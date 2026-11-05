@@ -18,6 +18,8 @@ export type Look = {
   aspectRatio: string;
   backgroundId: string | null;
   roomType: string | null;
+  category: string;
+  subcategory: string | null;
   items: LookItem[];
   resultAssetId: string;
   isBoard: boolean;

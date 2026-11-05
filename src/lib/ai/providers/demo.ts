@@ -44,7 +44,7 @@ export const demoProvider: ImageProvider = {
       const meta = await sharp(request.sceneUpload.bytes).metadata();
       const scale = Math.min(1, MAX_EDGE[request.resolution] / Math.max(meta.width ?? 1200, meta.height ?? 800));
       const [width, height] = [Math.round((meta.width ?? 1200) * scale), Math.round((meta.height ?? 800) * scale)];
-      const draft = await composeLook({ background: request.sceneUpload, items: [{ image: request.product, x: 0.3, y: 0.4, w: 0.4, h: 0.5 }], width, height, prompt: "", style: null });
+      const draft = await composeLook({ background: request.sceneUpload, items: [{ image: request.product, x: 0.3, y: 0.4, w: 0.4, h: 0.5 }], width, height });
       const data = await sharp(draft).webp({ quality: 85 }).toBuffer();
       return { url: `data:image/webp;base64,${data.toString("base64")}`, width, height, provider: "demo", model: "demo-lifestyle-v1" };
     }

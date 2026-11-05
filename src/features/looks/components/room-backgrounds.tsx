@@ -6,15 +6,18 @@ import { useTranslations } from "next-intl";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { categoryPresets } from "@/lib/catalog-presets";
 import type { RoomBackgroundView } from "@/lib/looks/room-backgrounds";
 import { deleteRoomBackground, editRoomBackground, getRoomBackgrounds, uploadRoomBackground } from "../actions";
-import { LOOK_STYLES, ROOM_TYPES } from "../config";
+import { DEFAULT_LOOK_CATEGORY, LOOK_STYLES, ROOM_TYPES, lookStyles } from "../config";
 
 type Editing = { mode: "upload" } | { mode: "edit"; background: RoomBackgroundView } | null;
 
 export function RoomBackgroundsManager() {
   const t = useTranslations("Looks");
+  const tp = useTranslations("Presets");
   const [data, setData] = useState<{ backgrounds: RoomBackgroundView[]; canManage: boolean } | null>(null);
+  const [category, setCategory] = useState("");
   const [room, setRoom] = useState("");
   const [style, setStyle] = useState("");
   const [status, setStatus] = useState("active");
@@ -26,7 +29,7 @@ export function RoomBackgroundsManager() {
   }, []);
 
   const visible = (data?.backgrounds ?? []).filter(
-    (b) => (!room || b.roomType === room) && (!style || b.style === style) && (status === "all" || (status === "active") === b.active),
+    (b) => (!category || b.category === category) && (!room || b.roomType === room) && (!style || b.style === style) && (status === "all" || (status === "active") === b.active),
   );
 
   return (
@@ -46,8 +49,9 @@ export function RoomBackgroundsManager() {
       {data && !data.canManage && <p className="rounded-lg bg-muted px-3 py-2 text-xs">{t("readOnly")}</p>}
 
       <div className="flex flex-wrap gap-2">
+        <FilterSelect label={t("category")} value={category} onChange={(c) => { setCategory(c); setStyle(""); }} options={[{ value: "", label: t("allCategories") }, ...categoryPresets.map((c) => ({ value: c.key, label: tp(`categories.${c.key}`) }))]} />
         <FilterSelect label={t("roomType")} value={room} onChange={setRoom} options={[{ value: "", label: t("allRooms") }, ...ROOM_TYPES.map((r) => ({ value: r, label: t(`rooms.${r}`) }))]} />
-        <FilterSelect label={t("styleLabel")} value={style} onChange={setStyle} options={[{ value: "", label: t("allStyles") }, ...LOOK_STYLES.map((s) => ({ value: s, label: t(`styles.${s}`) }))]} />
+        <FilterSelect label={t("styleLabel")} value={style} onChange={setStyle} options={[{ value: "", label: t("allStyles") }, ...(category ? lookStyles(category) : LOOK_STYLES).map((s) => ({ value: s, label: t(`styles.${s}` as "styles.luxury") }))]} />
         <FilterSelect label={t("status")} value={status} onChange={setStatus} options={[{ value: "active", label: t("activeOnly") }, { value: "inactive", label: t("inactiveOnly") }, { value: "all", label: t("allStatuses") }]} />
       </div>
 
@@ -65,7 +69,9 @@ export function RoomBackgroundsManager() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex min-w-0 flex-col">
                     <h2 className="truncate text-[13px] font-bold">{b.name}</h2>
-                    <span className="text-[11px] text-muted-foreground">{t(`rooms.${b.roomType}` as "rooms.livingRoom")}</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {tp(`categories.${b.category}`)} • {t(`rooms.${b.roomType}` as "rooms.livingRoom")}
+                    </span>
                   </div>
                   <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold", b.active ? "bg-emerald-50 text-emerald-700" : "bg-muted text-muted-foreground")}>
                     {b.active ? t("active") : t("inactive")}
@@ -116,7 +122,12 @@ function FilterSelect({ label, value, onChange, options }: { label: string; valu
 
 function BackgroundDialog({ editing, onClose, onSaved }: { editing: Editing; onClose: () => void; onSaved: () => void }) {
   const t = useTranslations("Looks");
+  const tp = useTranslations("Presets");
   const existing = editing?.mode === "edit" ? editing.background : null;
+  // Controlled, so the style list follows the picked category; reset whenever the dialog target changes.
+  const [category, setCategory] = useState({ for: existing?.id, value: existing?.category ?? DEFAULT_LOOK_CATEGORY });
+  if (category.for !== existing?.id) setCategory({ for: existing?.id, value: existing?.category ?? DEFAULT_LOOK_CATEGORY });
+  const styles = lookStyles(category.value);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
 
@@ -128,6 +139,7 @@ function BackgroundDialog({ editing, onClose, onSaved }: { editing: Editing; onC
       ? await editRoomBackground(existing.id, {
           name: String(data.get("name")),
           roomType: String(data.get("roomType")),
+          category: String(data.get("category")),
           style: String(data.get("style")),
           active: data.get("active") === "on",
         })
@@ -152,6 +164,12 @@ function BackgroundDialog({ editing, onClose, onSaved }: { editing: Editing; onC
             {t("name")}
             <input name="name" defaultValue={existing?.name} maxLength={80} required className="h-9 rounded-lg border px-3 text-[13px] font-normal outline-none focus-visible:border-ring" />
           </label>
+          <label className="flex flex-col gap-1.5 text-xs font-semibold">
+            {t("category")}
+            <select name="category" value={category.value} onChange={(e) => setCategory({ for: existing?.id, value: e.target.value })} className="h-9 rounded-lg border px-2 text-[13px] font-normal">
+              {categoryPresets.map((c) => <option key={c.key} value={c.key}>{tp(`categories.${c.key}`)}</option>)}
+            </select>
+          </label>
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1.5 text-xs font-semibold">
               {t("roomType")}
@@ -161,8 +179,9 @@ function BackgroundDialog({ editing, onClose, onSaved }: { editing: Editing; onC
             </label>
             <label className="flex flex-col gap-1.5 text-xs font-semibold">
               {t("styleLabel")}
-              <select name="style" defaultValue={existing?.style ?? LOOK_STYLES[0]} className="h-9 rounded-lg border px-2 text-[13px] font-normal">
-                {LOOK_STYLES.map((s) => <option key={s} value={s}>{t(`styles.${s}`)}</option>)}
+              {/* Keyed by category: a style from the old category isn't offered by the new one. */}
+              <select key={category.value} name="style" defaultValue={existing && styles.includes(existing.style) ? existing.style : styles[0]} className="h-9 rounded-lg border px-2 text-[13px] font-normal">
+                {styles.map((s) => <option key={s} value={s}>{t(`styles.${s}` as "styles.luxury")}</option>)}
               </select>
             </label>
           </div>

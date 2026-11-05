@@ -109,9 +109,10 @@ describe("provider routing", () => {
     const { org, actor } = await makeOrg();
     await saveProviderKey({ orgId: org.id, provider: "openai", key: "sk-test-0000000000000000", models: ["gpt-image-1"], createdBy: "t" });
     const background = { bytes: new Uint8Array(await readFile("public/scenes/living-room.png")), mimeType: "image/png", name: "room" };
-    const look = await (await getImageProvider(actor, "looks")).generateLook({ background, items: [{ image: product, x: 0.3, y: 0.4, w: 0.4, h: 0.4 }], width: 1600, height: 900, prompt: "cosy", style: null });
+    const look = await (await getImageProvider(actor, "looks")).generateLook({ background, items: [{ image: product, x: 0.3, y: 0.4, w: 0.4, h: 0.4 }], width: 1600, height: 900, prompt: "cosy", style: null, category: "fashion", subcategory: "handbags" });
     expect([look.width, look.height]).toEqual([1600, 900]);
     expect(calls.at(-1)!.images).toBe(1);
+    expect(calls.at(-1)!.fields.prompt).toContain("fashion (handbags) product cut-outs");
   });
 
   it("Gemini preference: recolor with swatch, aspect ratio and a vision preservation check", async () => {

@@ -4,6 +4,7 @@ import sharp from "sharp";
 import { ProviderError, type ProviderErrorCode } from "@/lib/ai/errors";
 import { getImageProvider } from "@/lib/ai/registry";
 import type { GeneratedImage } from "@/lib/ai/types";
+import { findCategory, findSubcategory } from "@/lib/catalog-presets";
 import { loadConnection } from "@/lib/catalog/connections";
 import { importProductPng, runSearch } from "@/lib/catalog/lookup";
 import type { CatalogErrorCode, CatalogProduct } from "@/lib/catalog/types";
@@ -13,6 +14,7 @@ import {
   insertRoomBackground,
   listRoomBackgrounds,
   removeRoomBackground,
+  resolveLookBackground,
   toBackgroundView,
   updateRoomBackground,
   type RoomBackgroundView,
@@ -20,7 +22,7 @@ import {
 import { safeFetch } from "@/lib/safe-fetch";
 import { assetUrl, deleteAsset, getAsset, saveAsset } from "@/lib/storage/assets";
 import { getWorkspace, type Workspace } from "@/lib/workspace";
-import { LOOK_RATIOS, LOOK_STYLES, MAX_LOOK_PRODUCTS, ROOM_TYPES, type LookItem } from "./config";
+import { LOOK_RATIOS, MAX_LOOK_PRODUCTS, ROOM_TYPES, lookStyles, uploadBackgroundId, uploadedAssetId, type LookItem } from "./config";
 import { reportError } from "@/lib/observability/report";
 
 type SearchError = "no_connection" | CatalogErrorCode;
@@ -71,6 +73,8 @@ type LookInput = {
   prompt: string;
   style: string | null;
   aspectRatio: string;
+  category: string;
+  subcategory: string | null;
   backgroundId: string | null;
   items: LookItem[];
 };
@@ -79,7 +83,10 @@ const clamp = (n: unknown, min: number, max: number) => (typeof n === "number" &
 
 function validateLook(input: LookInput) {
   const ratio = LOOK_RATIOS.find((r) => r.key === input.aspectRatio);
-  const style = input.style && (LOOK_STYLES as readonly string[]).includes(input.style) ? input.style : null;
+  const category = findCategory(String(input.category))?.key;
+  if (!category) return null;
+  const style = input.style && lookStyles(category).includes(input.style) ? input.style : null;
+  const subcategory = findSubcategory(category, typeof input.subcategory === "string" ? input.subcategory : null);
   if (!ratio || !Array.isArray(input.items) || input.items.length === 0 || input.items.length > MAX_LOOK_PRODUCTS) return null;
   const items: LookItem[] = [];
   for (const item of input.items) {
@@ -97,7 +104,7 @@ function validateLook(input: LookInput) {
       hidden: Boolean(item.hidden),
     });
   }
-  return { ratio, style, items, title: text(input.title, 80), prompt: text(input.prompt, 1000) };
+  return { ratio, style, category, subcategory, items, title: text(input.title, 80), prompt: text(input.prompt, 1000) };
 }
 
 type RenderError = ProviderErrorCode | "invalid_input";
@@ -105,13 +112,20 @@ type RenderError = ProviderErrorCode | "invalid_input";
 /** Composite the visible items onto the room background with the org's image provider. */
 async function renderLook(
   workspace: Workspace,
-  look: { items: LookItem[]; width: number; height: number; prompt: string; style: string | null; backgroundId: string | null },
+  look: {
+    items: LookItem[];
+    width: number;
+    height: number;
+    prompt: string;
+    style: string | null;
+    category: string;
+    subcategory: string | null;
+    backgroundId: string | null;
+  },
 ): Promise<{ ok: true; image: GeneratedImage } | { ok: false; error: RenderError }> {
   const { orgId } = workspace;
-  const backgrounds = await listRoomBackgrounds(orgId);
-  const background = backgrounds.find((b) => b.id === look.backgroundId && b.active) ?? backgrounds.find((b) => b.active);
-  const backgroundAsset = background ? await getAsset(orgId, background.assetId) : null;
-  if (!backgroundAsset) return { ok: false, error: "invalid_input" };
+  const background = await (await resolveLookBackground(orgId, look.category, look.backgroundId))?.load();
+  if (!background) return { ok: false, error: "invalid_input" };
 
   const items = [];
   for (const item of look.items.filter((i) => !i.hidden)) {
@@ -123,12 +137,14 @@ async function renderLook(
   const provider = await getImageProvider(workspace, "looks");
   try {
     const image = await provider.generateLook({
-      background: { bytes: new Uint8Array(backgroundAsset.bytes), mimeType: backgroundAsset.mimeType, name: background!.name },
+      background,
       items,
       width: look.width,
       height: look.height,
       prompt: look.prompt,
       style: look.style,
+      category: look.category,
+      subcategory: look.subcategory,
     });
     return { ok: true, image };
   } catch (error) {
@@ -145,11 +161,12 @@ export async function generateLook(input: LookInput): Promise<{ ok: true; image:
   return renderLook(workspace, { ...look, width: look.ratio.w, height: look.ratio.h, backgroundId: input.backgroundId });
 }
 
-export type LookView = Omit<Look, "orgId" | "resultAssetId" | "mode"> & { mode: LookMode; imageUrl: string };
+export type LookView = Omit<Look, "orgId" | "resultAssetId" | "mode"> & { mode: LookMode; imageUrl: string; uploadedBackgroundUrl: string | null };
 function toLookView(look: Look): LookView {
   const { resultAssetId, ...rest } = look;
   delete (rest as Partial<Look>).orgId;
-  return { ...rest, mode: look.mode ?? "generated", imageUrl: assetUrl(resultAssetId) };
+  const uploaded = uploadedAssetId(look.backgroundId);
+  return { ...rest, mode: look.mode ?? "generated", imageUrl: assetUrl(resultAssetId), uploadedBackgroundUrl: uploaded ? assetUrl(uploaded) : null };
 }
 
 async function dropAsset(orgId: string, id: string) {
@@ -178,7 +195,7 @@ export async function saveLook(
   const data = typeof input.image === "string" ? DATA_URL.exec(input.image) : null;
   if (!look || !data) return { ok: false, error: "invalid_input" };
 
-  const background = (await listRoomBackgrounds(workspace.orgId)).find((b) => b.id === input.backgroundId) ?? null;
+  const background = await resolveLookBackground(workspace.orgId, look.category, input.backgroundId);
   const fields = {
     title: look.title || background?.name || "Untitled look",
     prompt: look.prompt,
@@ -186,6 +203,8 @@ export async function saveLook(
     aspectRatio: look.ratio.key,
     backgroundId: background?.id ?? null,
     roomType: background?.roomType ?? null,
+    category: look.category,
+    subcategory: look.subcategory,
     items: look.items,
   };
 
@@ -290,6 +309,8 @@ export async function duplicateLook(id: string, title: string): Promise<{ ok: tr
     aspectRatio: look.aspectRatio,
     backgroundId: look.backgroundId,
     roomType: look.roomType,
+    category: look.category,
+    subcategory: look.subcategory,
     items: look.items,
     resultAssetId,
     isBoard: look.isBoard,
@@ -315,6 +336,25 @@ export async function deleteLook(id: string): Promise<{ ok: true } | { ok: false
   return { ok: true };
 }
 
+/** Store the merchant's own background image for the builder (any category); returns its background id. */
+export async function uploadLookBackground(
+  formData: FormData,
+): Promise<{ ok: true; background: { id: string; imageUrl: string } } | { ok: false; error: "forbidden" | "invalid_input" }> {
+  const workspace = await getWorkspace();
+  if (workspace.role === "viewer") return { ok: false, error: "forbidden" };
+  const file = formData.get("image");
+  if (!(file instanceof File) || !IMAGE_TYPES.includes(file.type) || file.size > MAX_IMAGE_BYTES) return { ok: false, error: "invalid_input" };
+  let webp: Buffer;
+  try {
+    webp = await sharp(new Uint8Array(await file.arrayBuffer())).resize({ width: 2048, height: 2048, fit: "inside", withoutEnlargement: true }).webp({ quality: 88 }).toBuffer();
+  } catch {
+    // Not a readable image, whatever its declared type.
+    return { ok: false, error: "invalid_input" };
+  }
+  const assetId = await saveAsset(workspace.orgId, webp, "image/webp", "look-background");
+  return { ok: true, background: { id: uploadBackgroundId(assetId), imageUrl: assetUrl(assetId) } };
+}
+
 // ---- Room backgrounds (admin) ----
 
 export async function getRoomBackgrounds(): Promise<{ backgrounds: RoomBackgroundView[]; canManage: boolean }> {
@@ -323,7 +363,7 @@ export async function getRoomBackgrounds(): Promise<{ backgrounds: RoomBackgroun
 }
 
 const isRoomType = (v: string) => (ROOM_TYPES as readonly string[]).includes(v);
-const isStyle = (v: string) => (LOOK_STYLES as readonly string[]).includes(v);
+const isCategory = (v: string) => Boolean(findCategory(v));
 
 export async function uploadRoomBackground(formData: FormData): Promise<{ ok: true } | { ok: false; error: "forbidden" | "invalid_input" }> {
   const workspace = await getWorkspace();
@@ -331,19 +371,23 @@ export async function uploadRoomBackground(formData: FormData): Promise<{ ok: tr
   const file = formData.get("image");
   const name = text(formData.get("name"), 80);
   const roomType = text(formData.get("roomType"), 40);
+  const category = text(formData.get("category"), 40);
   const style = text(formData.get("style"), 40);
-  if (!(file instanceof File) || !IMAGE_TYPES.includes(file.type) || file.size > MAX_IMAGE_BYTES || !name || !isRoomType(roomType) || !isStyle(style)) {
+  if (
+    !(file instanceof File) || !IMAGE_TYPES.includes(file.type) || file.size > MAX_IMAGE_BYTES || !name ||
+    !isRoomType(roomType) || !isCategory(category) || !lookStyles(category).includes(style)
+  ) {
     return { ok: false, error: "invalid_input" };
   }
   const webp = await sharp(new Uint8Array(await file.arrayBuffer())).resize({ width: 2048, height: 2048, fit: "inside", withoutEnlargement: true }).webp({ quality: 88 }).toBuffer();
   const assetId = await saveAsset(workspace.orgId, webp, "image/webp", "room-background");
-  await insertRoomBackground({ orgId: workspace.orgId, name, roomType, style, assetId, mimeType: "image/webp", active: true });
+  await insertRoomBackground({ orgId: workspace.orgId, name, roomType, category, style, assetId, mimeType: "image/webp", active: true });
   return { ok: true };
 }
 
 export async function editRoomBackground(
   id: string,
-  patch: { name?: string; roomType?: string; style?: string; active?: boolean },
+  patch: { name?: string; roomType?: string; category?: string; style?: string; active?: boolean },
 ): Promise<{ ok: true } | { ok: false; error: "forbidden" | "invalid_input" }> {
   const workspace = await getWorkspace();
   if (workspace.role !== "admin") return { ok: false, error: "forbidden" };
@@ -353,9 +397,14 @@ export async function editRoomBackground(
     if (!isRoomType(patch.roomType)) return { ok: false, error: "invalid_input" };
     clean.roomType = patch.roomType;
   }
-  if (patch.style !== undefined) {
-    if (!isStyle(patch.style)) return { ok: false, error: "invalid_input" };
-    clean.style = patch.style;
+  if (patch.category !== undefined || patch.style !== undefined) {
+    // A style only exists within a category, so the pair is checked together.
+    const current = (await listRoomBackgrounds(workspace.orgId)).find((b) => b.id === String(id));
+    const category = patch.category ?? current?.category ?? "";
+    const style = patch.style ?? current?.style ?? "";
+    if (!isCategory(category) || !lookStyles(category).includes(style)) return { ok: false, error: "invalid_input" };
+    clean.category = category;
+    clean.style = style;
   }
   if (patch.active !== undefined) clean.active = Boolean(patch.active);
   if (clean.name === "") return { ok: false, error: "invalid_input" };

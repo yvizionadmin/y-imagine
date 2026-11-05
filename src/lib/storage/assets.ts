@@ -12,7 +12,7 @@ const EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "
 const ID = /^[0-9a-f-]{36}$/;
 const ORG = /^[A-Za-z0-9_-]{1,64}$/;
 
-export type AssetKind = "generation" | "look-product" | "room-background" | "look" | "swatch";
+export type AssetKind = "generation" | "look-product" | "room-background" | "look-background" | "look" | "swatch";
 
 const { assets } = schema;
 

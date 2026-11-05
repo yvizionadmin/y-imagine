@@ -275,10 +275,10 @@ export function createAiImageProvider(config: AiProviderConfig): ImageProvider {
       // the model only blends it into one believable photo.
       const draft = await composeLook(request);
       const prompt = [
-        "This is a draft room scene made by pasting product cut-outs onto a room photo. Turn it into one photorealistic interior photo.",
+        `This is a draft scene made by pasting ${productKind(request)} product cut-outs onto a background photo. Turn it into one photorealistic lifestyle photo.`,
         "Keep every product exactly where it is, at the same size, with the same shape, colours and details. Do not add, remove, move or replace products.",
-        "Fix lighting so it matches the room, add realistic contact shadows and reflections, and blend edges naturally.",
-        request.style ? `Interior style: ${words(request.style)}.` : "",
+        "Fix lighting so it matches the scene, add realistic contact shadows and reflections, and blend edges naturally.",
+        request.style ? `Style: ${words(request.style)}.` : "",
         request.prompt ? `Mood: ${request.prompt}` : "",
       ];
       return render({

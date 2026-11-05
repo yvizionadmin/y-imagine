@@ -4,7 +4,7 @@ import type { LookRequest } from "@/lib/ai/types";
 import { cutOutProduct } from "./cutout";
 
 /** Places each cut-out product where the merchant arranged it on the room backdrop (PNG). */
-export async function composeLook(request: LookRequest) {
+export async function composeLook(request: Pick<LookRequest, "background" | "items" | "width" | "height">) {
   const { width, height } = request;
   const layers = [];
   for (const item of request.items) {

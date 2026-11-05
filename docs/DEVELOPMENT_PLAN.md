@@ -769,3 +769,14 @@ key re-validation cron service, marketing pages, production deploy on Railway (c
   clean; 133 Vitest tests (+3: type data/labels/photos, `findSubcategory`, Generate refuses another category's type);
   Playwright `templates.spec.ts` (category → type → Generate, category switch clears the type, search); `next build`
   clean; screenshots en + ar. **Not yet:** product types per tenant (DB-backed presets, Phase 2); type-specific scenes.
+- **2026-11-05, Shop the Look: categories + own backgrounds (local):** the Builder's Look Settings gained the shared
+  `CategoryFields` (category + optional product type, `?category=` / `?sub=` like Generate). Style chips follow the
+  category (`lookStyles`: furniture keeps the 7 room styles, others use their preset styles; labels added to
+  `Looks.styles`). Backgrounds follow it too (`categoryBackgrounds`): the org's active room backgrounds for the
+  category, else the category's preset scenes (`scene:<key>`, read from `public/`). Merchants can upload their own
+  background in the Builder (`uploadLookBackground`, any non-viewer, asset kind `look-background`, id `upload:<assetId>`,
+  kept across category switches). `resolveLookBackground` (render + save + regenerate) handles all three; another org's
+  upload id falls back. Looks store `category` / `subcategory`, room backgrounds store `category` (migration `0010`,
+  existing rows default to furniture); the Room Backgrounds admin has a category filter and field. The look prompt now
+  names the products (`productKind`) instead of assuming an interior. **Not yet:** uploaded backgrounds are not deleted
+  with a look (duplicates may share them); history/board filters by category.

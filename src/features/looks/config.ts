@@ -1,9 +1,35 @@
+import { findCategory } from "@/lib/catalog-presets";
+
 /** Plan-quota jobs consumed by one generated look. */
 export const LOOK_COST = 1;
 export const MAX_LOOK_PRODUCTS = 20;
 
 export const LOOK_STYLES = ["contemporary", "scandinavian", "minimalist", "industrial", "bohemian", "traditional", "luxury"] as const;
 export type LookStyle = (typeof LOOK_STYLES)[number];
+
+/** A look's product category (a catalog preset key, as in Generate) when none is picked. */
+export const DEFAULT_LOOK_CATEGORY = "furniture";
+
+/** Style chips for a category: furniture keeps the room styles, the others use their preset's styles. */
+export const lookStyles = (category: string): readonly string[] =>
+  category === DEFAULT_LOOK_CATEGORY ? LOOK_STYLES : (findCategory(category)?.styles ?? LOOK_STYLES);
+
+/** Background id of a preset scene, used while the org has no backgrounds of its own for the category. */
+export const sceneBackgroundId = (scene: string) => `scene:${scene}`;
+
+/** Background id of an image the merchant uploaded in the builder (an org asset); not tied to a category. */
+export const uploadBackgroundId = (assetId: string) => `upload:${assetId}`;
+/** The asset id inside an uploaded background id, else null. */
+export const uploadedAssetId = (id: string | null) => (id?.startsWith("upload:") ? id.slice("upload:".length) : null);
+
+/**
+ * The category's backgrounds: the org's active ones for it, or the category's preset scenes as
+ * starters when it has none (the builder and the render pick from the same list).
+ */
+export function categoryBackgrounds<T extends { category: string; active: boolean }>(category: string, own: T[]) {
+  const mine = own.filter((b) => b.active && b.category === category);
+  return { own: mine, scenes: mine.length > 0 ? [] : (findCategory(category)?.scenes ?? []) };
+}
 
 export const ROOM_TYPES = ["livingRoom", "bedroom", "dining", "kitchen", "office", "outdoor"] as const;
 export type RoomType = (typeof ROOM_TYPES)[number];

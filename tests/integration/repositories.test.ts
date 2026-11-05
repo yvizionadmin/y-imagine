@@ -5,7 +5,7 @@ import { findUserByEmail, insertUser } from "@/lib/auth/users";
 import { insertConnection, listConnections, loadConnection, removeConnection, setDefaultConnection } from "@/lib/catalog/connections";
 import { db, schema } from "@/lib/db";
 import { insertGeneration, listGenerations, removeGenerations, updateGenerations } from "@/lib/generations";
-import { listRoomBackgrounds } from "@/lib/looks/room-backgrounds";
+import { listRoomBackgrounds, resolveLookBackground } from "@/lib/looks/room-backgrounds";
 import { getOrganization, updateOrganization } from "@/lib/platform/organizations";
 import { getPlatformSettings, savePlatformSettings } from "@/lib/platform/settings";
 import { deleteAsset, getAsset, saveAsset } from "@/lib/storage/assets";
@@ -138,6 +138,31 @@ describe("generations, assets, room backgrounds", () => {
     const [first, second] = await Promise.all([listRoomBackgrounds(org.id), listRoomBackgrounds(org.id)]);
     expect(Math.max(first.length, second.length)).toBe(3);
     expect(await listRoomBackgrounds(org.id)).toHaveLength(3);
+  });
+
+  it("resolves a look's background within its category", async () => {
+    const { org } = await makeOrg();
+    const seeded = await listRoomBackgrounds(org.id);
+    // Furniture uses the org's own (seeded) backgrounds; an unknown id falls back to the first.
+    expect((await resolveLookBackground(org.id, "furniture", seeded[1].id))?.id).toBe(seeded[1].id);
+    expect((await resolveLookBackground(org.id, "furniture", "scene:urbanStreet"))?.id).toBe(seeded[0].id);
+    // Fashion has none of its own, so it renders on the preset scene, read from public/.
+    const fashion = await resolveLookBackground(org.id, "fashion", "scene:urbanStreet");
+    expect(fashion?.id).toBe("scene:urbanStreet");
+    const image = await fashion!.load();
+    expect(image?.mimeType).toBe("image/jpeg");
+    expect(image?.bytes.length).toBeGreaterThan(0);
+  });
+
+  it("resolves an uploaded look background for its own org only", async () => {
+    const a = await makeOrg();
+    const b = await makeOrg();
+    const assetId = await saveAsset(a.org.id, new Uint8Array([1, 2, 3]), "image/webp", "look-background");
+    const own = await resolveLookBackground(a.org.id, "fashion", `upload:${assetId}`);
+    expect(own?.id).toBe(`upload:${assetId}`);
+    expect((await own!.load())?.mimeType).toBe("image/webp");
+    // Another org's asset id falls back to that org's category choices.
+    expect((await resolveLookBackground(b.org.id, "fashion", `upload:${assetId}`))?.id).toBe("scene:studioBackdrop");
   });
 });
 

@@ -99,6 +99,9 @@ export type LookRequest = {
   height: number;
   prompt: string;
   style: string | null;
+  /** Catalog preset key of the products (and optional product type), so the scene suits them. */
+  category: string;
+  subcategory?: string | null;
 };
 
 export interface ImageProvider {

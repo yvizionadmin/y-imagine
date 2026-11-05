@@ -3,21 +3,34 @@
 import { blockedReason } from "@/components/app/job-errors";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Box, Eye, EyeOff, Link2, Loader2, Lock, Search, Sparkles, Unlock, X } from "lucide-react";
+import { Box, Eye, EyeOff, Link2, Loader2, Lock, Plus, Search, Sparkles, Unlock, X } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { cn } from "cn";
 import { ExportDialog } from "@/components/app/export-dialog";
+import { HiddenFileInput } from "@/components/app/upload-inputs";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import type { GeneratedImage } from "@/lib/ai/types";
 import type { CatalogProduct } from "@/lib/catalog/types";
 import { LATN } from "@/lib/format";
 import type { RoomBackgroundView } from "@/lib/looks/room-backgrounds";
-import { addLookProduct, generateLook, getLookById, getRoomBackgrounds, saveLook, searchLookProducts } from "../actions";
-import { LOOK_COST, LOOK_RATIOS, LOOK_STYLES, MAX_LOOK_PRODUCTS, type LookItem, type LookRatio, type LookStyle } from "../config";
+import { useCategoryParam, useCategorySync, useSubcategorySync } from "@/lib/use-category-param";
+import { CategoryFields } from "@/features/image-batch/components/bulk-fields";
+import { addLookProduct, generateLook, getLookById, getRoomBackgrounds, saveLook, searchLookProducts, uploadLookBackground } from "../actions";
+import {
+  DEFAULT_LOOK_CATEGORY,
+  LOOK_COST,
+  LOOK_RATIOS,
+  MAX_LOOK_PRODUCTS,
+  categoryBackgrounds,
+  lookStyles,
+  sceneBackgroundId,
+  type LookItem,
+  type LookRatio,
+} from "../config";
 import { LookCanvas } from "./look-canvas";
 
-type Settings = { title: string; prompt: string; style: LookStyle | null; ratio: LookRatio; backgroundId: string | null };
+type Settings = { title: string; prompt: string; category: string; style: string | null; ratio: LookRatio; backgroundId: string | null };
 type Result = { image: GeneratedImage; saved: "none" | "look" | "board" };
 
 /** Shop-the-look builder. With `?look=<id>` (Edit Look) it loads that look and saves back into it. */
@@ -29,8 +42,11 @@ export function LooksBuilder() {
 
 function Builder({ lookId }: { lookId: string | null }) {
   const t = useTranslations("Looks");
+  const tp = useTranslations("Presets");
   const format = useFormatter();
   const tw = useTranslations("Workspace");
+  // The template picker (and a reload) passes ?category= / ?sub=, as in Generate.
+  const paramCategory = useCategoryParam();
   const searchRef = useRef<HTMLInputElement>(null);
   // Snapshot taken when a drag starts, so undo returns to the pre-drag layout.
   const dragBase = useRef<LookItem[] | null>(null);
@@ -38,8 +54,22 @@ function Builder({ lookId }: { lookId: string | null }) {
   const [past, setPast] = useState<LookItem[][]>([]);
   const [future, setFuture] = useState<LookItem[][]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [settings, setSettings] = useState<Settings>({ title: "", prompt: "", style: null, ratio: "1:1", backgroundId: null });
+  const [settings, setSettings] = useState<Settings>({
+    title: "",
+    prompt: "",
+    category: paramCategory ?? DEFAULT_LOOK_CATEGORY,
+    style: null,
+    ratio: "1:1",
+    backgroundId: null,
+  });
+  // Styles and backgrounds belong to a category, so a new category starts on its own.
+  const chooseCategory = useCategorySync(settings.category, (category) => setSettings((s) => ({ ...s, category, style: null, backgroundId: null })));
+  const [subcategory, chooseSubcategory] = useSubcategorySync(settings.category);
   const [backgrounds, setBackgrounds] = useState<RoomBackgroundView[]>([]);
+  // Backgrounds the merchant uploaded here: kept across category switches, like Generate's own scene.
+  const [uploads, setUploads] = useState<{ id: string; imageUrl: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const uploadRef = useRef<HTMLInputElement>(null);
   const [zoom, setZoom] = useState(100);
   const [grid, setGrid] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -48,11 +78,7 @@ function Builder({ lookId }: { lookId: string | null }) {
   const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
-    getRoomBackgrounds().then(({ backgrounds }) => {
-      const active = backgrounds.filter((b) => b.active);
-      setBackgrounds(active);
-      setSettings((s) => ({ ...s, backgroundId: s.backgroundId ?? active[0]?.id ?? null }));
-    });
+    getRoomBackgrounds().then(({ backgrounds }) => setBackgrounds(backgrounds));
   }, []);
 
   useEffect(() => {
@@ -61,18 +87,34 @@ function Builder({ lookId }: { lookId: string | null }) {
       if (!found) return setError(t("notFound"));
       const { look } = found;
       setItems(look.items);
-      setSettings((s) => ({
+      setSettings({
         title: look.title,
         prompt: look.prompt,
-        style: look.style as LookStyle | null,
+        category: look.category,
+        style: look.style,
         ratio: look.aspectRatio as LookRatio,
-        backgroundId: look.backgroundId ?? s.backgroundId,
-      }));
+        backgroundId: look.backgroundId,
+      });
+      if (look.backgroundId && look.uploadedBackgroundUrl) setUploads([{ id: look.backgroundId, imageUrl: look.uploadedBackgroundUrl }]);
+      // The category is already set above, so the address change below keeps the look's style.
+      const params = new URLSearchParams(window.location.search);
+      params.set("category", look.category);
+      if (look.subcategory) params.set("sub", look.subcategory);
+      else params.delete("sub");
+      window.history.replaceState(null, "", `?${params}`);
     });
   }, [lookId, t]);
 
   const ratio = LOOK_RATIOS.find((r) => r.key === settings.ratio)!;
-  const background = backgrounds.find((b) => b.id === settings.backgroundId) ?? null;
+  // Same list (and fallback to the first) the server renders with: the org's backgrounds for the category, else its preset scenes.
+  const { own, scenes } = categoryBackgrounds(settings.category, backgrounds);
+  const choices = [
+    ...own.map((b) => ({ id: b.id, name: b.name, imageUrl: b.imageUrl, roomType: b.roomType as string | null })),
+    ...scenes.map((sc) => ({ id: sceneBackgroundId(sc.key), name: tp(`scenes.${sc.key}`), imageUrl: sc.image, roomType: null })),
+    ...uploads.map((u) => ({ ...u, name: t("uploadedBackground"), roomType: null })),
+  ];
+  const background = choices.find((b) => b.id === settings.backgroundId) ?? choices[0] ?? null;
+  const categoryLabel = tp(`categories.${settings.category}`);
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) => setSettings((s) => ({ ...s, [key]: value }));
 
   function commit(next: LookItem[]) {
@@ -104,6 +146,19 @@ function Builder({ lookId }: { lookId: string | null }) {
     );
   }
 
+  async function uploadBackground(file: File | null) {
+    if (!file) return;
+    setError(null);
+    setUploading(true);
+    const data = new FormData();
+    data.set("image", file);
+    const response = await uploadLookBackground(data);
+    setUploading(false);
+    if (!response.ok) return setError(t("uploadBackgroundFailed"));
+    setUploads((u) => [...u, response.background]);
+    set("backgroundId", response.background.id);
+  }
+
   async function generate() {
     setError(null);
     setGenerating(true);
@@ -121,7 +176,9 @@ function Builder({ lookId }: { lookId: string | null }) {
     prompt: settings.prompt,
     style: settings.style,
     aspectRatio: settings.ratio,
-    backgroundId: settings.backgroundId,
+    category: settings.category,
+    subcategory,
+    backgroundId: background?.id ?? null,
     items,
   });
 
@@ -140,7 +197,7 @@ function Builder({ lookId }: { lookId: string | null }) {
   );
 
   if (result) {
-    const roomLabel = background ? t(`rooms.${background.roomType}` as "rooms.livingRoom") : "";
+    const roomLabel = background?.roomType ? t(`rooms.${background.roomType}` as "rooms.livingRoom") : (background?.name ?? "");
     return (
       <div className="flex flex-col gap-4 pb-6">
         {header}
@@ -148,7 +205,14 @@ function Builder({ lookId }: { lookId: string | null }) {
           <aside className="flex flex-col gap-3 rounded-2xl border bg-background p-4">
             <h2 className="text-sm font-bold">{t("arranged")}</h2>
             <div className="flex flex-wrap gap-1.5">
-              {[t("items", { count: items.length }), roomLabel, settings.style ? t(`styles.${settings.style}`) : null].filter(Boolean).map((tag) => (
+              {[
+                t("items", { count: items.length }),
+                subcategory ? tp(`subcategories.${subcategory}`) : categoryLabel,
+                roomLabel,
+                settings.style ? t(`styles.${settings.style}` as "styles.luxury") : null,
+              ]
+                .filter(Boolean)
+                .map((tag) => (
                 <span key={tag} className="rounded bg-muted px-2 py-0.5 text-[10px] font-semibold">{tag}</span>
               ))}
             </div>
@@ -287,13 +351,20 @@ function Builder({ lookId }: { lookId: string | null }) {
                 {t("prompt")}
                 <textarea value={settings.prompt} maxLength={1000} onChange={(e) => set("prompt", e.target.value)} placeholder={t("promptPlaceholder")} className="h-16 resize-none rounded-lg border px-3 py-2 text-xs font-normal outline-none placeholder:text-subtle focus-visible:border-ring" />
               </label>
+              <CategoryFields
+                label={t("category")}
+                category={settings.category}
+                subcategory={subcategory}
+                onCategory={chooseCategory}
+                onSubcategory={chooseSubcategory}
+              />
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold">{t("style")}</span>
                 <div role="radiogroup" aria-label={t("style")} className="flex flex-wrap gap-1.5">
-                  {LOOK_STYLES.map((style) => (
+                  {lookStyles(settings.category).map((style) => (
                     <button key={style} type="button" role="radio" aria-checked={settings.style === style} onClick={() => set("style", settings.style === style ? null : style)}
                       className={cn("rounded-full border bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground", settings.style === style && "border-primary bg-primary text-primary-foreground")}>
-                      {t(`styles.${style}`)}
+                      {t(`styles.${style}` as "styles.luxury")}
                     </button>
                   ))}
                 </div>
@@ -313,13 +384,18 @@ function Builder({ lookId }: { lookId: string | null }) {
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold">{t("roomBackground")}</span>
                 <div role="radiogroup" aria-label={t("roomBackground")} className="flex flex-wrap gap-1.5">
-                  {backgrounds.map((b) => (
-                    <button key={b.id} type="button" role="radio" aria-checked={settings.backgroundId === b.id} aria-label={b.name} title={b.name} onClick={() => set("backgroundId", b.id)}
-                      className={cn("h-9 w-12 overflow-hidden rounded-md border-2 border-transparent", settings.backgroundId === b.id && "border-primary")}>
+                  {choices.map((b) => (
+                    <button key={b.id} type="button" role="radio" aria-checked={background?.id === b.id} aria-label={b.name} title={b.name} onClick={() => set("backgroundId", b.id)}
+                      className={cn("h-9 w-12 overflow-hidden rounded-md border-2 border-transparent", background?.id === b.id && "border-primary")}>
                       {/* eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route */}
                       <img src={b.imageUrl} alt="" className="size-full object-cover" />
                     </button>
                   ))}
+                  <button type="button" aria-label={t("uploadBackground")} title={t("uploadBackground")} disabled={uploading} onClick={() => uploadRef.current?.click()}
+                    className="flex h-9 w-12 items-center justify-center rounded-md border-2 border-dashed text-muted-foreground hover:border-primary hover:text-primary disabled:opacity-50">
+                    {uploading ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Plus className="size-4" aria-hidden />}
+                  </button>
+                  <HiddenFileInput inputRef={uploadRef} accept="image/png,image/jpeg,image/webp" onChange={uploadBackground} />
                 </div>
               </div>
             </section>
