@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local asset files (blob store without S3_BUCKET) and the old JSON store
+/.data
+
+!.env.example
+
+# Playwright
+/test-results/
+/playwright-report/
+
+# image eval outputs (npm run eval:images)
+/evals/images/runs/

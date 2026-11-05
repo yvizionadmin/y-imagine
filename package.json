@@ -1,26 +1,72 @@
 {
-  "name": "scaffold",
+  "name": "y-imagine",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.mts",
+    "db:studio": "drizzle-kit studio",
+    "db:import-dev-store": "tsx --env-file-if-exists=.env.local scripts/import-dev-store.mts",
+    "worker": "tsx --conditions=react-server --env-file-if-exists=.env.local src/worker.ts",
+    "stripe:setup": "tsx --env-file-if-exists=.env.local scripts/stripe-setup.mts",
+    "eval:images": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/eval-images.mts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.96",
+    "@ai-sdk/google": "^4.0.111",
+    "@ai-sdk/openai": "^4.0.108",
+    "@aws-sdk/client-s3": "^3.1161.0",
+    "@base-ui/react": "^1.9.0",
+    "@clerk/backend": "^3.26.5",
+    "@clerk/localizations": "^4.24.4",
+    "@clerk/nextjs": "^7.9.23",
+    "@openrouter/ai-sdk-provider": "^3.1.0",
+    "@sentry/nextjs": "^11.10.0",
+    "@sentry/node": "^11.10.0",
+    "ai": "^7.0.162",
+    "bullmq": "^6.5.4",
+    "class-variance-authority": "^0.7.1",
+    "cn": "^0.5.2",
+    "drizzle-orm": "^0.45.4",
+    "fflate": "^0.8.2",
+    "ioredis": "^6.0.0",
+    "lucide-react": "^1.66.0",
     "next": "16.4.4",
+    "next-intl": "^4.14.9",
+    "postgres": "^3.4.9",
+    "qrcode": "^1.5.4",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
+    "shadcn": "^4.23.0",
+    "sharp": "^0.35.5",
+    "stripe": "^23.1.0",
+    "tsx": "^4.23.15",
+    "tw-animate-css": "^1.4.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/turbopack": "^4",
-    "@types/node": "^20",
+    "@types/node": "^22.20.5",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.4",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

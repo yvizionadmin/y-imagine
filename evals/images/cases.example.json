@@ -1,0 +1,11 @@
+[
+  { "id": "sofa-living-scale", "tool": "generate", "product": "public/demo/sofa-source.png", "category": "furniture", "scene": "livingRoom", "style": "scandinavian", "productSize": "220 × 95 × 85 cm", "aspectRatio": "16:9" },
+  { "id": "sofa-living-noscale", "tool": "generate", "product": "public/demo/sofa-source.png", "category": "furniture", "scene": "livingRoom", "style": "scandinavian", "aspectRatio": "16:9" },
+  { "id": "chair-patio", "tool": "generate", "product": "public/demo/source-chair.png", "category": "outdoor", "scene": "patioTerrace", "style": "mediterranean", "productSize": "60 × 55 × 80 cm" },
+  { "id": "chair-custom-scene", "tool": "generate", "product": "public/demo/source-chair.png", "category": "furniture", "customScene": "a bright apartment balcony at golden hour with a city view" },
+  { "id": "chair-own-background", "tool": "generate", "product": "public/demo/source-chair.png", "category": "furniture", "sceneImage": "public/scenes/luxury-loft.png", "productSize": "60 × 55 × 80 cm" },
+  { "id": "sofa-beige-main", "tool": "recolor", "product": "public/demo/sofa-grey-base.png", "swatch": "public/demo/swatch-beige-linen.png", "category": "furniture", "scope": "main" },
+  { "id": "sofa-beige-all", "tool": "recolor", "product": "public/demo/sofa-grey-base.png", "swatch": "public/demo/swatch-beige-linen.png", "category": "furniture", "scope": "all" },
+  { "id": "sofa-aplus-en", "tool": "aplus", "product": "public/demo/sofa-source.png", "category": "furniture", "scene": "livingRoom", "title": "Cloud Comfort Sofa", "subtitle": "Deep seats, washable linen", "features": [{ "title": "Washable", "description": "Removable linen covers" }, { "title": "Solid wood", "description": "Kiln-dried oak frame" }] },
+  { "id": "sofa-aplus-ar", "tool": "aplus", "product": "public/demo/sofa-source.png", "category": "furniture", "scene": "livingRoom", "title": "كنبة كلاود المريحة", "subtitle": "مقاعد عميقة وكتان قابل للغسل", "features": [{ "title": "قابل للغسل", "description": "أغطية كتان قابلة للإزالة" }, { "title": "خشب صلب", "description": "إطار من خشب البلوط" }] }
+]

@@ -1,0 +1,1 @@
+ALTER TABLE "image_batch_items" ADD COLUMN "data" jsonb;

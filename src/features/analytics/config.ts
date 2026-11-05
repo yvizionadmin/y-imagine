@@ -1,0 +1,7 @@
+import type { Feature } from "@/lib/ai/types";
+
+export const JOB_FEATURES = ["generate", "recolor", "aplus", "looks", "copy"] as const satisfies readonly Feature[];
+export type JobFeature = (typeof JOB_FEATURES)[number];
+
+export const ANALYTICS_RANGES = [7, 30, 90] as const;
+export type AnalyticsRange = (typeof ANALYTICS_RANGES)[number];
