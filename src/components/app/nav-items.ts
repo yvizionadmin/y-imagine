@@ -6,6 +6,8 @@ import {
   Coins,
   Crop,
   Image,
+  ImagePlus,
+  Layers,
   KeyRound,
   LayoutDashboard,
   Link,
@@ -54,6 +56,28 @@ export const navItems: NavItem[] = [
   { key: "qr", href: "/qr", icon: QrCode },
   { key: "links", href: "/links", icon: Link },
 ];
+
+/**
+ * Image tools grouped under the rail's "AI Image" item (it takes the Generate slot). The rail shows
+ * only that item; hovering it opens the menu below, next to the org's image models.
+ */
+export const AI_IMAGE_KEYS: readonly ToolKey[] = ["generate", "recolor", "aplus", "looks", "resize"];
+
+export type AiImageTool = { key: "create" | "generate" | "generateBulk" | "recolor" | "aplus" | "looks" | "resize"; href: `/${string}`; icon: LucideIcon };
+
+/** The AI Image menu's Tools column, in order. */
+export const aiImageTools: AiImageTool[] = [
+  { key: "create", href: "/home", icon: ImagePlus },
+  { key: "generate", href: "/generate", icon: WandSparkles },
+  { key: "generateBulk", href: "/generate/bulk", icon: Layers },
+  { key: "recolor", href: "/recolor", icon: Palette },
+  { key: "aplus", href: "/aplus", icon: Image },
+  { key: "looks", href: "/looks", icon: Star },
+  { key: "resize", href: "/resize", icon: Crop },
+];
+
+/** What the rail lists: everything except the grouped image tools, which collapse into "generate". */
+export const railItems = navItems.filter((item) => item.key === "generate" || !AI_IMAGE_KEYS.includes(item.key));
 
 export function activeTool(pathname: string): NavItem | undefined {
   return navItems.find(

@@ -15,10 +15,11 @@ import {
 } from "@/lib/generations";
 import { deleteAsset, isAssetMime, readAsset, saveAsset } from "@/lib/storage/assets";
 import { decodeImage } from "@/lib/storage/decode-image";
+import { forgetVideoJobs } from "@/lib/video/history";
 import { getWorkspace } from "@/lib/workspace";
 import { HISTORY_PAGE_SIZES, type HistoryFilters, type HistoryItem } from "./types";
 
-const MODES: GenerationMode[] = ["create", "lifestyle", "recolor", "aplus"];
+const MODES: GenerationMode[] = ["create", "video", "lifestyle", "recolor", "aplus"];
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const ORG_TZ_OFFSET = "+04:00"; // Asia/Dubai, matches the next-intl default until per-org time zones
 
@@ -139,6 +140,7 @@ export async function deleteGenerations(ids: string[]) {
   if (!workspace) return { ok: false as const, error: "forbidden" as const };
   const removed = await removeGenerations(workspace.orgId, cleanIds(ids));
   await Promise.all(removed.map((g) => deleteAsset(workspace.orgId, g.assetId, g.mimeType)));
+  await forgetVideoJobs(workspace.orgId, removed.filter((g) => g.mode === "video").map((g) => g.assetId));
   return { ok: true as const, count: removed.length };
 }
 

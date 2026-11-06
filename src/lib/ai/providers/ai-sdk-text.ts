@@ -7,7 +7,7 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { copyPrompt, copySchema, tidyCopy } from "../copy-prompt";
 import { improvePromptText, tidyPrompt } from "../prompt-improve";
 import { ProviderError } from "../errors";
-import type { AiProviderId } from "../providers-info";
+import type { TextProviderId } from "../models";
 import type { CopyLanguage, ProductCopy, TextProvider } from "../types";
 import { mapError } from "./ai-sdk";
 
@@ -15,7 +15,7 @@ import { mapError } from "./ai-sdk";
 // structured call writes every requested language, so EN and AR describe the same facts.
 
 export type AiTextConfig = {
-  provider: AiProviderId;
+  provider: TextProviderId;
   apiKey: string;
   model: string;
   /** Called when the provider rejects the key, so its status can turn invalid in Settings. */

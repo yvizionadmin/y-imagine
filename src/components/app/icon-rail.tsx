@@ -14,7 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
-import { activeTool, adminItems, moreItems, navItems } from "./nav-items";
+import { AiImageRailItem } from "./ai-image-menu";
+import { activeTool, adminItems, AI_IMAGE_KEYS, moreItems, railItems, type ToolKey } from "./nav-items";
 import { startNewJob } from "./new-job";
 
 type RailProps = { isSuperAdmin: boolean };
@@ -65,7 +66,8 @@ function Rail({ activeKey, isSuperAdmin }: { activeKey: string | null } & RailPr
         )}
       </Link>
 
-      {navItems.map(({ key, href, icon: Icon, soon }) => {
+      {railItems.map(({ key, href, icon: Icon, soon }) => {
+        if (key === "generate") return <AiImageRailItem key={key} compact={compact} active={AI_IMAGE_KEYS.includes(activeKey as ToolKey)} />;
         const isActive = activeKey === key;
         if (soon) {
           return (

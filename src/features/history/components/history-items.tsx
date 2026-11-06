@@ -15,6 +15,7 @@ import type { GenerationMode, HistoryItem, PublishStatus } from "../types";
 
 const modeBadge: Record<GenerationMode, string> = {
   create: "bg-[#8b5cf6]",
+  video: "bg-[#f97316]",
   lifestyle: "bg-primary",
   recolor: "bg-[#ec4899]",
   aplus: "bg-[#06b6d4]",
@@ -25,6 +26,26 @@ const statusDot: Record<PublishStatus, string> = {
   pending: "bg-amber-500",
   failed: "bg-[#ef4444]",
 };
+
+/** The item's image, or a video player for Studio videos. */
+export function HistoryMedia({ item, className, controls, alt }: { item: HistoryItem; className?: string; controls?: boolean; alt?: string }) {
+  if (item.mode === "video") {
+    return (
+      <video
+        // Without controls it's a thumbnail: `#t=0.1` makes browsers paint a frame instead of a blank box.
+        src={controls ? item.imageUrl : `${item.imageUrl}#t=0.1`}
+        controls={controls}
+        muted={!controls}
+        playsInline
+        preload="metadata"
+        aria-label={item.title}
+        className={cn("bg-black", className)}
+      />
+    );
+  }
+  // eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route
+  return <img src={item.imageUrl} alt={alt ?? (item.title || item.sku)} loading="lazy" className={className} />;
+}
 
 export function ModeBadge({ mode, className }: { mode: GenerationMode; className?: string }) {
   const t = useTranslations("History");
@@ -102,8 +123,7 @@ export function HistoryCard({
       )}
     >
       <button type="button" onClick={() => actions.onOpen(item)} className="relative block aspect-[4/2.5] w-full overflow-hidden bg-muted">
-        {/* eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route */}
-        <img src={item.imageUrl} alt={item.title || item.sku} loading="lazy" className="size-full object-cover transition-transform group-hover:scale-[1.02]" />
+        <HistoryMedia item={item} className="size-full object-cover transition-transform group-hover:scale-[1.02]" />
       </button>
       <ModeBadge mode={item.mode} className="absolute start-2 top-2" />
       <div className="absolute end-2 top-2 flex items-center gap-1.5">
@@ -120,7 +140,7 @@ export function HistoryCard({
           <span className="truncate text-sm font-bold" dir="ltr">
             {item.sku}
           </span>
-          <StatusLabel status={item.status} />
+          {item.sku && <StatusLabel status={item.status} />}
         </div>
         {item.title && <span className="truncate text-xs text-muted-foreground">{item.title}</span>}
         <span className="text-[10px] text-subtle">{format.dateTime(new Date(item.createdAt), { dateStyle: "medium", timeStyle: "short", numberingSystem: "latn" })}</span>
@@ -158,8 +178,7 @@ export function HistoryRow({
       </td>
       <td className="py-2">
         <button type="button" onClick={() => actions.onOpen(item)} className="flex items-center gap-3 text-start">
-          {/* eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route */}
-          <img src={item.imageUrl} alt="" loading="lazy" className="h-10 w-14 rounded-md bg-muted object-cover" />
+          <HistoryMedia item={item} alt="" className="h-10 w-14 rounded-md bg-muted object-cover" />
           <span className="flex min-w-0 flex-col">
             <span className="text-[13px] font-bold" dir="ltr">
               {item.sku}
@@ -171,9 +190,7 @@ export function HistoryRow({
       <td>
         <ModeBadge mode={item.mode} />
       </td>
-      <td>
-        <StatusLabel status={item.status} />
-      </td>
+      <td>{item.sku && <StatusLabel status={item.status} />}</td>
       <td className="text-[11px] text-muted-foreground">
         {format.dateTime(new Date(item.createdAt), { dateStyle: "medium", timeStyle: "short", numberingSystem: "latn" })}
       </td>

@@ -17,11 +17,11 @@ import { HistoryCard, HistoryRow, type ItemActions } from "./history-items";
 type Data = Awaited<ReturnType<typeof queryHistory>>;
 type Notice = { tone: "success" | "error"; text: string } | null;
 
-const EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
+const EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "video/mp4": "mp4", "video/webm": "webm" };
 
 async function fetchImage(item: HistoryItem) {
   const blob = await (await fetch(item.imageUrl)).blob();
-  return { blob, name: `${item.sku}_${item.mode}_${item.id.slice(0, 8)}.${EXT[blob.type] ?? "png"}` };
+  return { blob, name: `${item.sku || "studio"}_${item.mode}_${item.id.slice(0, 8)}.${EXT[blob.type] ?? "png"}` };
 }
 
 function saveBlob(blob: Blob, name: string) {

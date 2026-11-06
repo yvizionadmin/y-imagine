@@ -4,7 +4,7 @@ import { refresh } from "next/cache";
 import { ProviderError, type ProviderErrorCode } from "@/lib/ai/errors";
 import { getImageProvider, videoModelFor } from "@/lib/ai/registry";
 import { CAMERA_MOVES, CREATE_ASPECT_RATIOS, MOTION_LEVELS, type CreateAspectRatio, type GeneratedImage } from "@/lib/ai/types";
-import { DEFAULT_VIDEO_MODEL, fitsCapabilities, videoCapabilities } from "@/lib/ai/video-models";
+import { DEFAULT_VIDEO_MODEL, fitsCapabilities, ratioParts, videoCapabilities } from "@/lib/ai/video-models";
 import { planAllows, videoCost, type CreditRules } from "@/lib/credits";
 import { insertGeneration, listRecentGenerations, type Generation } from "@/lib/generations";
 import { PRODUCT_IMAGE_TYPES } from "@/lib/image-formats";
@@ -41,14 +41,16 @@ const toItem = (g: Generation): StudioItem => ({
 });
 
 const toVideoItem = (j: VideoJob): StudioItem => {
-  const [w, h] = j.settings.aspectRatio === "9:16" ? [9, 16] : [16, 9];
+  // Display box only (the player letterboxes): 1280 px on the long edge.
+  const [w, h] = ratioParts(j.settings.aspectRatio);
+  const scale = 1280 / Math.max(w, h);
   return {
     id: j.id,
     kind: "video",
     status: j.status,
     url: j.assetId ? `/api/assets/${j.assetId}` : null,
-    width: w * 80,
-    height: h * 80,
+    width: Math.round(w * scale),
+    height: Math.round(h * scale),
     prompt: j.prompt,
     aspectRatio: j.settings.aspectRatio,
     seconds: j.settings.seconds,

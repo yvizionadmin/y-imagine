@@ -1,7 +1,8 @@
 import type { BrandKit } from "@/lib/brand/limits";
 import type { CameraAngle } from "@/lib/camera-angles";
+import type { VideoResolution } from "@/lib/credits";
 
-export type ProviderId = "demo" | "openai" | "anthropic" | "gemini" | "openrouter" | "openai-compatible";
+export type ProviderId = "demo" | "openai" | "anthropic" | "gemini" | "openrouter" | "byteplus" | "openai-compatible";
 
 export type Feature = "create" | "video" | "generate" | "recolor" | "aplus" | "looks" | "copy" | "chat";
 
@@ -121,11 +122,14 @@ export type CameraMove = (typeof CAMERA_MOVES)[number];
 export const MOTION_LEVELS = ["low", "medium", "high"] as const;
 export type MotionLevel = (typeof MOTION_LEVELS)[number];
 
+export const VIDEO_ASPECT_RATIOS = ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"] as const;
+export type VideoAspectRatio = (typeof VIDEO_ASPECT_RATIOS)[number];
+
 export type VideoRequest = {
   prompt: string;
-  aspectRatio: "16:9" | "9:16";
+  aspectRatio: VideoAspectRatio;
   seconds: number;
-  resolution: "360p" | "720p" | "1080p";
+  resolution: VideoResolution;
   /** Image-to-video: the first frame. */
   startFrame: ImageInput | null;
   /** Prompt-based direction (not native model parameters). */

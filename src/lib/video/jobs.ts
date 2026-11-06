@@ -1,13 +1,15 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, inArray, lt } from "drizzle-orm";
+import type { VideoAspectRatio } from "@/lib/ai/types";
+import type { VideoResolution } from "@/lib/credits";
 import { db, schema } from "@/lib/db";
 
 // Repository for Studio video jobs (the `video_jobs` table). Tenant data: always through db.forOrg,
 // except the scheduled stale-job sweep, which spans orgs like the other maintenance jobs.
 
 export type VideoJobStatus = "pending" | "running" | "ok" | "failed";
-export type VideoSettings = { aspectRatio: "16:9" | "9:16"; seconds: number; resolution: "360p" | "720p" | "1080p"; camera: string; motion: string };
+export type VideoSettings = { aspectRatio: VideoAspectRatio; seconds: number; resolution: VideoResolution; camera: string; motion: string };
 
 export type VideoJob = {
   id: string;

@@ -5,7 +5,7 @@ import { PLAN_IDS, PLANS, type PlanId } from "@/lib/plans";
 // `platform_settings` row. Pure and client-safe: the server charges with these functions and the
 // UI shows the same numbers before a job runs. The defaults apply until an admin saves rules.
 
-export const VIDEO_RESOLUTIONS = ["360p", "720p", "1080p"] as const;
+export const VIDEO_RESOLUTIONS = ["360p", "480p", "720p", "1080p"] as const;
 export type VideoResolution = (typeof VIDEO_RESOLUTIONS)[number];
 
 /** Tools with a flat per-job cost and a plan-access setting. Video is priced by length and resolution, and plan-gated in code. */
@@ -31,7 +31,7 @@ export const LIMITS = { planCredits: 1_000_000, cost: 10_000, multiplier: 100 } 
 export const DEFAULT_CREDIT_RULES: CreditRules = {
   planCredits: Object.fromEntries(PLAN_IDS.map((p) => [p, PLANS[p].creditsMonthly])) as Record<PlanId, number>,
   featureCosts: Object.fromEntries(PRICED_FEATURES.map((f) => [f, 1])) as Record<PricedFeature, number>,
-  video: { base: 0, perSecond: 2, resolution: { "360p": 0.5, "720p": 1, "1080p": 2 } },
+  video: { base: 0, perSecond: 2, resolution: { "360p": 0.5, "480p": 0.75, "720p": 1, "1080p": 2 } },
   planFeatures: Object.fromEntries(PLAN_IDS.map((p) => [p, [...PRICED_FEATURES]])) as Record<PlanId, PricedFeature[]>,
 };
 

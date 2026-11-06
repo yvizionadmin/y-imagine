@@ -2,7 +2,6 @@ import "server-only";
 import { generateText } from "ai";
 import { createGoogleGenerativeAI, type GoogleLanguageModelInteractionsOptions } from "@ai-sdk/google";
 import { ProviderError } from "../errors";
-import type { VideoProviderId } from "../models";
 import type { GeneratedVideo, VideoProvider } from "../types";
 import { videoPrompt } from "../video-prompt";
 import { mapError } from "./ai-sdk";
@@ -12,7 +11,7 @@ import { mapError } from "./ai-sdk";
 // inline in `files`. Runs in the worker (a job takes minutes), never in a request.
 
 export type AiVideoConfig = {
-  provider: VideoProviderId;
+  provider: "gemini";
   apiKey: string;
   model: string;
   onKeyRejected?: () => Promise<void>;
@@ -28,6 +27,9 @@ export function createAiVideoProvider(config: AiVideoConfig): VideoProvider {
     model: config.model,
 
     async generateVideo(request): Promise<GeneratedVideo> {
+      // Omni Flash takes 16:9 / 9:16 at 360p–1080p only (the Studio offers no more; this guards the type).
+      const { aspectRatio, resolution } = request;
+      if ((aspectRatio !== "16:9" && aspectRatio !== "9:16") || resolution === "480p") throw new ProviderError("unsupported");
       const text = videoPrompt(request);
       try {
         const result = await generateText({
@@ -47,7 +49,7 @@ export function createAiVideoProvider(config: AiVideoConfig): VideoProvider {
             google: {
               store: false,
               responseFormat: [
-                { type: "video", aspectRatio: request.aspectRatio, resolution: request.resolution, duration: `${request.seconds}s`, delivery: "inline" },
+                { type: "video", aspectRatio, resolution, duration: `${request.seconds}s`, delivery: "inline" },
               ],
             } satisfies GoogleLanguageModelInteractionsOptions,
           },

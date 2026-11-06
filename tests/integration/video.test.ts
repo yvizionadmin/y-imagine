@@ -111,6 +111,23 @@ describe("studio video", () => {
     expect(await startVideo(form({ prompt: "" }))).toEqual({ ok: false, error: "invalid_input" });
   });
 
+  it("uses Seedance's options with a BytePlus key and runs the job", async () => {
+    const { org } = await signedIn("pro", { key: false });
+    await saveProviderKey({ orgId: org.id, provider: "byteplus", key: "demo-byteplus-key-123456", models: null, createdBy: "t" });
+    const setup = await getStudioSetup();
+    expect(setup.videoProblem).toBeNull();
+    expect(setup.videoCaps.aspectRatios).toContain("21:9");
+    expect(setup.videoCaps.durations).toContain(30);
+
+    const started = await startVideo(form({ aspectRatio: "21:9", seconds: "30", resolution: "480p" }));
+    expect(started.ok && started.item).toMatchObject({ aspectRatio: "21:9", seconds: 30, width: 1280, height: 549 });
+    expect(await startVideo(form({ resolution: "360p" }))).toEqual({ ok: false, error: "invalid_input" });
+
+    expect(await runVideoJob(org.id, dispatched[0])).toBe("done");
+    const [job] = await getVideoJobs(org.id, dispatched);
+    expect(job.credits).toBe(videoCost(DEFAULT_CREDIT_RULES, { seconds: 30, resolution: "480p" }));
+  });
+
   it("checks credits, viewers, the per-org limit and a missing key", async () => {
     await signedIn("pro", { credits: 3 });
     expect(await startVideo(form())).toEqual({ ok: false, error: "not_enough_credits" });

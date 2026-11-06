@@ -17,6 +17,7 @@ import {
   pickModel,
   TEXT_PROVIDERS,
   textModelsFor,
+  type TextProviderId,
   VIDEO_PROVIDERS,
   videoModelsFor,
   VISION_MODELS,
@@ -29,6 +30,7 @@ import { loadProviderKey, recordKeyCheck } from "./provider-keys";
 import { createAiImageProvider } from "./providers/ai-sdk";
 import { createAiTextProvider } from "./providers/ai-sdk-text";
 import { createAiVideoProvider } from "./providers/ai-sdk-video";
+import { createByteplusVideoProvider } from "./providers/byteplus-video";
 import { demoVideoProvider } from "./providers/demo-video";
 import { demoProvider } from "./providers/demo";
 import { demoTextProvider } from "./providers/demo-text";
@@ -108,10 +110,18 @@ async function resolveVideoProvider(orgId: string): Promise<Resolved<VideoProvid
   for (const provider of VIDEO_PROVIDERS as readonly VideoProviderId[]) {
     const stored = await loadProviderKey(orgId, provider);
     if (!stored || stored.status !== "valid") continue;
-    if (demoMode() && stored.key.startsWith("demo-")) return { ok: true, provider: demoVideoProvider };
     const model = videoModelsFor(provider, stored.models)[0];
     if (!model) continue;
-    return { ok: true, provider: createAiVideoProvider({ provider, apiKey: stored.key, model, onKeyRejected: keyRejected(orgId, provider) }) };
+    // An offline demo key keeps its provider's model, so the Studio shows that model's options.
+    if (demoMode() && stored.key.startsWith("demo-")) return { ok: true, provider: provider === "byteplus" ? { ...demoVideoProvider, model } : demoVideoProvider };
+    const onKeyRejected = keyRejected(orgId, provider);
+    return {
+      ok: true,
+      provider:
+        provider === "byteplus"
+          ? createByteplusVideoProvider({ apiKey: stored.key, model, onKeyRejected })
+          : createAiVideoProvider({ provider, apiKey: stored.key, model, onKeyRejected }),
+    };
   }
   return demoMode() ? { ok: true, provider: demoVideoProvider } : { ok: false, code: "no_provider" };
 }
@@ -166,7 +176,7 @@ async function resolveImageProvider(orgId: string, feature: Feature): Promise<Re
 
 async function resolveTextProvider(orgId: string, feature: TextFeature): Promise<Resolved<TextProvider>> {
   if (!isTextFeature(feature)) return { ok: false, code: "unsupported" };
-  const { preference, order } = await providerOrder<AiProviderId>(orgId, feature, TEXT_PROVIDERS);
+  const { preference, order } = await providerOrder<TextProviderId>(orgId, feature, TEXT_PROVIDERS);
 
   for (const provider of order) {
     const stored = await loadProviderKey(orgId, provider);

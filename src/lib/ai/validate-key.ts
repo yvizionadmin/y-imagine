@@ -1,8 +1,10 @@
 import "server-only";
 import { safeFetch } from "@/lib/safe-fetch";
+import { MODELARK_BASE_URL } from "./providers/byteplus-video";
 import type { AiProviderId, KeyError } from "./providers-info";
 
-// Checks a key with a cheap authenticated read (list models, or OpenRouter's key endpoint). The key
+// Checks a key with a cheap authenticated read (list models, OpenRouter's key endpoint, or one page
+// of BytePlus ModelArk's video tasks, which needs no model to be activated). The key
 // only travels in request headers, never in a URL, so it can't end up in proxy or access logs.
 
 const REQUESTS: Record<AiProviderId, (key: string) => { url: string; headers: Record<string, string> }> = {
@@ -13,6 +15,7 @@ const REQUESTS: Record<AiProviderId, (key: string) => { url: string; headers: Re
   }),
   gemini: (key) => ({ url: "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000", headers: { "x-goog-api-key": key } }),
   openrouter: (key) => ({ url: "https://openrouter.ai/api/v1/key", headers: { authorization: `Bearer ${key}` } }),
+  byteplus: (key) => ({ url: `${MODELARK_BASE_URL}/contents/generations/tasks?page_num=1&page_size=1`, headers: { authorization: `Bearer ${key}` } }),
 };
 
 const DEMO_MODELS: Record<AiProviderId, string[]> = {
@@ -20,12 +23,14 @@ const DEMO_MODELS: Record<AiProviderId, string[]> = {
   anthropic: ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"],
   gemini: ["gemini-3-pro", "gemini-3-flash-image"],
   openrouter: [],
+  byteplus: [],
 };
 
 export type KeyCheck = { ok: true; models: string[] | null } | { ok: false; error: KeyError };
 
 function modelIds(provider: AiProviderId, json: unknown): string[] | null {
-  if (provider === "openrouter") return null;
+  // Neither lists models: OpenRouter routes to many, ModelArk's preferred Seedance id is assumed.
+  if (provider === "openrouter" || provider === "byteplus") return null;
   const body = json as { data?: { id?: unknown }[]; models?: { name?: unknown }[] };
   const ids =
     provider === "gemini"

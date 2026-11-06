@@ -2,7 +2,8 @@
 
 import { listAudit, recordAudit, type AuditEntry } from "@/lib/audit";
 import { listModelPreferences, setModelPreference } from "@/lib/ai/model-preferences";
-import { isModelFeature, MODEL_FEATURES, modelsFor, providersFor, type ModelFeature, type ModelPreference } from "@/lib/ai/models";
+import { describeImageModel, type ImageModelEntry } from "@/lib/ai/image-model-info";
+import { IMAGE_PROVIDERS, isModelFeature, MODEL_FEATURES, modelsFor, providersFor, type ModelFeature, type ModelPreference } from "@/lib/ai/models";
 import { listKeyModels, listProviderKeys, recordKeyCheck, removeProviderKey, revealProviderKey, saveProviderKey, type ProviderKeyView } from "@/lib/ai/provider-keys";
 import { isAiProvider, type AiProviderId, type KeyError } from "@/lib/ai/providers-info";
 import { checkProviderKey } from "@/lib/ai/validate-key";
@@ -52,6 +53,22 @@ export async function getProviderKeys(): Promise<{
     listModelPreferences(workspace.orgId),
   ]);
   return { keys, activity, canManage: workspace.role === "admin", demo: process.env.IMAGINE_DEMO === "1", models, preferences };
+}
+
+/**
+ * The image models the org's keys can call for the Studio ("create"), for the rail's AI Image menu.
+ * `inUse` marks the one Studio images run on: the tool's chosen model, else Automatic's first pick.
+ */
+export async function getImageModelMenu(): Promise<{ models: ImageModelEntry[]; canManage: boolean }> {
+  const workspace = await getWorkspace();
+  const [options, preferences] = await Promise.all([modelOptions(workspace.orgId), listModelPreferences(workspace.orgId)]);
+  const byProvider = options.create;
+  const automatic = IMAGE_PROVIDERS.find((p) => byProvider[p]?.length);
+  const current = preferences.create ?? (automatic ? { provider: automatic, model: byProvider[automatic]![0] } : null);
+  const models = IMAGE_PROVIDERS.flatMap((provider) =>
+    (byProvider[provider] ?? []).map((model) => describeImageModel(provider, model, current?.provider === provider && current.model === model)),
+  );
+  return { models, canManage: workspace.role === "admin" };
 }
 
 /** Picks the model for one tool; null goes back to Automatic. Only models a connected key can call. */

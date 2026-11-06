@@ -1,4 +1,4 @@
-import { AI_PROVIDERS, type AiProviderId } from "./providers-info";
+import type { AiProviderId } from "./providers-info";
 import type { Feature } from "./types";
 
 // Which models can serve each tool (image tools and copy), shared by the registry and the API Keys settings.
@@ -52,14 +52,16 @@ export const TEXT_FEATURES = ["copy"] as const satisfies readonly Feature[];
 export type TextFeature = (typeof TEXT_FEATURES)[number];
 export const isTextFeature = (value: unknown): value is TextFeature => (TEXT_FEATURES as readonly unknown[]).includes(value);
 
-/** Every provider writes text; "Automatic" tries them in this order. */
-export const TEXT_PROVIDERS = AI_PROVIDERS;
+/** Providers that write text (all but video-only BytePlus); "Automatic" tries them in this order. */
+export const TEXT_PROVIDERS = ["openai", "anthropic", "gemini", "openrouter"] as const satisfies readonly AiProviderId[];
+export type TextProviderId = (typeof TEXT_PROVIDERS)[number];
+export const isTextProvider = (value: unknown): value is TextProviderId => (TEXT_PROVIDERS as readonly unknown[]).includes(value);
 
 /**
  * Preferred writing models, balanced quality/cost first (product copy runs often). OpenRouter's key
  * endpoint lists no models, so its preferred ids are used as-is.
  */
-const TEXT_MODELS: Record<AiProviderId, { preferred: readonly string[]; pattern: RegExp }> = {
+const TEXT_MODELS: Record<TextProviderId, { preferred: readonly string[]; pattern: RegExp }> = {
   openai: { preferred: ["gpt-5", "gpt-5-mini", "gpt-4.1", "gpt-4.1-mini", "gpt-4o", "gpt-4o-mini"], pattern: /^(gpt-5(\.\d+)?(-mini|-nano)?|gpt-4\.1(-mini|-nano)?|gpt-4o(-mini)?)$/ },
   anthropic: { preferred: ["claude-sonnet-5-5", "claude-opus-5-5", "claude-haiku-5-5", "claude-sonnet-4-5", "claude-haiku-4-5"], pattern: /^claude-/ },
   gemini: { preferred: ["gemini-3-pro", "gemini-3-flash", "gemini-2.5-pro", "gemini-2.5-flash"], pattern: /^gemini-[\d.]+-(pro|flash)(-lite)?(-preview)?$/ },
@@ -67,6 +69,7 @@ const TEXT_MODELS: Record<AiProviderId, { preferred: readonly string[]; pattern:
 };
 
 export function textModelsFor(provider: AiProviderId, available: readonly string[] | null): string[] {
+  if (!isTextProvider(provider)) return [];
   const { preferred, pattern } = TEXT_MODELS[provider];
   if (!available) return [...preferred];
   return available.filter((id) => pattern.test(id) && !/-\d{4}-\d{2}-\d{2}$/.test(id)).sort((a, b) => rank(preferred, a) - rank(preferred, b) || a.localeCompare(b));
@@ -78,15 +81,18 @@ export const VIDEO_FEATURES = ["video"] as const satisfies readonly Feature[];
 export type VideoFeature = (typeof VIDEO_FEATURES)[number];
 
 /** Providers with video generation, in the order "Automatic" tries them. */
-export const VIDEO_PROVIDERS = ["gemini"] as const satisfies readonly AiProviderId[];
+export const VIDEO_PROVIDERS = ["gemini", "byteplus"] as const satisfies readonly AiProviderId[];
 export type VideoProviderId = (typeof VIDEO_PROVIDERS)[number];
 
 /**
  * Video models, best first. Google shut the Veo 3.1 previews down in the Gemini API (2026-10-22)
- * and points to Gemini Omni Flash (GA). Capabilities per model live in video-models.ts.
+ * and points to Gemini Omni Flash (GA). BytePlus ModelArk serves Seedance (dated ids, newest
+ * first); its key check lists no models, so the preferred id is used. Capabilities per model live
+ * in video-models.ts.
  */
 const VIDEO_MODELS: Record<VideoProviderId, { preferred: readonly string[]; pattern: RegExp }> = {
   gemini: { preferred: ["gemini-omni-1.2-flash"], pattern: /^gemini-omni-[\d.]+-flash$/ },
+  byteplus: { preferred: ["dreamina-seedance-2-5-260628"], pattern: /^dreamina-seedance-\d+-\d+(-fast)?-\d{6}$/ },
 };
 
 /** Video models this key can use, best first; the preferred list when the key reports none. */

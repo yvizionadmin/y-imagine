@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Link } from "@/i18n/navigation";
 import type { HistoryItem } from "../types";
-import { ModeBadge, StatusLabel } from "./history-items";
+import { HistoryMedia, ModeBadge, StatusLabel } from "./history-items";
 
-const TOOL_ROUTE = { create: "/home", lifestyle: "/generate", recolor: "/recolor", aplus: "/aplus" } as const;
+const TOOL_ROUTE = { create: "/home", video: "/home", lifestyle: "/generate", recolor: "/recolor", aplus: "/aplus" } as const;
 const TEXT_SETTINGS = ["instructions", "notes"];
 const PRESET_SETTINGS: Record<string, "categories" | "scenes" | "styles"> = { category: "categories", scene: "scenes", style: "styles" };
 
@@ -59,22 +59,25 @@ export function HistoryDrawer({
               <SheetTitle className="text-base font-bold">{t("details")}</SheetTitle>
             </div>
             <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pb-5">
-              {/* eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route */}
-              <img src={item.imageUrl} alt={item.title || item.sku} className="w-full rounded-xl border bg-muted object-contain" />
+              <HistoryMedia item={item} controls className="w-full rounded-xl border bg-muted object-contain" />
 
               <dl className="flex flex-col gap-3 text-xs">
-                <Row label={t("identifier")}>
-                  <span className="font-bold" dir="ltr">{item.sku}</span>
-                </Row>
+                {item.sku && (
+                  <Row label={t("identifier")}>
+                    <span className="font-bold" dir="ltr">{item.sku}</span>
+                  </Row>
+                )}
                 <Row label={t("mode")}>
                   <ModeBadge mode={item.mode} />
                 </Row>
                 <Row label={t("created")}>
                   {format.dateTime(new Date(item.createdAt), { dateStyle: "medium", timeStyle: "short", numberingSystem: "latn" })}
                 </Row>
-                <Row label={t("status")}>
-                  <StatusLabel status={item.status} />
-                </Row>
+                {item.sku && (
+                  <Row label={t("status")}>
+                    <StatusLabel status={item.status} />
+                  </Row>
+                )}
                 {item.publishedTo && <Row label={t("publishedTo")}>{item.publishedTo}</Row>}
                 <Row label={t("createdBy")}>{item.createdBy}</Row>
                 <Row label={t("engine")}>
@@ -111,7 +114,7 @@ export function HistoryDrawer({
 
             <div className="flex flex-col gap-2 border-t p-4">
               <Button onClick={() => onDownload(item)} className="h-10 font-semibold">
-                {t("downloadImage")}
+                {t(item.mode === "video" ? "downloadVideo" : "downloadImage")}
               </Button>
               {onPublish && item.sku !== "" && item.status !== "uploaded" && (
                 <Button variant="outline" disabled={publishing} onClick={() => onPublish(item)} className="h-9 border-primary text-primary">

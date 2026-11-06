@@ -94,6 +94,9 @@ export async function mapError(error: unknown, config: { provider: AiProviderId;
       return new ProviderError("invalid_key");
     }
     if (status === 402 || /insufficient_quota|billing|credit balance|RESOURCE_EXHAUSTED.*quota/i.test(body)) return new ProviderError("no_credits");
+    // A quota of zero (e.g. a Gemini Free Tier key asking for a paid-tier model) never clears by
+    // waiting: the account owner has to upgrade, so it isn't retried like a real rate limit.
+    if (status === 429 && /limit: 0\b|upgrade your tier|free[ _]tier/i.test(body)) return new ProviderError("no_credits");
     if (status === 429) return new ProviderError("rate_limited");
     if (status === 404) return new ProviderError("unsupported");
   }

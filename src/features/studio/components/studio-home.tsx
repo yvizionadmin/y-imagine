@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ImagePlus, Loader2, Lock, Sparkles, X } from "lucide-react";
+import { ArrowUp, ChevronDown, Clapperboard, Clock, ImagePlus, Images, Loader2, Lock, Plus, Sparkles, X } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { cn } from "cn";
 import { blockedReason } from "@/components/app/job-errors";
+import { navItems } from "@/components/app/nav-items";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Link } from "@/i18n/navigation";
 import { CAMERA_MOVES, CREATE_ASPECT_RATIOS, MOTION_LEVELS, type CameraMove, type CreateAspectRatio, type MotionLevel } from "@/lib/ai/types";
 import type { VideoAspectRatio, VideoCapabilities } from "@/lib/ai/video-models";
@@ -37,8 +39,9 @@ function fitVideo(options: VideoOptions, caps: VideoCapabilities): VideoOptions 
 const isOpen = (item: StudioItem) => item.kind === "video" && (item.status === "pending" || item.status === "running");
 
 /**
- * Studio home after sign-in: one prompt box, the Image | Video switch below it, the options of the
- * chosen mode, and recent results. The mode lives in `?mode=` so refresh, back and shared links keep it.
+ * Studio home after sign-in: a hero with the Image | Video tabs, one prompt card (references at the
+ * start, the mode's options as chips, cost and send at the bottom), shortcuts to the other tools,
+ * and recent results. The mode lives in `?mode=` so refresh, back and shared links keep it.
  */
 export function StudioHome() {
   const t = useTranslations("Studio");
@@ -156,146 +159,156 @@ export function StudioHome() {
     });
   }
 
+  const sources = mode === "image" ? references : startFrame ? [startFrame] : [];
+  const canAddSource = mode === "image" ? references.length < STUDIO_MAX_REFERENCES : !startFrame;
+  const removeSource = (i: number) => (mode === "image" ? setReferences((r) => r.filter((_, j) => j !== i)) : setStartFrame(null));
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <section className="mx-auto flex w-full max-w-3xl flex-col items-center gap-5 px-4 pt-12 pb-8 sm:px-8">
-        <div className="flex flex-col items-center gap-2 text-center">
-          <h1 className="text-3xl font-extrabold tracking-tight">{t("title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
-        </div>
+      <section className="p-2 sm:p-4">
+        <div className="relative isolate overflow-hidden rounded-3xl border bg-linear-to-b from-primary/10 via-primary/5 to-muted/40 px-4 pt-10 pb-8 sm:px-8 sm:pt-14">
+          <div aria-hidden className="pointer-events-none absolute -top-32 start-1/2 -z-10 size-[36rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl rtl:translate-x-1/2" />
+          <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6">
+            <h1 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
+              {t.rich("title", { em: (chunks) => <em className="font-serif font-bold italic rtl:font-sans rtl:not-italic rtl:text-primary">{chunks}</em> })}
+            </h1>
 
-        {/* Prompt */}
-        <div className="w-full rounded-2xl border bg-background p-3 shadow-sm focus-within:border-ring">
-          <label htmlFor="studio-prompt" className="sr-only">
-            {t("promptLabel")}
-          </label>
-          <textarea
-            id="studio-prompt"
-            rows={3}
-            maxLength={PROMPT_MAX}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
-            }}
-            placeholder={t(mode === "image" ? "promptImage" : "promptVideo")}
-            className="w-full resize-none bg-transparent px-1 text-[15px] leading-relaxed outline-none placeholder:text-muted-foreground"
-          />
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <div className="flex flex-wrap items-center gap-2">
-              {(mode === "image" ? references : startFrame ? [startFrame] : []).map((file, i) => (
-                <Thumb
-                  key={`${file.name}-${i}`}
-                  file={file}
-                  label={t("removeReference")}
-                  onRemove={() => (mode === "image" ? setReferences((r) => r.filter((_, j) => j !== i)) : setStartFrame(null))}
+            <MediaModeSwitch mode={mode} onChange={setMode} videoLocked={videoLocked} />
+
+            {/* Prompt card */}
+            <div className="w-full rounded-2xl border bg-background/90 p-3 shadow-sm backdrop-blur focus-within:border-ring sm:p-4">
+              <div className="flex gap-3 sm:gap-4">
+                <SourceStack
+                  files={sources}
+                  canAdd={canAddSource}
+                  addLabel={t(mode === "image" ? "addReference" : "addStartFrame")}
+                  removeLabel={t("removeReference")}
+                  onAdd={() => fileInput.current?.click()}
+                  onRemove={removeSource}
                 />
-              ))}
-              {(mode === "image" ? references.length < STUDIO_MAX_REFERENCES : !startFrame) && (
-                <button
-                  type="button"
-                  onClick={() => fileInput.current?.click()}
-                  className="flex h-9 items-center gap-1.5 rounded-lg border border-dashed px-3 text-xs font-semibold text-muted-foreground hover:bg-muted"
-                >
-                  <ImagePlus className="size-4" aria-hidden />
-                  {t(mode === "image" ? "addReference" : "addStartFrame")}
-                </button>
-              )}
-              <input ref={fileInput} type="file" accept={IMAGE_TYPES} multiple={mode === "image"} className="hidden" onChange={(e) => (addFiles(e.target.files), (e.target.value = ""))} />
+                <input ref={fileInput} type="file" accept={IMAGE_TYPES} multiple={mode === "image"} className="hidden" onChange={(e) => (addFiles(e.target.files), (e.target.value = ""))} />
+                <label htmlFor="studio-prompt" className="sr-only">
+                  {t("promptLabel")}
+                </label>
+                <textarea
+                  id="studio-prompt"
+                  rows={4}
+                  maxLength={PROMPT_MAX}
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
+                  }}
+                  placeholder={t(mode === "image" ? "promptImage" : "promptVideo")}
+                  className="field-sizing-content max-h-72 min-h-24 min-w-0 flex-1 resize-none bg-transparent pt-1 text-[15px] leading-relaxed outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-3">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {mode === "image" ? (
+                    <>
+                      <OptionChip icon={<RatioIcon ratio={image.aspectRatio} />} label={t("aspectRatio")} value={`${image.aspectRatio} · ${image.resolution}`}>
+                        <ChipGroup label={t("aspectRatio")} options={CREATE_ASPECT_RATIOS} value={image.aspectRatio} onChange={(aspectRatio) => setImage({ ...image, aspectRatio })} ltr />
+                        <ChipGroup label={t("resolution")} options={["HD", "2K"] as const} value={image.resolution} onChange={(resolution) => setImage({ ...image, resolution })} ltr />
+                      </OptionChip>
+                      <OptionChip icon={<Images className="size-3.5" aria-hidden />} label={t("count")} value={n(image.count)}>
+                        <ChipGroup
+                          label={t("count")}
+                          options={Array.from({ length: STUDIO_MAX_IMAGES }, (_, i) => String(i + 1))}
+                          value={String(image.count)}
+                          onChange={(count) => setImage({ ...image, count: Number(count) })}
+                          ltr
+                        />
+                      </OptionChip>
+                    </>
+                  ) : (
+                    <>
+                      <OptionChip icon={<RatioIcon ratio={video.aspectRatio} />} label={t("aspectRatio")} value={`${video.aspectRatio} · ${video.resolution}`}>
+                        <ChipGroup label={t("aspectRatio")} options={setup?.videoCaps.aspectRatios ?? [video.aspectRatio]} value={video.aspectRatio} onChange={(aspectRatio) => setVideo({ ...video, aspectRatio })} ltr />
+                        <ChipGroup label={t("resolution")} options={setup?.videoCaps.resolutions ?? [video.resolution]} value={video.resolution} onChange={(resolution) => setVideo({ ...video, resolution })} ltr />
+                      </OptionChip>
+                      <OptionChip icon={<Clock className="size-3.5" aria-hidden />} label={t("duration")} value={t("seconds", { count: video.seconds })}>
+                        <ChipGroup
+                          label={t("duration")}
+                          options={(setup?.videoCaps.durations ?? [video.seconds]).map(String)}
+                          value={String(video.seconds)}
+                          onChange={(s) => setVideo({ ...video, seconds: Number(s) })}
+                          render={(s) => t("seconds", { count: Number(s) })}
+                        />
+                      </OptionChip>
+                      <OptionChip icon={<Clapperboard className="size-3.5" aria-hidden />} label={t("camera")} value={`${t(`cameraMoves.${video.camera}`)} · ${t(`motionLevels.${video.motion}`)}`}>
+                        <ChipGroup label={t("motion")} options={MOTION_LEVELS} value={video.motion} onChange={(motion) => setVideo({ ...video, motion })} render={(m) => t(`motionLevels.${m}`)} />
+                        <ChipGroup label={t("camera")} options={CAMERA_MOVES} value={video.camera} onChange={(camera) => setVideo({ ...video, camera })} render={(c) => t(`cameraMoves.${c}`)} wrap />
+                        <p className="max-w-64 text-[11px] text-muted-foreground">{t(setup?.videoCaps.audio ? "promptDirectionAudio" : "promptDirection")}</p>
+                      </OptionChip>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-2.5 ms-auto">
+                  {cost !== null && (
+                    <span className="flex items-center gap-1 text-xs font-semibold text-muted-foreground tabular-nums">
+                      <Sparkles className="size-3.5" aria-hidden />
+                      <span aria-hidden>{n(cost)}</span>
+                      <span className="sr-only">{t("cost", { count: cost, display: n(cost) })}</span>
+                    </span>
+                  )}
+                  <Button
+                    onClick={submit}
+                    disabled={!canSubmit}
+                    size="icon"
+                    aria-label={t(pending ? "generating" : "generate")}
+                    title={t(pending ? "generating" : "generate")}
+                    className="size-9 rounded-full"
+                  >
+                    {pending ? <Loader2 className="animate-spin" aria-hidden /> : <ArrowUp className="size-4.5" aria-hidden />}
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              {cost !== null && <span className="text-xs text-muted-foreground tabular-nums">{t("cost", { count: cost, display: n(cost) })}</span>}
-              <Button onClick={submit} disabled={!canSubmit} className="h-10 gap-2 px-5 text-[13px] font-bold">
-                {pending ? <Loader2 className="animate-spin" aria-hidden /> : <Sparkles aria-hidden />}
-                {t(pending ? "generating" : "generate")}
-              </Button>
-            </div>
+
+            {mode === "video" &&
+              (videoLocked ? (
+                <div className="flex w-full flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                  <span className="flex items-start gap-2 text-[13px]">
+                    <Lock className="mt-0.5 size-4 shrink-0" aria-hidden />
+                    <span className="flex flex-col">
+                      <span className="font-bold">{t("videoLockedTitle")}</span>
+                      <span>{t("videoLockedBody")}</span>
+                    </span>
+                  </span>
+                  <Link href="/settings/billing" className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">
+                    {t("upgrade")}
+                  </Link>
+                </div>
+              ) : setup?.videoDisabled ? (
+                <p className="w-full rounded-xl bg-muted px-4 py-3 text-center text-xs text-muted-foreground">{tw("blocked.disabled.title")}</p>
+              ) : setup?.videoProblem ? (
+                <p className="w-full rounded-xl bg-muted px-4 py-3 text-center text-xs text-muted-foreground">
+                  {t("videoNeedsKey")}{" "}
+                  <Link href="/settings/api-keys" className="font-semibold text-primary hover:underline">
+                    {t("addKey")}
+                  </Link>
+                </p>
+              ) : null)}
+
+            {setup && !setup.canCreate && <p className="text-xs text-muted-foreground">{t("viewerNote")}</p>}
+            {setup && setup.canCreate && mode === "image" && !setup.imageAllowed && <p className="text-xs text-danger">{tw("blocked.plan.title")}</p>}
+            {setup && modeReady && cost !== null && cost > setup.creditsRemaining && <p className="text-xs text-danger">{t("notEnoughCredits", { count: cost })}</p>}
+            {error && (
+              <p role="alert" className="w-full rounded-lg bg-red-50 px-3 py-2 text-xs text-danger">
+                {error}
+              </p>
+            )}
+            {notice && (
+              <p role="status" className="w-full rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                {notice}
+              </p>
+            )}
+
+            <ToolShortcuts />
           </div>
         </div>
-
-        {/* Image | Video switch, right below the prompt */}
-        <MediaModeSwitch mode={mode} onChange={setMode} videoLocked={videoLocked} />
-
-        {mode === "image" ? (
-          <OptionRow>
-            <ChipGroup label={t("aspectRatio")} options={CREATE_ASPECT_RATIOS} value={image.aspectRatio} onChange={(aspectRatio) => setImage({ ...image, aspectRatio })} ltr />
-            <ChipGroup label={t("resolution")} options={["HD", "2K"] as const} value={image.resolution} onChange={(resolution) => setImage({ ...image, resolution })} ltr />
-            <ChipGroup
-              label={t("count")}
-              options={Array.from({ length: STUDIO_MAX_IMAGES }, (_, i) => String(i + 1))}
-              value={String(image.count)}
-              onChange={(count) => setImage({ ...image, count: Number(count) })}
-              ltr
-            />
-          </OptionRow>
-        ) : (
-          <>
-            <OptionRow>
-              <ChipGroup
-                label={t("duration")}
-                options={(setup?.videoCaps.durations ?? [video.seconds]).map(String)}
-                value={String(video.seconds)}
-                onChange={(s) => setVideo({ ...video, seconds: Number(s) })}
-                render={(s) => t("seconds", { count: Number(s) })}
-              />
-              <ChipGroup label={t("aspectRatio")} options={setup?.videoCaps.aspectRatios ?? [video.aspectRatio]} value={video.aspectRatio} onChange={(aspectRatio) => setVideo({ ...video, aspectRatio })} ltr />
-              <ChipGroup label={t("resolution")} options={setup?.videoCaps.resolutions ?? [video.resolution]} value={video.resolution} onChange={(resolution) => setVideo({ ...video, resolution })} ltr />
-              <ChipGroup label={t("motion")} options={MOTION_LEVELS} value={video.motion} onChange={(motion) => setVideo({ ...video, motion })} render={(m) => t(`motionLevels.${m}`)} />
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-semibold text-muted-foreground">{t("camera")}</span>
-                <select
-                  value={video.camera}
-                  onChange={(e) => setVideo({ ...video, camera: e.target.value as CameraMove })}
-                  className="h-8 rounded-lg border bg-background px-2 text-xs font-semibold outline-none focus-visible:border-ring"
-                >
-                  {CAMERA_MOVES.map((c) => (
-                    <option key={c} value={c}>
-                      {t(`cameraMoves.${c}`)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </OptionRow>
-            <p className="-mt-1 text-[11px] text-muted-foreground">{t(setup?.videoCaps.audio ? "promptDirectionAudio" : "promptDirection")}</p>
-            {videoLocked ? (
-              <div className="flex w-full flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-                <span className="flex items-start gap-2 text-[13px]">
-                  <Lock className="mt-0.5 size-4 shrink-0" aria-hidden />
-                  <span className="flex flex-col">
-                    <span className="font-bold">{t("videoLockedTitle")}</span>
-                    <span>{t("videoLockedBody")}</span>
-                  </span>
-                </span>
-                <Link href="/settings/billing" className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">
-                  {t("upgrade")}
-                </Link>
-              </div>
-            ) : setup?.videoDisabled ? (
-              <p className="w-full rounded-xl bg-muted px-4 py-3 text-center text-xs text-muted-foreground">{tw("blocked.disabled.title")}</p>
-            ) : setup?.videoProblem ? (
-              <p className="w-full rounded-xl bg-muted px-4 py-3 text-center text-xs text-muted-foreground">
-                {t("videoNeedsKey")}{" "}
-                <Link href="/settings/api-keys" className="font-semibold text-primary hover:underline">
-                  {t("addKey")}
-                </Link>
-              </p>
-            ) : null}
-          </>
-        )}
-
-        {setup && !setup.canCreate && <p className="text-xs text-muted-foreground">{t("viewerNote")}</p>}
-        {setup && setup.canCreate && mode === "image" && !setup.imageAllowed && <p className="text-xs text-danger">{tw("blocked.plan.title")}</p>}
-        {setup && modeReady && cost !== null && cost > setup.creditsRemaining && <p className="text-xs text-danger">{t("notEnoughCredits", { count: cost })}</p>}
-        {error && (
-          <p role="alert" className="w-full rounded-lg bg-red-50 px-3 py-2 text-xs text-danger">
-            {error}
-          </p>
-        )}
-        {notice && (
-          <p role="status" className="w-full rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
-            {notice}
-          </p>
-        )}
       </section>
 
       <Recent items={recent} pending={pending && mode === "image" ? image.count : 0} />
@@ -303,8 +316,95 @@ export function StudioHome() {
   );
 }
 
-function OptionRow({ children }: { children: React.ReactNode }) {
-  return <div className="flex w-full flex-wrap items-end justify-center gap-x-6 gap-y-4">{children}</div>;
+/** Other tools, one tap from the Studio (the row of tiles under the prompt). */
+const SHORTCUTS = navItems.filter((item) => !item.soon && !["create", "history", "analytics"].includes(item.key));
+
+function ToolShortcuts() {
+  const t = useTranslations("Shell");
+  const ts = useTranslations("Studio");
+  return (
+    <nav aria-label={ts("toolsLabel")} className="-mx-4 w-[calc(100%+2rem)] overflow-x-auto px-4 sm:mx-0 sm:w-full sm:px-0">
+      <ul className="mx-auto flex w-max gap-2 sm:gap-3">
+        {SHORTCUTS.map(({ key, href, icon: Icon }) => (
+          <li key={key}>
+            <Link href={href} title={t(`tools.${key}`)} className="group flex w-18 flex-col items-center gap-1.5 text-center outline-offset-4">
+              <span className="flex size-12 items-center justify-center rounded-xl border bg-background/70 text-foreground/80 shadow-xs transition group-hover:-translate-y-0.5 group-hover:border-primary/40 group-hover:text-primary">
+                <Icon className="size-5" aria-hidden />
+              </span>
+              <span className="line-clamp-1 text-[11px] font-medium text-muted-foreground group-hover:text-foreground">{t(`nav.${key}`)}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+/** A setting shown as a compact chip in the prompt bar; its choices open in a popover. */
+function OptionChip({ icon, label, value, children }: { icon: React.ReactNode; label: string; value: string; children: React.ReactNode }) {
+  return (
+    <Popover>
+      <PopoverTrigger
+        aria-label={`${label}: ${value}`}
+        className="flex h-8 items-center gap-1.5 rounded-lg border border-transparent bg-muted/70 px-2.5 text-xs font-semibold text-foreground/80 outline-none hover:bg-muted focus-visible:border-ring data-popup-open:border-border data-popup-open:bg-muted"
+      >
+        {icon}
+        <span dir="auto">{value}</span>
+        <ChevronDown className="size-3 opacity-60" aria-hidden />
+      </PopoverTrigger>
+      <PopoverContent className="flex flex-col gap-3">{children}</PopoverContent>
+    </Popover>
+  );
+}
+
+/** Outline of the frame for an aspect ratio such as "16:9". */
+function RatioIcon({ ratio }: { ratio: string }) {
+  const [w, h] = ratio.split(":").map(Number);
+  const scale = 12 / Math.max(w, h);
+  return (
+    <span aria-hidden className="flex size-3.5 items-center justify-center">
+      <span className="rounded-[2px] border-[1.5px] border-current" style={{ width: Math.max(5, w * scale), height: Math.max(5, h * scale) }} />
+    </span>
+  );
+}
+
+/** References (image) or the start frame (video) as a small tilted stack at the start of the prompt. */
+function SourceStack({
+  files,
+  canAdd,
+  addLabel,
+  removeLabel,
+  onAdd,
+  onRemove,
+}: {
+  files: File[];
+  canAdd: boolean;
+  addLabel: string;
+  removeLabel: string;
+  onAdd: () => void;
+  onRemove: (index: number) => void;
+}) {
+  return (
+    <div className="flex w-14 shrink-0 flex-col items-center gap-2 pt-1">
+      {files.map((file, i) => (
+        <Thumb key={`${file.name}-${i}`} file={file} label={removeLabel} onRemove={() => onRemove(i)} tilt={i % 2 ? 4 : -4} />
+      ))}
+      {canAdd && (
+        <button
+          type="button"
+          onClick={onAdd}
+          title={addLabel}
+          className={cn(
+            "flex flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed bg-muted/40 text-muted-foreground transition hover:border-primary/50 hover:text-primary",
+            files.length ? "size-9" : "h-14 w-12 -rotate-6 hover:rotate-0",
+          )}
+        >
+          {files.length ? <Plus className="size-4" aria-hidden /> : <ImagePlus className="size-4" aria-hidden />}
+          <span className={cn("text-[9px] font-semibold leading-none", files.length && "sr-only")}>{addLabel}</span>
+        </button>
+      )}
+    </div>
+  );
 }
 
 function ChipGroup<T extends string>({
@@ -314,6 +414,7 @@ function ChipGroup<T extends string>({
   onChange,
   render,
   ltr,
+  wrap,
 }: {
   label: string;
   options: readonly T[];
@@ -321,11 +422,12 @@ function ChipGroup<T extends string>({
   onChange: (value: T) => void;
   render?: (value: T) => string;
   ltr?: boolean;
+  wrap?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-[11px] font-semibold text-muted-foreground">{label}</span>
-      <div role="radiogroup" aria-label={label} className="flex gap-0.5 rounded-lg bg-muted p-0.5">
+      <div role="radiogroup" aria-label={label} className={cn("flex gap-0.5 rounded-lg bg-muted p-0.5", wrap && "grid max-w-64 grid-cols-3")}>
         {options.map((option) => (
           <button
             key={option}
@@ -334,7 +436,7 @@ function ChipGroup<T extends string>({
             aria-checked={option === value}
             onClick={() => onChange(option)}
             dir={ltr ? "ltr" : undefined}
-            className={cn("rounded-md px-2.5 py-1.5 text-xs font-semibold text-muted-foreground", option === value && "bg-background text-foreground shadow-xs")}
+            className={cn("rounded-md px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-muted-foreground hover:text-foreground", option === value && "bg-background text-foreground shadow-xs")}
           >
             {render ? render(option) : option}
           </button>
@@ -344,14 +446,14 @@ function ChipGroup<T extends string>({
   );
 }
 
-function Thumb({ file, label, onRemove }: { file: File; label: string; onRemove: () => void }) {
+function Thumb({ file, label, onRemove, tilt = 0 }: { file: File; label: string; onRemove: () => void; tilt?: number }) {
   const url = useMemo(() => URL.createObjectURL(file), [file]);
   useEffect(() => () => URL.revokeObjectURL(url), [url]);
   return (
-    <span className="relative size-9 overflow-hidden rounded-lg border">
+    <span className="relative h-14 w-12 rounded-lg border-2 border-background shadow-md transition hover:rotate-0" style={{ rotate: `${tilt}deg` }}>
       {/* eslint-disable-next-line @next/next/no-img-element -- local preview of an unsent file */}
-      <img src={url} alt="" className="size-full object-cover" />
-      <button type="button" onClick={onRemove} aria-label={label} className="absolute -top-0.5 -end-0.5 rounded-full bg-foreground/80 p-0.5 text-background">
+      <img src={url} alt="" className="size-full rounded-md object-cover" />
+      <button type="button" onClick={onRemove} aria-label={label} className="absolute -top-1.5 -end-1.5 rounded-full bg-foreground/80 p-0.5 text-background">
         <X className="size-2.5" aria-hidden />
       </button>
     </span>

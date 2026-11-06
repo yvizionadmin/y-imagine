@@ -833,3 +833,43 @@ key re-validation cron service, marketing pages, production deploy on Railway (c
   against a live key (inline delivery may need `uri` delivery for large clips); video model picker in Settings → API
   Keys; video in History; other providers (BytePlus Seedance, Kling, OpenAI). **Next (PRD):** Cinema controls,
   FFmpeg editor/export, AI Director, Audio (Gemini TTS / music).
+- **2026-11-06, Creative Studio: Seedance 2.5 video on BytePlus ModelArk (local).** New BYOK provider **`byteplus`**
+  (video only: `PROVIDER_INFO` capability `videoGen`; key card in Settings → API Keys, encrypted, admin-only, audited like
+  the others). Key check = one page of ModelArk video tasks (`GET /contents/generations/tasks`), no model list, so the
+  preferred id `dreamina-seedance-2-5-260628` is used. `VIDEO_PROVIDERS = ["gemini", "byteplus"]` (Automatic: Gemini
+  first); `TEXT_PROVIDERS` is now its own list so BytePlus never shows up for copy. Adapter
+  `src/lib/ai/providers/byteplus-video.ts`: create task (`content` = prompt text + optional `image_url` data URL with role
+  `first_frame`; `ratio` (`adaptive` with a start frame), `duration`, `resolution`, `generate_audio: true`,
+  `watermark: false`), poll every 5 s (15 min limit, then the task is cancelled with DELETE), download `content.video_url`
+  (signed, 24 h) through `safeFetch` into our storage. ModelArk errors → our codes (`modelArkError`: ModelNotOpen →
+  unsupported, overdue → no_credits, rate/overload → rate_limited and retried, auth → invalid_key and the key turns
+  invalid, sensitive content → generation_failed). Capabilities (`video-models.ts`): 16:9 / 9:16 / 1:1 / 4:3 / 3:4 / 21:9,
+  4–30 s (chips 4, 5, 8, 10, 12, 15, 20, 30), 480p / 720p / 1080p, start frame, audio; the Studio offers exactly these.
+  `480p` added to credit pricing (default ×0.75, editable in Admin → Credits). Labels en + ar. Verified: tsc + eslint
+  clean; 182 Vitest tests (+9: `byteplus-video.test.ts` with the API stubbed, Seedance Studio/worker case in
+  `video.test.ts`, 480p pricing); `next build` clean; Playwright studio + main-flow pass. **Not yet verified with a real
+  ModelArk key** (user adds it later): the API contract comes from third-party guides because BytePlus's reference pages
+  didn't load. Check on the first live run: the start-frame field shape, `adaptive` vs the chosen ratio with a start
+  frame, the key-check endpoint, error code names, and the download content type.
+- **2026-11-06, Studio videos in History (local).** A finished video job is also saved as a History item
+  (`saveVideoToHistory`, `src/lib/video/history.ts`): mode `video`, no SKU, pixel size from resolution × aspect ratio
+  (`videoSize`, all provider ratios incl. 1:1 / 4:3 / 21:9 and 480p), settings (prompt, seconds, resolution, camera,
+  motion). History plays it (`HistoryMedia`: muted thumbnail with a frame, controls in the drawer), filters by "Studio
+  video", downloads `.mp4` / `.webm` ("Download video", ZIP included), and deleting it removes the clip and its Studio
+  card (`forgetVideoJobs`). SKU-less items (Studio images and videos) no longer show a store-upload status or an empty
+  identifier. Analytics counts saved videos under the Video tool. Also: a zero-quota 429 (e.g. a Gemini Free Tier key on
+  Omni Flash: "limit: 0 … upgrade your tier") maps to `no_credits` and fails at once instead of retrying forever
+  (`mapError`, `tests/unit/provider-errors.test.ts`); live check on 2026-11-06 confirmed the Omni call path but the
+  org's key is Free Tier, so no real clip yet. Verified: tsc + eslint clean; 185 Vitest tests (+3
+  `video-history.test.ts`, +2 provider errors); 16 Playwright specs; `next build` clean; screenshots of History grid
+  and drawer.
+- **2026-11-06, Studio home layout + rail "AI Image" menu (local).** Studio home: hero panel ("Create *anything* you
+  imagine"), Image | Video pill tabs above the prompt, a prompt card with references / start frame as a tilted stack at the
+  start and the mode's options as chips (popovers, `src/components/ui/popover.tsx`) next to the cost and a round send
+  button, and shortcut tiles to the other tools. Rail: Generate, Recolor, A+, Inspirational and Resize collapse into one
+  **AI Image** item (`railItems` / `AI_IMAGE_KEYS` in `nav-items.ts`), which is not a link: hover (or click/tap) opens a
+  two-column menu (`ai-image-menu.tsx`): **Tools** (Create image, Lifestyle, Bulk lifestyle, Recolor, A+, Looks,
+  Resizer) and **Models**, the image models the org's keys can call for the Studio with the one in use marked
+  (`getImageModelMenu`, names/blurbs in `src/lib/ai/image-model-info.ts`); admins get a link to choose models per tool.
+  Verified: tsc + eslint clean; 188 Vitest tests (+3 `image-model-menu.test.ts`); new `ai-image-menu.spec.ts` passes
+  against the dev server; screenshots en + ar. **Not yet:** picking a model per prompt from the menu or the Studio.

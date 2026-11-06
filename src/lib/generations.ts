@@ -5,7 +5,7 @@ import { db, schema } from "@/lib/db";
 
 // Repository for saved generations (History), the `generations` table. Image bytes live in asset storage, referenced by assetId.
 
-export type GenerationMode = "create" | "lifestyle" | "recolor" | "aplus";
+export type GenerationMode = "create" | "video" | "lifestyle" | "recolor" | "aplus";
 export type PublishStatus = "pending" | "uploaded" | "failed";
 
 export type Generation = {

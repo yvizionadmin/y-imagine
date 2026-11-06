@@ -43,8 +43,9 @@ describe("credit rules", () => {
   });
 
   it("prices video by duration and resolution, rounding up", () => {
-    const r = rules((x) => (x.video = { base: 1, perSecond: 2, resolution: { "360p": 0.5, "720p": 1, "1080p": 1.5 } }));
+    const r = rules((x) => (x.video = { base: 1, perSecond: 2, resolution: { "360p": 0.5, "480p": 0.75, "720p": 1, "1080p": 1.5 } }));
     expect(videoCost(r, { seconds: 5, resolution: "720p" })).toBe(11);
+    expect(videoCost(r, { seconds: 5, resolution: "480p" })).toBe(9);
     expect(videoCost(r, { seconds: 5, resolution: "360p" })).toBe(6);
     expect(videoCost(r, { seconds: 8, resolution: "1080p" })).toBe(26);
     expect(videoCost(r, { seconds: 4.2, resolution: "720p" })).toBe(11);

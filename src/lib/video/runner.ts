@@ -4,6 +4,7 @@ import { getVideoProvider } from "@/lib/ai/registry";
 import type { CameraMove, MotionLevel } from "@/lib/ai/types";
 import { reportError } from "@/lib/observability/report";
 import { readAsset, saveAsset } from "@/lib/storage/assets";
+import { saveVideoToHistory } from "./history";
 import { claimVideoJob, finishVideoJob } from "./jobs";
 
 // Runs one Studio video job, from the worker (BullMQ) or in-process when there is no Redis. Only a
@@ -32,6 +33,7 @@ export async function runVideoJob(orgId: string, id: string): Promise<VideoJobOu
     });
     const assetId = await saveAsset(orgId, video.bytes, video.mimeType, "video");
     await finishVideoJob(orgId, id, { status: "ok", assetId, mimeType: video.mimeType, provider: video.provider, model: video.model });
+    await saveVideoToHistory(job, { assetId, mimeType: video.mimeType, provider: video.provider, model: video.model });
     return "done";
   } catch (error) {
     // Rate limits pass: put the job back and let the queue try again later.

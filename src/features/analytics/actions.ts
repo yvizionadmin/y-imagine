@@ -41,7 +41,7 @@ export type Analytics = {
   credits: { used: number; allocated: number };
 };
 
-const MODE_TOOL: Record<GenerationMode, JobFeature> = { create: "create", lifestyle: "generate", recolor: "recolor", aplus: "aplus" };
+const MODE_TOOL: Record<GenerationMode, JobFeature> = { create: "create", video: "video", lifestyle: "generate", recolor: "recolor", aplus: "aplus" };
 const isJob = (e: UsageEvent): e is UsageEvent & { feature: JobFeature } => (JOB_FEATURES as readonly string[]).includes(e.feature);
 
 function summarize(events: UsageEvent[]) {

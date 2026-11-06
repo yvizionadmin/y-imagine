@@ -22,7 +22,8 @@
       "links": "Bitly",
       "more": "More",
       "copy": "Copy",
-      "video": "Video"
+      "video": "Video",
+      "aiImage": "AI Image"
     },
     "tools": {
       "create": "Image & Video Studio",
@@ -65,7 +66,59 @@
       "dark": "Dark",
       "system": "System"
     },
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "aiImage": {
+      "tools": "Tools",
+      "models": "Models",
+      "inUse": "In use",
+      "loading": "Loading models…",
+      "noModels": "No image models yet",
+      "connectKey": "Connect an OpenAI or Gemini key",
+      "chooseModels": "Choose the model for each tool",
+      "adminChooses": "Your admin chooses the model for each tool.",
+      "items": {
+        "create": {
+          "title": "Create image",
+          "desc": "Simple prompts, stunning visuals"
+        },
+        "generate": {
+          "title": "Lifestyle image",
+          "desc": "Put your product in a styled scene"
+        },
+        "generateBulk": {
+          "title": "Bulk lifestyle images",
+          "desc": "A whole catalog in one run"
+        },
+        "recolor": {
+          "title": "Recolor product",
+          "desc": "New colors, same product"
+        },
+        "aplus": {
+          "title": "A+ images",
+          "desc": "Marketplace-ready content images"
+        },
+        "looks": {
+          "title": "Inspirational looks",
+          "desc": "Shoppable room and outfit scenes"
+        },
+        "resize": {
+          "title": "Image resizer",
+          "desc": "One image, multiple sizes"
+        }
+      },
+      "blurbs": {
+        "detail": "Sharper details and more precise editing",
+        "everyday": "Everyday generation and editing",
+        "draft": "Quick, low-cost drafts",
+        "closeToPrompt": "Better design, closer to your prompt",
+        "contextRich": "Accurate, context-rich visuals with clear text",
+        "fast": "Fast generation and edits"
+      },
+      "providers": {
+        "openai": "OpenAI",
+        "gemini": "Google Gemini"
+      }
+    }
   },
   "Workspace": {
     "back": "Back",
@@ -820,13 +873,15 @@
       "create": "Studio",
       "lifestyle": "Lifestyle",
       "recolor": "Fabric Recolor",
-      "aplus": "A+"
+      "aplus": "A+",
+      "video": "Studio video"
     },
     "tools": {
       "create": "Studio",
       "lifestyle": "Generate",
       "recolor": "Recolor",
-      "aplus": "A+ Images"
+      "aplus": "A+ Images",
+      "video": "Studio"
     },
     "statuses": {
       "pending": "Pending",
@@ -909,7 +964,8 @@
     },
     "markedUploaded": "{count, plural, one {# image marked as uploaded.} other {# images marked as uploaded.}}",
     "deleted": "{count, plural, one {# generation deleted.} other {# generations deleted.}}",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "downloadVideo": "Download video"
   },
   "Looks": {
     "tabs": {
@@ -1280,6 +1336,10 @@
       "openrouter": {
         "name": "OpenRouter",
         "blurb": "One key for many model vendors, routed by OpenRouter."
+      },
+      "byteplus": {
+        "name": "BytePlus ModelArk",
+        "blurb": "Seedance video models on BytePlus ModelArk. Video generation only."
       }
     },
     "capabilitiesLabel": "Capabilities",
@@ -1522,7 +1582,7 @@
       "looks": "Shop the Look",
       "resize": "Batch resize"
     },
-    "byok": "Bring your own AI keys: OpenAI, Anthropic, Gemini or OpenRouter",
+    "byok": "Bring your own AI keys: OpenAI, Anthropic, Gemini, OpenRouter or BytePlus",
     "footer": "© Imagine AI. Your keys stay encrypted and never leave our servers.",
     "signInTitle": "Welcome back",
     "signInBody": "Sign in to your workspace.",
@@ -2440,8 +2500,7 @@
     "layoutAuto": "Let the AI design it"
   },
   "Studio": {
-    "title": "What do you want to create?",
-    "subtitle": "Describe it, pick Image or Video, and generate with your own AI keys.",
+    "title": "Create <em>anything</em> you imagine",
     "promptLabel": "Prompt",
     "promptImage": "A cozy reading corner at golden hour, soft film grain, 35mm…",
     "promptVideo": "Slow push-in on a steaming cup of coffee on a wooden table, morning light…",
@@ -2496,13 +2555,14 @@
     "emptyRecent": "Your images will appear here.",
     "promptDirection": "Camera and motion are added to your prompt as direction; the model has no separate setting for them.",
     "promptDirectionAudio": "Camera and motion are added to your prompt as direction. The model also makes a soundtrack.",
-    "videoNeedsKey": "Videos need a Google Gemini key with video access.",
+    "videoNeedsKey": "Videos need a Google Gemini key with video access or a BytePlus ModelArk key (Seedance).",
     "addKey": "Add it in Settings → API Keys",
     "videoQueued": "Your video is being made. It usually takes 1–3 minutes; you can keep working.",
     "videoPending": "Waiting to start…",
     "videoRunning": "Making your video…",
     "videoFailed": "Video failed",
     "videoFailedHint": "No credits were used. Try again or change the prompt.",
-    "videoTimedOut": "It took too long. No credits were used."
+    "videoTimedOut": "It took too long. No credits were used.",
+    "toolsLabel": "Other tools"
   }
 }

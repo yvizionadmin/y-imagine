@@ -191,7 +191,7 @@ export const generations = pgTable(
   {
     id: text().primaryKey(),
     orgId: orgId(),
-    mode: text().$type<"create" | "lifestyle" | "recolor" | "aplus">().notNull(),
+    mode: text().$type<"create" | "video" | "lifestyle" | "recolor" | "aplus">().notNull(),
     sku: text().notNull(),
     title: text().notNull(),
     assetId: text().notNull(),
