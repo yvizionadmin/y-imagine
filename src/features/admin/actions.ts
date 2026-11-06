@@ -222,9 +222,11 @@ export async function createAdminOrg(input: {
   if (user) {
     await ensureMembership({ orgId: org.id, userId: user.id, name: user.name, email, role: "admin", invitedBy: actor.name });
     await recordAudit({ orgId: org.id, action: "member.added", actor: actor.name, target: email, meta: { role: "admin" } });
+    // A temporary password was just set by the admin, who shares it; only joining an existing account is emailed.
+    if (owner === "joined") await sendInvitationEmail({ email, orgName: org.name, inviter: actor.name, role: "admin", hasAccount: true });
   } else {
     await insertInvite({ orgId: org.id, email, role: "admin", department: "", invitedBy: actor.name });
-    await sendInvitationEmail(email);
+    await sendInvitationEmail({ email, orgName: org.name, inviter: actor.name, role: "admin", hasAccount: false });
     await recordAudit({ orgId: org.id, action: "member.invited", actor: actor.name, target: email, meta: { role: "admin" } });
   }
   return { ok: true, id: org.id, owner };
@@ -337,9 +339,10 @@ export async function addAdminOrgMember(orgId: string, input: { email: string; r
   if (user) {
     await ensureMembership({ orgId, userId: user.id, name: user.name, email, role: input.role, invitedBy: actor.name });
     await recordAudit({ orgId, action: "member.added", actor: actor.name, target: email, meta: { role: input.role, via: "admin" } });
+    await sendInvitationEmail({ email, orgName: org.name, inviter: actor.name, role: input.role, hasAccount: true });
   } else {
     await insertInvite({ orgId, email, role: input.role, department: "", invitedBy: actor.name });
-    await sendInvitationEmail(email);
+    await sendInvitationEmail({ email, orgName: org.name, inviter: actor.name, role: input.role, hasAccount: false });
     await recordAudit({ orgId, action: "member.invited", actor: actor.name, target: email, meta: { role: input.role, via: "admin" } });
   }
   return { ok: true, joined: !!user };

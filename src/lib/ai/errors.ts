@@ -13,6 +13,8 @@ export type ProviderErrorCode =
   /** The org's plan doesn't include this tool (Admin → Credits → plan access). */
   | "not_in_plan"
   | "rate_limited"
+  /** The provider's safety filter refused the prompt, an input image or the result. A changed request may pass. */
+  | "content_rejected"
   | "unsupported"
   | "feature_disabled";
 

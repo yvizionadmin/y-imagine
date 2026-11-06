@@ -107,10 +107,13 @@ export async function videoModelFor(orgId: string): Promise<{ ok: true; model: s
 }
 
 async function resolveVideoProvider(orgId: string): Promise<Resolved<VideoProvider>> {
-  for (const provider of VIDEO_PROVIDERS as readonly VideoProviderId[]) {
+  const { preference, order } = await providerOrder<VideoProviderId>(orgId, "video", VIDEO_PROVIDERS);
+  for (const provider of order) {
     const stored = await loadProviderKey(orgId, provider);
     if (!stored || stored.status !== "valid") continue;
-    const model = videoModelsFor(provider, stored.models)[0];
+    const models = videoModelsFor(provider, stored.models);
+    // The chosen model when its key can still call it, else the provider's best (Automatic).
+    const model = preference?.provider === provider && models.includes(preference.model) ? preference.model : models[0];
     if (!model) continue;
     // An offline demo key keeps its provider's model, so the Studio shows that model's options.
     if (demoMode() && stored.key.startsWith("demo-")) return { ok: true, provider: provider === "byteplus" ? { ...demoVideoProvider, model } : demoVideoProvider };

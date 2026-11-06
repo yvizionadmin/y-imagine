@@ -20,5 +20,6 @@ export async function writeCopy(actor: JobActor, input: { sku: string; productNa
     provider: result.provider,
     model: result.model,
     createdBy: actor.user.name,
+    createdById: actor.user.id,
   });
 }

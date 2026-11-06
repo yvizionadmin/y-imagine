@@ -97,6 +97,12 @@ export async function updateMember(orgId: string, id: string, patch: Partial<Pic
   return row ?? null;
 }
 
+/** Name / email of a membership, when the person changed them in their account (Clerk profile sync). */
+export async function updateMemberIdentity(orgId: string, id: string, patch: Partial<Pick<Member, "name" | "email">>): Promise<Member | null> {
+  const [row] = await db.forOrg(orgId).update(members, { ...patch, updatedAt: new Date().toISOString() }, eq(members.id, id));
+  return row ?? null;
+}
+
 export async function removeMember(orgId: string, id: string) {
   await db.forOrg(orgId).delete(members, eq(members.id, id));
 }

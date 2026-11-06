@@ -83,6 +83,25 @@ export const sessions = pgTable(
   (t) => [index().on(t.userId)],
 );
 
+/**
+ * Local-login password reset links. Like sessions, these belong to the person, not an org. Only
+ * the token's SHA-256 is stored; a link works once, for an hour.
+ */
+export const passwordResets = pgTable(
+  "password_resets",
+  {
+    id: text().primaryKey(),
+    tokenHash: text().notNull().unique(),
+    userId: text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: now(),
+    expiresAt: timestamp().notNull(),
+    usedAt: timestamp(),
+  },
+  (t) => [index().on(t.userId)],
+);
+
 export const platformSettings = pgTable("platform_settings", {
   id: integer().primaryKey().default(1),
   maintenance: jsonb().$type<{ enabled: boolean; message: string }>().notNull(),
@@ -397,6 +416,8 @@ export const copyGenerations = pgTable(
     reviewedBy: text(),
     reviewedAt: timestamp(),
     createdBy: text().notNull(),
+    /** Who wrote it, for review notices (null on rows saved before 2026-11-06). */
+    createdById: text(),
     createdAt: now(),
     updatedAt: now(),
   },

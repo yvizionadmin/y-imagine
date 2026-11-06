@@ -259,6 +259,42 @@ key re-validation cron service, marketing pages, production deploy on Railway (c
 - UI: each screen checked against its Figma screenshot in `en` and `ar` (RTL mirror), at desktop and mobile widths.
 - E2E (Playwright): sign up → create org → add key → generate → see it on the dashboard.
 
+## Remaining roadmap (one step at a time, from 2026-11-06)
+Build in this order, one step per session. A step is done when it matches its "Done when" line, has tests, passes
+tsc + eslint + Vitest + the Playwright specs it touches, works in en + ar, and has a Progress entry below. Estimates
+are working days with Claude. **Part A gets the product live; Part B ships as updates after launch.**
+
+### Part A: launch (about 3 weeks)
+| # | Step | Scope | Done when | Est. |
+|---|------|-------|-----------|------|
+| A1 ✅ | Video model picker | Add `video` to the model choices in Settings → API Keys (Gemini Omni / Seedance); Studio shows which model is used | An org with both keys can choose Seedance, and the Studio uses it | 0.5 |
+| A2 ✅ | Tool error messages | Proper messages for `quota_exceeded`, `feature_disabled`, `not_in_plan` and content rejected on every tool screen | Each code shows its own message instead of the generic failed state | 0.5 |
+| A3 ✅ | Emails | Transactional email service (provider through an env setting): invites, password reset (local login), reviewer notices for copy approvals | Invite and approval emails arrive, with en/ar templates | 1–2 |
+| A4 ✅ | Clerk profile sync | `user.updated` webhook → name/email synced to the users table | Changing a name in Clerk shows in Team | 0.5 |
+| A5 | Chat / assistant | Streaming chat through `getTextProvider`, saved threads per user, org-scoped, credits per message | Users chat, reload, and see their history; viewers read only | 2–3 |
+| A6 | Video safety + storage | Content-rejected code, likeness consent checkbox, storage quota per plan, cleanup job in `SCHEDULES` | Over quota is refused with a message; old clips removed on schedule | 2 |
+| A7 | Marketing pages | Home, features, pricing (Stripe prices), legal pages, en/ar | Signed-out visitors see the site and can sign up | 2–3 |
+| A8 | Live-key testing | Real OpenAI, Gemini (image + Omni video), BytePlus Seedance, Anthropic, OpenRouter, Clerk, Stripe test mode, Sentry; fix what turns up | Every tool runs once with a real key; the open checks in the Progress entries are closed | 3–5 |
+| A9 | Production deploy | Railway: web, worker, Postgres, Redis, Bucket, custom domain, health check, env secrets, backups | The production URL works end to end with a paying test org | 1–2 |
+
+### Part B: after launch (about 6–9 weeks)
+| # | Step | Scope | Done when | Est. |
+|---|------|-------|-----------|------|
+| B1 | More video providers | Kling and OpenAI video adapters, same pattern as `byteplus-video.ts` | Each one selectable and tested with the API stubbed | 1–2 |
+| B2 | Cinema controls | Camera / lens / lighting presets → native parameters where a model has them, else labelled prompt text | Presets in the Studio, driven by the model's capabilities | 1 |
+| B3 | Agents with tools | Agent runs with catalog search, generate image, write copy; steps shown live; credits per tool call | An agent finds a product, writes copy and makes an image in one run | 3–4 |
+| B4 | Image approvals + publish gate | Review status for History images; "Upload to Website" only for approved items when the org turns it on | Same review flow as copy, for images | 1–2 |
+| B5 | Prompt helpers | "Improve with AI" for merchant text; per-team suggestions from saved results | Both available in Generate and Recolor | 1–2 |
+| B6 | Team scenes and catalog per tenant | Save uploaded scenes as team scenes; product types and scenes per org in the DB; category filters in History/board; delete look backgrounds with their look | Two orgs see different product types and scenes | 3–4 |
+| B7 | Bulk improvements | Choose which catalog image to use; Arabic titles from `nameAr` for bulk A+ | Both available in the bulk tools | 1 |
+| B8 | Store publishing | Real Shopify and Magento image upload through the catalog connectors | An approved image appears on a test store | 3–5 |
+| B9 | Impersonation | Super-admin "view as org admin", read-only, audited, time-limited | Console can open an org view and every visit is in the audit log | 1–2 |
+| B10 | Video editor (FFmpeg in the worker) | Trim, merge clips, subtitles, music / voice-over, export sizes (9:16, 1:1, 16:9) | A user cuts two clips together with subtitles and downloads the MP4 | 4–6 |
+| B11 | AI Director | Idea → script → scenes → storyboard images → a video per scene → assembled MP4 (uses B10) | One prompt gives a finished multi-scene video | 3–5 |
+| B12 | Audio | Voice-over (TTS) and music generation, plan-gated and priced in Admin → Credits | Audio can be generated and added to an editor project | 2–3 |
+| B13 | Characters + motion | Saved characters reused across scenes, motion control where providers support it, consent kept | The same character appears across AI Director scenes | 3–5 |
+| B14 | Polish | Copy fixes (A+ title overlap, Arabic units), performance and accessibility pass | Known small issues closed | 1–2 |
+
 ## Progress
 - **2026-11-02, Phase 0 (part 1) done:** Next.js 16.4 + Tailwind 4 + shadcn (base-nova, RTL), next-intl en/ar
   via `src/proxy.ts`, Figma tokens in `src/app/globals.css` (Geist / Geist Mono / Inter / Cairo), app shell
@@ -873,3 +909,46 @@ key re-validation cron service, marketing pages, production deploy on Railway (c
   (`getImageModelMenu`, names/blurbs in `src/lib/ai/image-model-info.ts`); admins get a link to choose models per tool.
   Verified: tsc + eslint clean; 188 Vitest tests (+3 `image-model-menu.test.ts`); new `ai-image-menu.spec.ts` passes
   against the dev server; screenshots en + ar. **Not yet:** picking a model per prompt from the menu or the Studio.
+- **2026-11-06, Roadmap A1: video model picker (local).** `video` joined `MODEL_FEATURES`, so Settings → API Keys has
+  a model select on the "Studio (video)" row (Automatic, Gemini Omni Flash, Seedance 2.5 from BytePlus; only video
+  providers, only models a connected key can call; audited as `provider_model.changed`). `resolveVideoProvider` follows
+  the choice through `providerOrder` like the image/copy tools, else Automatic (Gemini first). The Studio's video options
+  gained a **Model** chip (`videoModelName`: "Seedance 2.5", "Gemini Omni 1.2 Flash") explaining where it is chosen,
+  with a "Change model" link for admins; the options (ratios, lengths, resolutions) follow the chosen model. Labels en +
+  ar. Verified: tsc + eslint clean; 190 Vitest tests (+ choice/Automatic/refusals in `video.test.ts`, model names and
+  `providersFor("video")` in `byteplus-video.test.ts`); `next build` clean; 17 Playwright specs pass.
+- **2026-11-06, Roadmap A2: tool error messages (local).** `quota_exceeded`, `feature_disabled`, `not_in_plan`, key
+  and model problems already had their own blocked states on every tool (`blockedReason`, `Workspace.blocked`). New
+  code **`content_rejected`**: provider safety-filter refusals (OpenAI `moderation_blocked` / safety system, Gemini
+  `PROHIBITED_CONTENT` / `SAFETY` via `SAFETY_REFUSAL` in `mapError`; Gemini video finish reason `content-filter`;
+  ModelArk `*Sensitive*` codes) → blocked reason `content` ("Change the wording or the image and try again"), shown on
+  the single tools, the Studio (image and video cards), Looks, and the bulk item lists (`ImageBulk` / `CopyBulk`
+  `itemErrors`), en + ar. A refused job costs nothing (credits are only kept on success). Verified: tsc + eslint
+  clean; 192 Vitest tests (+2 `content-rejected.test.ts`).
+- **2026-11-06, Roadmap A3: emails (local).** `src/lib/email/`: `sendEmail` with the transport from env only
+  (`RESEND_API_KEY` → Resend HTTP API, `SMTP_URL` → nodemailer 10.3, else the outbox `EMAIL_OUTBOX_DIR` (default
+  `.data/outbox`) outside production or when set explicitly; production without one sends nothing). Never throws;
+  failures go through `reportError` without addresses. `renderEmail`: one escaped HTML + text layout, en / ar (RTL), texts
+  in the `Emails` namespace. Emails: **invitations** (Team invite/resend, console add-member/create-org): Clerk's
+  sign-up email for new people when Clerk is on, ours otherwise (sign-up link with the email filled in, or sign-in link
+  for existing accounts); actions return `emailed` and the Team page says when nothing could be sent. **Password
+  reset for the local login**: `/forgot-password` (same answer for unknown emails, 3 emails per address per hour + the
+  per-IP auth limit) and `/reset-password?token=` (`password_resets`, SHA-256 of the token only, one use, 1 hour, a new
+  link replaces older ones; success signs the user out everywhere, audited `auth.password_reset`); "Forgot password?"
+  on sign-in. With Clerk both pages go to sign-in (Clerk resets its own passwords). **Copy review notices**: submit
+  (single or bulk) → the org's active admins except the sender; approve / request changes → the author (with the
+  note), bulk approve → one email per author with their count. `copy_generations.created_by_id` added for this
+  (older rows have none, so they get no author notice). Migration `0013`. `password_resets` has no `org_id`: like
+  `sessions` it belongs to the person. Env documented in `.env.example`. Verified: tsc + eslint clean; 200 Vitest tests
+  (+8: `email.test.ts` invitations / reset / review notices via the outbox, `email-templates.test.ts` escaping, RTL,
+  both languages, transport choice); `next build` clean; 19 Playwright specs (+2 `password-reset.spec.ts`: full reset
+  through the outbox, invalid link in Arabic RTL). **Not yet:** a real Resend/SMTP send (A8); a per-user language for
+  emails (the sender's current language is used).
+- **2026-11-06, Roadmap A4: Clerk profile sync (local).** `POST /api/clerk/webhook` (event `user.updated`, signature
+  checked by `verifyWebhook` with `CLERK_WEBHOOK_SIGNING_SECRET`; 404 when Clerk or the secret isn't set, 400 on a bad
+  signature, 500 so Clerk retries if the sync fails). `syncClerkProfile` re-reads the profile from Clerk (not the event
+  body), then updates the user's name and, once verified and not used by another account, email; every membership row
+  follows (`updateMemberIdentity`; an org that already has an invitation for the new email keeps the old one), audited
+  `member.profile_updated`. Users who never signed in here are ignored (linked on first sign-in). Verified: tsc + eslint
+  clean; 4 Vitest tests (`clerk-profile-sync.test.ts`: name + email sync, unverified / taken email, svix-signed webhook,
+  bad signature, not configured). **Setup (A8):** add the endpoint in the Clerk dashboard and copy its signing secret.

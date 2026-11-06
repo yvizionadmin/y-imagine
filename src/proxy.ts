@@ -8,7 +8,7 @@ const intl = createMiddleware(routing);
 
 // Pages reachable without a session. The check here is only a fast redirect; the session itself is
 // validated server-side by getWorkspace() / requireSuperAdmin().
-const PUBLIC = /^\/(?:(en|ar)(?=\/|$))?\/?(sign-in|sign-up|blocked)?\/?$/;
+const PUBLIC = /^\/(?:(en|ar)(?=\/|$))?\/?(sign-in|sign-up|forgot-password|reset-password|blocked)?\/?$/;
 
 function route(request: NextRequest, signedIn: boolean) {
   const { pathname, search } = request.nextUrl;

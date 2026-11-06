@@ -190,6 +190,10 @@
       "plan": {
         "title": "Not included in your plan",
         "body": "Your organization's plan doesn't include this tool. Ask your admin to upgrade in Settings → Billing."
+      },
+      "content": {
+        "title": "Request refused by the AI's safety filter",
+        "body": "The AI provider's safety filter refused this prompt or image. Change the wording or the image and try again."
       }
     }
   },
@@ -1292,8 +1296,8 @@
     "removed": "{name} was removed from the team.",
     "revoked": "The invitation for {name} was revoked.",
     "roleChanged": "{name} is now {role}.",
-    "resent": "Invitation for {email} marked as resent. Emails go out once sign-in (Clerk) is connected.",
-    "invited": "Invitation saved for {email}. Emails go out once sign-in (Clerk) is connected.",
+    "resent": "Invitation sent to {email} again.",
+    "invited": "Invitation sent to {email}.",
     "inviteTitle": "Invite Team Member",
     "inviteBody": "Add a collaborator to share jobs, templates and the team's monthly credits.",
     "email": "Email address",
@@ -1313,7 +1317,9 @@
       "self": "You can't change your own role or remove yourself.",
       "last_admin": "The team needs at least one admin. Make someone else an admin first.",
       "seat_limit": "Your plan's seats are full. Upgrade in Billing or remove a member first."
-    }
+    },
+    "invitedNoEmail": "Invitation saved for {email}. Email isn't set up, so ask them to sign up with this address.",
+    "resentNoEmail": "Email isn't set up, so nothing was sent. Ask {email} to sign up with this address."
   },
   "AiProviders": {
     "title": "AI Provider Keys",
@@ -1610,7 +1616,9 @@
       "signups_closed": "New sign-ups are paused. Ask your administrator for an invitation.",
       "invalid_credentials": "That email and password don't match.",
       "disabled": "This account has been disabled. Contact your administrator.",
-      "too_many_attempts": "Too many attempts. Wait 15 minutes and try again."
+      "too_many_attempts": "Too many attempts. Wait 15 minutes and try again.",
+      "invalid_token": "This link is invalid or has expired. Ask for a new one.",
+      "email_unavailable": "Password reset by email isn't set up. Ask your administrator to reset your password."
     },
     "blocked": {
       "suspended": {
@@ -1638,7 +1646,18 @@
       "submit": "Create workspace",
       "signedInAs": "Signed in as {email}.",
       "switchAccount": "Use a different account"
-    }
+    },
+    "forgotLink": "Forgot password?",
+    "forgotTitle": "Reset your password",
+    "forgotBody": "Enter your account email and we'll send you a link to choose a new password.",
+    "sendLink": "Send reset link",
+    "forgotSent": "If an account uses {email}, a reset link is on its way. It works once, for 1 hour.",
+    "backToSignIn": "Back to sign in",
+    "resetTitle": "Choose a new password",
+    "resetBody": "Your new password replaces the old one and signs you out everywhere else.",
+    "newPassword": "New password",
+    "savePassword": "Save password",
+    "resetDone": "Password changed. Sign in with your new password."
   },
   "Admin": {
     "brand": "Imagine AI",
@@ -1708,10 +1727,12 @@
         "invite_resent": "resent the invitation to",
         "role_changed": "changed the role of",
         "removed": "removed",
-        "added": "added member"
+        "added": "added member",
+        "profile_updated": "updated their profile:"
       },
       "auth": {
-        "signed_up": "signed up as"
+        "signed_up": "signed up as",
+        "password_reset": "reset their password by email:"
       },
       "org": {
         "created": "created organization",
@@ -2245,7 +2266,8 @@
       "invalid_key": "AI provider key rejected",
       "no_credits": "AI provider account is out of credits",
       "unsupported": "The selected model can't write copy",
-      "not_in_plan": "Copy isn't included in your plan"
+      "not_in_plan": "Copy isn't included in your plan",
+      "content_rejected": "The AI's safety filter refused this product"
     },
     "approval": "Approval",
     "submitAll": "Submit all for review",
@@ -2478,7 +2500,8 @@
       "invalid_key": "Your AI key was rejected",
       "no_credits": "Your AI provider account is out of credit",
       "unsupported": "Your AI provider can't make this kind of image",
-      "not_in_plan": "This tool isn't included in your plan"
+      "not_in_plan": "This tool isn't included in your plan",
+      "content_rejected": "The AI's safety filter refused this image"
     },
     "problemRow": "Row {row}: {reason}"
   },
@@ -2554,6 +2577,9 @@
     "viewHistory": "View all in History",
     "emptyRecent": "Your images will appear here.",
     "promptDirection": "Camera and motion are added to your prompt as direction; the model has no separate setting for them.",
+    "videoModel": "Model",
+    "videoModelNote": "Videos are made with {model}. Your admin picks the model in Settings → API Keys.",
+    "changeModel": "Change model",
     "promptDirectionAudio": "Camera and motion are added to your prompt as direction. The model also makes a soundtrack.",
     "videoNeedsKey": "Videos need a Google Gemini key with video access or a BytePlus ModelArk key (Seedance).",
     "addKey": "Add it in Settings → API Keys",
@@ -2564,5 +2590,48 @@
     "videoFailedHint": "No credits were used. Try again or change the prompt.",
     "videoTimedOut": "It took too long. No credits were used.",
     "toolsLabel": "Other tools"
+  },
+  "Emails": {
+    "footer": "Imagine AI · You're getting this email because of your Imagine AI workspace.",
+    "noticeNote": "You get this because you're a member of {org} on Imagine AI.",
+    "roles": {
+      "admin": "admin",
+      "editor": "editor",
+      "viewer": "viewer"
+    },
+    "invite": {
+      "subject": "{inviter} invited you to {org} on Imagine AI",
+      "heading": "Join {org} on Imagine AI",
+      "body": "{inviter} invited you to the {org} workspace as {role}.",
+      "new": "Create your account with this email address to join.",
+      "existing": "You already have an account: sign in to open the workspace.",
+      "accept": "Accept invitation",
+      "signIn": "Sign in",
+      "note": "Didn't expect this? You can ignore this email."
+    },
+    "reset": {
+      "subject": "Reset your Imagine AI password",
+      "heading": "Choose a new password",
+      "body": "Someone asked to reset the password for this account. The link works once, for 1 hour.",
+      "button": "Choose a new password",
+      "note": "If it wasn't you, ignore this email; your password stays the same."
+    },
+    "copySubmitted": {
+      "subject": "{actor} sent {count, plural, one {# product} other {# products}} for review",
+      "heading": "Copy waiting for your review",
+      "body": "{actor} sent {label} for review in {org}. Approve it or ask for changes in Copy.",
+      "button": "Review copy"
+    },
+    "copyApproved": {
+      "subject": "Copy approved: {label}",
+      "heading": "Your copy was approved",
+      "body": "{actor} approved {label} in {org}."
+    },
+    "copyChanges": {
+      "subject": "Changes requested: {label}",
+      "heading": "Changes requested on your copy",
+      "body": "{actor} asked for changes to {label} in {org}:"
+    },
+    "copyOpen": "Open copy"
   }
 }

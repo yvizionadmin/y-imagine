@@ -4,9 +4,12 @@ import { redirect } from "next/navigation";
 import { recordAudit } from "@/lib/audit";
 import { PASSWORD_MAX, PASSWORD_MIN, verifyPassword } from "@/lib/auth/password";
 import { clerkEnabled } from "@/lib/auth/constants";
-import { createSession, endSession, getSession, setSessionOrg } from "@/lib/auth/session";
+import { consumeResetToken, createResetToken } from "@/lib/auth/password-reset";
+import { createSession, endSession, getSession, revokeUserSessions, setSessionOrg } from "@/lib/auth/session";
+import { requestEmailLocale, sendPasswordResetEmail } from "@/lib/email/notify";
+import { emailEnabled } from "@/lib/email/send";
 import { clearLimit, clientIp, hit, isLimited, LIMITS } from "@/lib/rate-limit";
-import { findUserByEmail, insertUser, normalizeEmail, syncBootstrapRole, updateUser } from "@/lib/auth/users";
+import { findUserByEmail, getUser, insertUser, normalizeEmail, setUserPassword, syncBootstrapRole, updateUser } from "@/lib/auth/users";
 import type { PlanId } from "@/lib/plans";
 import { insertOrganization } from "@/lib/platform/organizations";
 import { getPlatformSettings } from "@/lib/platform/settings";
@@ -14,7 +17,17 @@ import { acceptInvites, ensureMembership, listAllMembers, listMembershipsForUser
 
 type Failure = {
   ok: false;
-  error: "invalid_input" | "weak_password" | "email_taken" | "company_required" | "signups_closed" | "invalid_credentials" | "disabled" | "too_many_attempts";
+  error:
+    | "invalid_input"
+    | "weak_password"
+    | "email_taken"
+    | "company_required"
+    | "signups_closed"
+    | "invalid_credentials"
+    | "disabled"
+    | "too_many_attempts"
+    | "invalid_token"
+    | "email_unavailable";
 };
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -117,5 +130,44 @@ export async function switchOrganization(orgId: string): Promise<{ ok: boolean }
   const memberships = await listMembershipsForUser(session.user.id);
   if (!memberships.some((m) => m.orgId === orgId)) return { ok: false };
   await setSessionOrg(orgId);
+  return { ok: true };
+}
+
+/**
+ * "Forgot password" (local login). Always answers the same way whether or not the email has an
+ * account, so the form can't be used to find out who is registered.
+ */
+export async function requestPasswordReset(input: { email: string }): Promise<{ ok: true } | Failure> {
+  if (clerkEnabled()) return { ok: false, error: "invalid_input" };
+  if (!emailEnabled()) return { ok: false, error: "email_unavailable" };
+  const email = typeof input.email === "string" ? normalizeEmail(input.email) : "";
+  if (!EMAIL.test(email) || email.length > 254) return { ok: false, error: "invalid_input" };
+  if (!(await hit("auth-ip", await clientIp(), LIMITS.authPerIp)).ok) return { ok: false, error: "too_many_attempts" };
+  // Over the per-address limit the answer stays "sent", so it reveals nothing; no email goes out.
+  if (!(await hit("reset-email", email, LIMITS.resetEmailsPerAddress)).ok) return { ok: true };
+
+  const user = await findUserByEmail(email);
+  if (user && user.status === "active" && user.passwordHash) {
+    await sendPasswordResetEmail({ to: user.email, token: await createResetToken(user.id), locale: await requestEmailLocale() });
+  }
+  return { ok: true };
+}
+
+/** Sets a new password from a reset link, then signs the person out everywhere. */
+export async function resetPassword(input: { token: string; password: string }): Promise<{ ok: true } | Failure> {
+  if (clerkEnabled()) return { ok: false, error: "invalid_input" };
+  const password = typeof input.password === "string" ? input.password : "";
+  if (password.length < PASSWORD_MIN || password.length > PASSWORD_MAX) return { ok: false, error: "weak_password" };
+  if (!(await hit("auth-ip", await clientIp(), LIMITS.authPerIp)).ok) return { ok: false, error: "too_many_attempts" };
+  const userId = await consumeResetToken(input.token);
+  const user = userId ? await getUser(userId) : null;
+  if (!user || user.status !== "active") return { ok: false, error: "invalid_token" };
+
+  await setUserPassword(user, password);
+  await revokeUserSessions(user.id);
+  await clearLimit("sign-in", user.email);
+  for (const m of await listMembershipsForUser(user.id)) {
+    await recordAudit({ orgId: m.orgId, action: "auth.password_reset", actor: user.name, target: user.email, meta: { via: "email_link" } });
+  }
   return { ok: true };
 }

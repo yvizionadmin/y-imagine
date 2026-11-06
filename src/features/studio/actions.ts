@@ -4,7 +4,7 @@ import { refresh } from "next/cache";
 import { ProviderError, type ProviderErrorCode } from "@/lib/ai/errors";
 import { getImageProvider, videoModelFor } from "@/lib/ai/registry";
 import { CAMERA_MOVES, CREATE_ASPECT_RATIOS, MOTION_LEVELS, type CreateAspectRatio, type GeneratedImage } from "@/lib/ai/types";
-import { DEFAULT_VIDEO_MODEL, fitsCapabilities, ratioParts, videoCapabilities } from "@/lib/ai/video-models";
+import { DEFAULT_VIDEO_MODEL, fitsCapabilities, ratioParts, videoCapabilities, videoModelName } from "@/lib/ai/video-models";
 import { planAllows, videoCost, type CreditRules } from "@/lib/credits";
 import { insertGeneration, listRecentGenerations, type Generation } from "@/lib/generations";
 import { PRODUCT_IMAGE_TYPES } from "@/lib/image-formats";
@@ -72,6 +72,8 @@ export async function getStudioSetup(): Promise<StudioSetup> {
     videoDisabled: disabledFeatures.includes("video"),
     videoProblem: video.ok ? null : video.code,
     videoCaps: videoCapabilities(model),
+    videoModel: video.ok ? videoModelName(video.model) : null,
+    canManageModels: workspace.role === "admin",
     imageCost: creditRules.featureCosts.create,
     video: creditRules.video satisfies CreditRules["video"],
     creditsRemaining: workspace.creditsRemaining,

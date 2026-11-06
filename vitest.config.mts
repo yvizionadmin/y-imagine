@@ -32,6 +32,11 @@ export default defineConfig({
       STRIPE_SECRET_KEY: "",
       SENTRY_DSN: "",
       SUPER_ADMIN_EMAILS: "",
+      // Emails go to a local outbox the tests read; links use a fixed base URL.
+      APP_URL: "https://app.test",
+      EMAIL_OUTBOX_DIR: ".data/test-outbox",
+      RESEND_API_KEY: "",
+      SMTP_URL: "",
     },
   },
 });

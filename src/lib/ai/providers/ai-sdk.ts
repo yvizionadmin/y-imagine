@@ -81,6 +81,9 @@ async function publicImage(publicPath: string): Promise<ImageInput> {
   return { bytes, mimeType: publicPath.endsWith(".png") ? "image/png" : "image/jpeg", name: path.basename(publicPath) };
 }
 
+/** Safety-filter refusals in provider error bodies (OpenAI moderation, Gemini safety/prohibited content). */
+export const SAFETY_REFUSAL = /moderation_blocked|content_policy_violation|safety system|safety_violation|PROHIBITED_CONTENT|blocked due to safety|finishReason"?:\s*"?SAFETY|IMAGE_SAFETY/i;
+
 /** Provider errors → stable codes (image and text providers). Raw provider messages never leave the server. */
 export async function mapError(error: unknown, config: { provider: AiProviderId; onKeyRejected?: () => Promise<void> }): Promise<ProviderError> {
   if (error instanceof ProviderError) return error;
@@ -98,6 +101,7 @@ export async function mapError(error: unknown, config: { provider: AiProviderId;
     // waiting: the account owner has to upgrade, so it isn't retried like a real rate limit.
     if (status === 429 && /limit: 0\b|upgrade your tier|free[ _]tier/i.test(body)) return new ProviderError("no_credits");
     if (status === 429) return new ProviderError("rate_limited");
+    if (status === 400 && SAFETY_REFUSAL.test(body)) return new ProviderError("content_rejected");
     if (status === 404) return new ProviderError("unsupported");
   }
   if (NoImageGeneratedError.isInstance(error)) return new ProviderError("generation_failed");

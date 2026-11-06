@@ -59,7 +59,7 @@ export async function getTeam(): Promise<{ members: MemberView[]; departments: s
   };
 }
 
-export async function inviteMember(input: { email: string; role: string; department: string }): Promise<{ ok: true } | Failure> {
+export async function inviteMember(input: { email: string; role: string; department: string }): Promise<{ ok: true; emailed: boolean } | Failure> {
   const workspace = await requireAdmin();
   if (!workspace) return { ok: false, error: "forbidden" };
   const email = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
@@ -73,10 +73,10 @@ export async function inviteMember(input: { email: string; role: string; departm
   if (seats !== null && members.length >= seats) return { ok: false, error: "seat_limit" };
 
   await insertInvite({ orgId: workspace.orgId, email, role: input.role, department: cleanDepartment(input.department), invitedBy: workspace.user.name });
-  // People who already have an account get the org on their next sign-in; no sign-up email.
-  if (!(await findUserByEmail(email))) await sendInvitationEmail(email);
+  // People who already have an account get the org on their next sign-in; the email says so.
+  const emailed = await sendInvitationEmail({ email, orgName: workspace.orgName, inviter: workspace.user.name, role: input.role, hasAccount: !!(await findUserByEmail(email)) });
   await recordAudit({ orgId: workspace.orgId, action: "member.invited", actor: workspace.user.name, target: email, meta: { role: input.role } });
-  return { ok: true };
+  return { ok: true, emailed };
 }
 
 async function editable(id: string) {
@@ -112,14 +112,15 @@ export async function changeMemberDepartment(id: string, department: string): Pr
   return updated ? { ok: true } : { ok: false, error: "not_found" };
 }
 
-/** Sends the sign-up email again (Clerk only; the local login sends none). */
-export async function resendInvite(id: string): Promise<{ ok: true } | Failure> {
+/** Sends the invitation email again. `emailed` is false when no email transport is set up. */
+export async function resendInvite(id: string): Promise<{ ok: true; emailed: boolean } | Failure> {
   const found = await editable(id);
   if (!found.ok) return found;
-  if (found.member.status !== "invited") return { ok: false, error: "invalid_input" };
-  if (!(await findUserByEmail(found.member.email))) await sendInvitationEmail(found.member.email);
-  await recordAudit({ orgId: found.workspace.orgId, action: "member.invite_resent", actor: found.workspace.user.name, target: found.member.email });
-  return { ok: true };
+  const { workspace, member } = found;
+  if (member.status !== "invited") return { ok: false, error: "invalid_input" };
+  const emailed = await sendInvitationEmail({ email: member.email, orgName: workspace.orgName, inviter: workspace.user.name, role: member.role, hasAccount: !!(await findUserByEmail(member.email)) });
+  await recordAudit({ orgId: workspace.orgId, action: "member.invite_resent", actor: workspace.user.name, target: member.email });
+  return { ok: true, emailed };
 }
 
 export async function removeTeamMember(id: string): Promise<{ ok: true } | Failure> {

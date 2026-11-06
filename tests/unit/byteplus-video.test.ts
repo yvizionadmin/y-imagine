@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { textModelsFor, videoModelsFor } from "@/lib/ai/models";
-import { ratioParts, videoCapabilities } from "@/lib/ai/video-models";
+import { modelsFor, providersFor, textModelsFor, videoModelsFor } from "@/lib/ai/models";
+import { ratioParts, videoCapabilities, videoModelName } from "@/lib/ai/video-models";
 import type { VideoRequest } from "@/lib/ai/types";
 
 // Seedance on BytePlus ModelArk: the task API is stubbed (no network). Checks the request we send,
@@ -98,7 +98,7 @@ describe("Seedance on BytePlus ModelArk", () => {
       [200, { id: "cgt-1" }],
       [200, { status: "failed", error: { code: "OutputVideoSensitiveContentDetected", message: "x" } }],
     ]);
-    await expect(provider().generateVideo(request())).rejects.toMatchObject({ code: "generation_failed" });
+    await expect(provider().generateVideo(request())).rejects.toMatchObject({ code: "content_rejected" });
 
     stubModelArk([
       [200, { id: "cgt-2" }],
@@ -120,7 +120,7 @@ describe("Seedance on BytePlus ModelArk", () => {
     expect(modelArkError(403, "AccountOverdueError").code).toBe("no_credits");
     expect(modelArkError(403, "AccessDenied").code).toBe("invalid_key");
     expect(modelArkError(429, "ServerOverloaded").code).toBe("rate_limited");
-    expect(modelArkError(400, "InputImageSensitiveContentDetected").code).toBe("generation_failed");
+    expect(modelArkError(400, "InputImageSensitiveContentDetected").code).toBe("content_rejected");
     expect(modelArkError(500).code).toBe("generation_failed");
   });
 });
@@ -133,6 +133,18 @@ describe("Seedance models and capabilities", () => {
       "dreamina-seedance-2-0-260128",
     ]);
     expect(textModelsFor("byteplus", null)).toEqual([]);
+    // Video has its own model picker: video providers only.
+    expect(providersFor("video")).toEqual(["gemini", "byteplus"]);
+    expect(modelsFor("video", "byteplus", null)).toEqual(["dreamina-seedance-2-5-260628"]);
+    expect(modelsFor("video", "openai", null)).toEqual([]);
+    expect(modelsFor("copy", "byteplus", null)).toEqual([]);
+  });
+
+  it("names video models for people", () => {
+    expect(videoModelName("dreamina-seedance-2-5-260628")).toBe("Seedance 2.5");
+    expect(videoModelName("dreamina-seedance-2-0-fast-260128")).toBe("Seedance 2.0 Fast");
+    expect(videoModelName("gemini-omni-1.2-flash")).toBe("Gemini Omni 1.2 Flash");
+    expect(videoModelName("something-else")).toBe("something-else");
   });
 
   it("offers Seedance 2.5's lengths, ratios and resolutions", () => {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowUp, ChevronDown, Clapperboard, Clock, ImagePlus, Images, Loader2, Lock, Plus, Sparkles, X } from "lucide-react";
+import { ArrowUp, ChevronDown, Clapperboard, Clock, Cpu, ImagePlus, Images, Loader2, Lock, Plus, Sparkles, X } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { cn } from "cn";
 import { blockedReason } from "@/components/app/job-errors";
@@ -242,6 +242,16 @@ export function StudioHome() {
                         <ChipGroup label={t("camera")} options={CAMERA_MOVES} value={video.camera} onChange={(camera) => setVideo({ ...video, camera })} render={(c) => t(`cameraMoves.${c}`)} wrap />
                         <p className="max-w-64 text-[11px] text-muted-foreground">{t(setup?.videoCaps.audio ? "promptDirectionAudio" : "promptDirection")}</p>
                       </OptionChip>
+                      {setup?.videoModel && (
+                        <OptionChip icon={<Cpu className="size-3.5" aria-hidden />} label={t("videoModel")} value={setup.videoModel}>
+                          <p className="max-w-64 text-[11px] text-muted-foreground">{t("videoModelNote", { model: setup.videoModel })}</p>
+                          {setup.canManageModels && (
+                            <Link href="/settings/api-keys" className="text-xs font-semibold text-primary hover:underline">
+                              {t("changeModel")}
+                            </Link>
+                          )}
+                        </OptionChip>
+                      )}
                     </>
                   )}
                 </div>

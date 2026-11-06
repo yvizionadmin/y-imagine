@@ -122,7 +122,11 @@ export function TeamSettings() {
           rows={rows}
           canManage={team.canManage}
           onRole={(m, r) => run(changeMemberRole(m.id, r), t("roleChanged", { name: m.name || m.email, role: t(`roles.${r}`) }))}
-          onResend={(m) => run(resendInvite(m.id), t("resent", { email: m.email }))}
+          onResend={async (m) => {
+            const response = await resendInvite(m.id);
+            setNotice(response.ok ? { tone: "ok", text: t(response.emailed ? "resent" : "resentNoEmail", { email: m.email }) } : { tone: "error", text: t(`errors.${response.error}`) });
+            await refresh();
+          }}
           onEditDepartment={setEditing}
           onRemove={(m) => {
             const name = m.name || m.email;
@@ -139,8 +143,8 @@ export function TeamSettings() {
             open={inviting}
             onOpenChange={setInviting}
             departments={team.departments}
-            onInvited={(email) => {
-              setNotice({ tone: "ok", text: t("invited", { email }) });
+            onInvited={(email, emailed) => {
+              setNotice({ tone: "ok", text: t(emailed ? "invited" : "invitedNoEmail", { email }) });
               refresh();
             }}
           />
@@ -308,7 +312,7 @@ function InviteDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   departments: string[];
-  onInvited: (email: string) => void;
+  onInvited: (email: string, emailed: boolean) => void;
 }) {
   const t = useTranslations("Team");
   const [email, setEmail] = useState("");
@@ -332,7 +336,7 @@ function InviteDialog({
     const response = await inviteMember({ email, role, department });
     setBusy(false);
     if (!response.ok) return setError(t(`errors.${response.error === "invalid_input" ? "invalid_email" : response.error}`));
-    onInvited(email.trim().toLowerCase());
+    onInvited(email.trim().toLowerCase(), response.emailed);
     close();
   }
 

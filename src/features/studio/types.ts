@@ -26,6 +26,10 @@ export type StudioSetup = {
   videoProblem: ProviderErrorCode | null;
   /** What the org's video model supports; the options are built from it. */
   videoCaps: VideoCapabilities;
+  /** Readable name of the video model jobs run on now (chosen in Settings → API Keys, else Automatic), or null. */
+  videoModel: string | null;
+  /** Org admins can change the model in Settings → API Keys. */
+  canManageModels: boolean;
   imageCost: number;
   video: CreditRules["video"];
   creditsRemaining: number;

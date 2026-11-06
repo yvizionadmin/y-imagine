@@ -39,7 +39,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** ModelArk error codes and HTTP status → our stable codes. Messages never leave the server. */
 export function modelArkError(status: number, code = ""): ProviderError {
-  if (/Sensitive|Moderation|RiskControl/i.test(code)) return new ProviderError("generation_failed", "content_rejected");
+  if (/Sensitive|Moderation|RiskControl/i.test(code)) return new ProviderError("content_rejected");
   if (/Overdue|Quota|Balance|InsufficientFunds|InvalidAccountStatus/i.test(code) || status === 402) return new ProviderError("no_credits");
   if (/ModelNotOpen|ModelNotFound|InvalidEndpointOrModel|NotSupported/i.test(code) || status === 404) return new ProviderError("unsupported");
   if (/RateLimit|ServerOverloaded|ConcurrencyLimit|TooManyRequests/i.test(code) || status === 429) return new ProviderError("rate_limited");

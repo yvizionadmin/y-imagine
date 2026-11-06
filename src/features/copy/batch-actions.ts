@@ -9,6 +9,7 @@ import { dispatchItems } from "@/lib/copy/batch-queue";
 import { cancelBatch, countBatchItems, getBatch, insertBatch, listBatches, listBatchItems, removeBatch, reopenFailed, type Batch, type BatchCounts, type BatchDefaults, type BatchItem } from "@/lib/copy/batches";
 import { recordAudit } from "@/lib/audit";
 import { getCopies, reviewCopies } from "@/lib/copy/copies";
+import { notifyCopyReviewed, notifyCopySubmitted, quietly, requestEmailLocale } from "@/lib/email/notify";
 import type { ReviewStatus } from "@/lib/copy/review-status";
 import { reportError } from "@/lib/observability/report";
 import { jobCost, planAllows } from "@/lib/credits";
@@ -149,6 +150,16 @@ export async function reviewCopyBatch(id: string, action: "submit" | "approve"):
       actor: workspace.user.name,
       target: batch.name,
       meta: { batchId: batch.id, count: String(changed.length) },
+    });
+    await quietly("copy batch review", async () => {
+      const common = { orgId: workspace.orgId, orgName: workspace.orgName, actorId: workspace.user.id, actor: workspace.user.name, label: batch.name, locale: await requestEmailLocale() };
+      if (action === "submit") return notifyCopySubmitted({ ...common, count: changed.length });
+      // Approved: one email per author, with how many of their products were approved.
+      const byAuthor = new Map<string, number>();
+      for (const c of changed) if (c.createdById) byAuthor.set(c.createdById, (byAuthor.get(c.createdById) ?? 0) + 1);
+      for (const [authorId, count] of byAuthor) {
+        await notifyCopyReviewed({ ...common, authorId, outcome: "approved", count, note: null, copyId: null });
+      }
     });
   }
   return { ok: true, changed: changed.length };

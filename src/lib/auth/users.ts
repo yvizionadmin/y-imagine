@@ -104,7 +104,7 @@ export async function insertUser(input: {
   }
 }
 
-export async function updateUser(id: string, patch: Partial<Pick<User, "name" | "platformRole" | "status" | "lastSignInAt" | "passwordHash" | "clerkUserId" | "lastSessionId">>): Promise<User | null> {
+export async function updateUser(id: string, patch: Partial<Pick<User, "name" | "email" | "platformRole" | "status" | "lastSignInAt" | "passwordHash" | "clerkUserId" | "lastSessionId">>): Promise<User | null> {
   const [row] = await db.update(users).set(patch).where(eq(users.id, id)).returning();
   return row ?? null;
 }

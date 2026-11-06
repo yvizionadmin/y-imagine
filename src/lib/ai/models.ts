@@ -83,6 +83,8 @@ export type VideoFeature = (typeof VIDEO_FEATURES)[number];
 /** Providers with video generation, in the order "Automatic" tries them. */
 export const VIDEO_PROVIDERS = ["gemini", "byteplus"] as const satisfies readonly AiProviderId[];
 export type VideoProviderId = (typeof VIDEO_PROVIDERS)[number];
+export const isVideoProvider = (value: unknown): value is VideoProviderId => (VIDEO_PROVIDERS as readonly unknown[]).includes(value);
+export const isVideoFeature = (value: unknown): value is VideoFeature => (VIDEO_FEATURES as readonly unknown[]).includes(value);
 
 /**
  * Video models, best first. Google shut the Veo 3.1 previews down in the Gemini API (2026-10-22)
@@ -105,16 +107,18 @@ export function videoModelsFor(provider: VideoProviderId, available: readonly st
 // ── Per-tool choice ──────────────────────────────────────────────────────────────────────────
 
 /** Tools with a model picker in Settings → API Keys. */
-export const MODEL_FEATURES = [...IMAGE_FEATURES, ...TEXT_FEATURES] as const;
+export const MODEL_FEATURES = [...IMAGE_FEATURES, ...TEXT_FEATURES, ...VIDEO_FEATURES] as const;
 export type ModelFeature = (typeof MODEL_FEATURES)[number];
 export const isModelFeature = (value: unknown): value is ModelFeature => (MODEL_FEATURES as readonly unknown[]).includes(value);
 
 /** Providers that can serve a tool, in "Automatic" order. */
-export const providersFor = (feature: ModelFeature): readonly AiProviderId[] => (isImageFeature(feature) ? IMAGE_PROVIDERS : TEXT_PROVIDERS);
+export const providersFor = (feature: ModelFeature): readonly AiProviderId[] =>
+  isImageFeature(feature) ? IMAGE_PROVIDERS : isVideoFeature(feature) ? VIDEO_PROVIDERS : TEXT_PROVIDERS;
 
 /** Models of one provider that can serve a tool, best first. */
 export function modelsFor(feature: ModelFeature, provider: AiProviderId, available: readonly string[] | null): string[] {
   if (isImageFeature(feature)) return isImageProvider(provider) ? imageModelsFor(provider, available) : [];
+  if (isVideoFeature(feature)) return isVideoProvider(provider) ? videoModelsFor(provider, available) : [];
   return textModelsFor(provider, available);
 }
 

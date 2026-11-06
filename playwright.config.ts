@@ -30,6 +30,8 @@ export default defineConfig({
       STRIPE_SECRET_KEY: "",
       SENTRY_DSN: "",
       SUPER_ADMIN_EMAILS: "",
+      APP_URL: `http://localhost:${PORT}`,
+      EMAIL_OUTBOX_DIR: ".data/e2e-outbox",
     },
   },
 });

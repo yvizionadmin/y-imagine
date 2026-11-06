@@ -11,6 +11,8 @@ export const LIMITS = {
   /** Failed sign-ins per email, and sign-in/up attempts per IP. */
   signInFailures: { limit: 5, windowMs: 15 * 60_000 },
   authPerIp: { limit: 30, windowMs: 15 * 60_000 },
+  /** Password reset emails per address (so the form can't be used to flood an inbox). */
+  resetEmailsPerAddress: { limit: 3, windowMs: 60 * 60_000 },
   /** AI jobs: per user, and per org across its members. */
   jobsPerUser: { limit: 12, windowMs: 60_000 },
   jobsPerOrg: { limit: 60, windowMs: 60_000 },

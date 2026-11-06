@@ -20,6 +20,7 @@ vi.mock("@/lib/workspace", () => ({ getWorkspace: async () => workspace }));
 vi.mock("@/lib/video/queue", () => ({ dispatchVideoJob: async (_org: string, id: string) => void dispatched.push(id) }));
 
 const { startVideo, getStudioSetup, pollStudioVideos } = await import("@/features/studio/actions");
+const { setToolModel, getProviderKeys } = await import("@/features/ai-providers/actions");
 
 async function signedIn(plan: PlanId = "pro", opts: { key?: boolean; role?: Workspace["role"]; credits?: number } = {}) {
   const made = await makeOrg(plan);
@@ -126,6 +127,26 @@ describe("studio video", () => {
     expect(await runVideoJob(org.id, dispatched[0])).toBe("done");
     const [job] = await getVideoJobs(org.id, dispatched);
     expect(job.credits).toBe(videoCost(DEFAULT_CREDIT_RULES, { seconds: 30, resolution: "480p" }));
+  });
+
+  it("uses the video model chosen in Settings → API Keys, else Automatic", async () => {
+    const { org } = await signedIn("pro");
+    await saveProviderKey({ orgId: org.id, provider: "byteplus", key: "demo-byteplus-key-123456", models: null, createdBy: "t" });
+    // Automatic: Gemini comes first.
+    expect((await getStudioSetup()).videoCaps.aspectRatios).toEqual(["16:9", "9:16"]);
+    expect((await getProviderKeys()).models.video).toEqual({ gemini: ["gemini-omni-1.2-flash"], byteplus: ["dreamina-seedance-2-5-260628"] });
+
+    expect(await setToolModel("video", { provider: "byteplus", model: "dreamina-seedance-2-5-260628" })).toEqual({ ok: true });
+    const setup = await getStudioSetup();
+    expect(setup).toMatchObject({ videoModel: "Seedance 2.5", canManageModels: true });
+    expect(setup.videoCaps.durations).toContain(30);
+    expect((await startVideo(form({ aspectRatio: "1:1", seconds: "20" }))).ok).toBe(true);
+
+    // Only video providers and models a key can call; back to Automatic with null.
+    expect(await setToolModel("video", { provider: "openai", model: "gpt-image-2" })).toEqual({ ok: false, error: "invalid_input" });
+    expect(await setToolModel("video", { provider: "byteplus", model: "dreamina-seedance-9-9-999999" })).toEqual({ ok: false, error: "invalid_input" });
+    expect(await setToolModel("video", null)).toEqual({ ok: true });
+    expect((await getStudioSetup()).videoCaps.aspectRatios).toEqual(["16:9", "9:16"]);
   });
 
   it("checks credits, viewers, the per-org limit and a missing key", async () => {

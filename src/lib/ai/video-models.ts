@@ -66,6 +66,16 @@ export function fitsCapabilities(caps: VideoCapabilities, request: { aspectRatio
   );
 }
 
+/** A readable name for a video model id, e.g. "dreamina-seedance-2-5-260628" → "Seedance 2.5". */
+export function videoModelName(model: string): string {
+  const seedance = /^dreamina-seedance-(\d+)-(\d+)(-fast)?-\d{6}$/.exec(model);
+  if (seedance) return `Seedance ${seedance[1]}.${seedance[2]}${seedance[3] ? " Fast" : ""}`;
+  const omni = /^gemini-omni-([\d.]+)-flash$/.exec(model);
+  if (omni) return `Gemini Omni ${omni[1]} Flash`;
+  if (model === "demo-video-v1") return "Demo";
+  return model;
+}
+
 /** Width:height of a video ratio, e.g. "21:9" → [21, 9]. */
 export function ratioParts(ratio: string): [number, number] {
   const [w, h] = ratio.split(":").map(Number);

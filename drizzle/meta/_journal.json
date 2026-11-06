@@ -92,6 +92,13 @@
       "when": 1793960157783,
       "tag": "0012_video_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793970151331,
+      "tag": "0013_email_and_password_reset",
+      "breakpoints": true
     }
   ]
 }

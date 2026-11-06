@@ -34,8 +34,8 @@ beforeEach(() => {
 describe("team actions", () => {
   it("enforces the plan's seats, counting pending invitations", async () => {
     await asAdminOf("free"); // 3 seats, the admin uses one
-    expect(await inviteMember({ email: uniqueEmail(), role: "editor", department: "" })).toEqual({ ok: true });
-    expect(await inviteMember({ email: uniqueEmail(), role: "viewer", department: "" })).toEqual({ ok: true });
+    expect(await inviteMember({ email: uniqueEmail(), role: "editor", department: "" })).toEqual({ ok: true, emailed: true });
+    expect(await inviteMember({ email: uniqueEmail(), role: "viewer", department: "" })).toEqual({ ok: true, emailed: true });
     expect(await inviteMember({ email: uniqueEmail(), role: "viewer", department: "" })).toEqual({ ok: false, error: "seat_limit" });
   });
 

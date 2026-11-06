@@ -57,7 +57,7 @@ export function createAiVideoProvider(config: AiVideoConfig): VideoProvider {
           maxRetries: 1,
         });
         const video = result.files.find((f) => f.mediaType.startsWith("video/"));
-        if (!video) throw new ProviderError("generation_failed");
+        if (!video) throw new ProviderError(result.finishReason === "content-filter" ? "content_rejected" : "generation_failed");
         return { bytes: video.uint8Array, mimeType: video.mediaType === "video/webm" ? "video/webm" : "video/mp4", provider: config.provider, model: config.model };
       } catch (error) {
         throw await mapError(error, config);

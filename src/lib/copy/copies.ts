@@ -34,6 +34,8 @@ export type SavedCopy = {
   reviewedBy: string | null;
   reviewedAt: string | null;
   createdBy: string;
+  /** The author's user id (null on rows saved before review notices existed). */
+  createdById: string | null;
   createdAt: string;
   updatedAt: string;
 };

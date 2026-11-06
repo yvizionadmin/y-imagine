@@ -5,7 +5,8 @@ import { COPY_CHANNELS, COPY_LANGUAGES, COPY_LENGTHS, COPY_TONES, type CopyLangu
 import { categoryPresets } from "@/lib/catalog-presets";
 import { recordAudit } from "@/lib/audit";
 import { getCopy, listCopies, removeCopy, reviewCopies, updateCopy, type SavedCopy } from "@/lib/copy/copies";
-import { REVIEW_FROM, REVIEW_NOTE_MAX, REVIEW_STATUSES, type ReviewAction, type ReviewStatus } from "@/lib/copy/review-status";
+import { notifyCopyReviewed, notifyCopySubmitted, quietly, requestEmailLocale } from "@/lib/email/notify";
+import { REVIEW_FROM, REVIEW_TO, REVIEW_NOTE_MAX, REVIEW_STATUSES, type ReviewAction, type ReviewStatus } from "@/lib/copy/review-status";
 import { writeCopy } from "@/lib/copy/write";
 import { reportError } from "@/lib/observability/report";
 import { isAssetMime } from "@/lib/storage/assets";
@@ -77,6 +78,11 @@ export async function reviewCopy(id: string, action: ReviewAction, note?: string
   const [changed] = await reviewCopies(workspace.orgId, [id], action, workspace.user.name, text || null);
   if (!changed) return { ok: false, error: "invalid_input" }; // not allowed from its current status
   await recordAudit({ orgId: workspace.orgId, action: REVIEW_AUDIT[action], actor: workspace.user.name, target: changed.sku, meta: { copyId: changed.id } });
+  await quietly("copy review", async () => {
+    const common = { orgId: workspace.orgId, orgName: workspace.orgName, actorId: workspace.user.id, actor: workspace.user.name, label: changed.productName || changed.sku, count: 1, locale: await requestEmailLocale() };
+    if (action === "submit") await notifyCopySubmitted(common);
+    else await notifyCopyReviewed({ ...common, authorId: changed.createdById, outcome: REVIEW_TO[action] as "approved" | "changes_requested", note: changed.reviewNote, copyId: changed.id });
+  });
   return { ok: true, copy: toView(changed) };
 }
 

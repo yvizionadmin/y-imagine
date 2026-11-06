@@ -68,7 +68,7 @@ export function AuthForm({ mode, demo }: { mode: Mode; demo?: { email: string } 
             dir="ltr"
             autoComplete="email"
             autoFocus={!signingUp}
-            defaultValue={demo?.email}
+            defaultValue={demo?.email ?? params.get("email") ?? undefined}
             placeholder="name@company.com"
             className="h-11 text-sm"
           />
@@ -96,6 +96,11 @@ export function AuthForm({ mode, demo }: { mode: Mode; demo?: { email: string } 
               {show ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
             </button>
           </div>
+          {!signingUp && (
+            <Link href="/forgot-password" className="self-end text-[12px] font-semibold text-primary hover:underline">
+              {t("forgotLink")}
+            </Link>
+          )}
         </Field>
 
         {error && (
