@@ -9,7 +9,7 @@ test("pick a category, then a product type, and Generate opens with both", async
   await page.locator("#auth-email").fill(`templates-${unique()}@e2e.test`);
   await page.locator("#auth-password").fill("e2e-password-123");
   await page.getByRole("button", { name: "Create account" }).click();
-  await page.waitForURL(/\/en\/generate/);
+  await page.waitForURL(/\/en\/home/);
 
   await page.goto("/en/templates");
   await page.getByRole("link", { name: "Furniture" }).click();
@@ -41,7 +41,8 @@ test("New Job starts every tool fresh", async ({ page }) => {
   await page.locator("#auth-email").fill(`new-job-${unique()}@e2e.test`);
   await page.locator("#auth-password").fill("e2e-password-123");
   await page.getByRole("button", { name: "Create account" }).click();
-  await page.waitForURL(/\/en\/generate/);
+  await page.waitForURL(/\/en\/home/);
+  await page.goto("/en/generate");
 
   await page.locator("#sku").fill("OLD-JOB-1");
   await page.getByRole("link", { name: "New Job" }).click();

@@ -5,8 +5,20 @@ import * as Sentry from "@sentry/node";
 import { DelayedError, Queue, Worker, type Job } from "bullmq";
 import { runBatchItem } from "@/lib/copy/batch-runner";
 import { runImageItem } from "@/lib/image-batch/runner";
+import { runVideoJob } from "@/lib/video/runner";
 import { closeStaleJobs, revalidateAllKeys } from "@/lib/jobs/maintenance";
-import { COPY_BATCH_QUEUE, IMAGE_BATCH_QUEUE, MAINTENANCE_QUEUE, queueConnection, SCHEDULES, type CopyItemJob, type ImageItemJob, type MaintenanceJob } from "@/lib/jobs/queues";
+import {
+  COPY_BATCH_QUEUE,
+  IMAGE_BATCH_QUEUE,
+  MAINTENANCE_QUEUE,
+  queueConnection,
+  SCHEDULES,
+  VIDEO_QUEUE,
+  type CopyItemJob,
+  type ImageItemJob,
+  type MaintenanceJob,
+  type VideoJobData,
+} from "@/lib/jobs/queues";
 import { sentryOptions } from "@/lib/observability/sentry-options";
 
 // Same project as the web service, tagged by service; off without SENTRY_DSN.
@@ -61,7 +73,21 @@ const imageWorker = new Worker<ImageItemJob>(
   { connection, concurrency: Number(process.env.IMAGE_BATCH_CONCURRENCY) || 2 },
 );
 
-for (const w of [worker, copyWorker, imageWorker] as Worker[]) {
+const videoWorker = new Worker<VideoJobData>(
+  VIDEO_QUEUE,
+  async (job, token) => {
+    const outcome = await runVideoJob(job.data.orgId, job.data.jobId);
+    if (outcome === "retry") {
+      await job.moveToDelayed(Date.now() + RATE_LIMIT_DELAY_MS, token);
+      throw new DelayedError();
+    }
+    return outcome;
+  },
+  // A video call waits minutes on the provider; per-org fairness comes from MAX_OPEN_VIDEO_JOBS.
+  { connection, concurrency: Number(process.env.VIDEO_CONCURRENCY) || 4, lockDuration: 12 * 60_000 },
+);
+
+for (const w of [worker, copyWorker, imageWorker, videoWorker] as Worker[]) {
   w.on("completed", (job: Job, result) => console.log(JSON.stringify({ job: job.name, ok: true, result })));
   w.on("failed", (job, error) => {
     console.error(JSON.stringify({ job: job?.name, ok: false, error: error.name }));
@@ -74,7 +100,7 @@ async function registerSchedules() {
   for (const [name, repeat] of Object.entries(SCHEDULES)) {
     await queue.upsertJobScheduler(name, repeat, { name, opts: { removeOnComplete: { count: 50 }, removeOnFail: { count: 200 } } });
   }
-  console.log(JSON.stringify({ worker: "started", queues: [MAINTENANCE_QUEUE, COPY_BATCH_QUEUE, IMAGE_BATCH_QUEUE], schedules: Object.keys(SCHEDULES) }));
+  console.log(JSON.stringify({ worker: "started", queues: [MAINTENANCE_QUEUE, COPY_BATCH_QUEUE, IMAGE_BATCH_QUEUE, VIDEO_QUEUE], schedules: Object.keys(SCHEDULES) }));
 }
 
 registerSchedules().catch((error) => {
@@ -85,7 +111,7 @@ registerSchedules().catch((error) => {
 // Railway sends SIGTERM on deploy: finish the current job, then exit.
 for (const signal of ["SIGTERM", "SIGINT"] as const) {
   process.once(signal, async () => {
-    await Promise.all([worker.close(), copyWorker.close(), imageWorker.close()]);
+    await Promise.all([worker.close(), copyWorker.close(), imageWorker.close(), videoWorker.close()]);
     await queue.close();
     await Sentry.flush(2_000);
     process.exit(0);

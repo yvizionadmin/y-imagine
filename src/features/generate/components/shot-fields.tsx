@@ -14,7 +14,7 @@ import {
   type CameraAngle,
   type ShotSet,
 } from "@/lib/camera-angles";
-import { GENERATE_COST } from "../config";
+import { useJobCost } from "@/features/credits/use-job-cost";
 
 export type ShotSettings = { shotSet: ShotSet; angles: CameraAngle[]; keepScene: boolean; minimalProps: boolean };
 export type Dimensions = { w: string; h: string; d: string };
@@ -23,6 +23,7 @@ const labelClass = "text-[11px] font-semibold text-muted-foreground";
 const hintClass = "font-normal text-subtle";
 
 export function ShotFields({ value, onChange }: { value: ShotSettings; onChange: (value: ShotSettings) => void }) {
+  const jobCost = useJobCost("generate");
   const t = useTranslations("Generate.shots");
   const multiple = value.angles.length > 1;
 
@@ -83,7 +84,7 @@ export function ShotFields({ value, onChange }: { value: ShotSettings; onChange:
           {t("summary", {
             count: value.angles.length,
             list: value.angles.map((a) => t(`angles.${a}`)).join(", "),
-            cost: GENERATE_COST,
+            cost: jobCost,
           })}
         </p>
       </div>

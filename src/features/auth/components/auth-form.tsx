@@ -13,7 +13,7 @@ type Mode = "sign-in" | "sign-up";
 
 /** Only same-app paths, so ?next= can't send people to another site. */
 function safeNext(value: string | null) {
-  return value && value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/\\") ? value : "/generate";
+  return value && value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/\\") ? value : "/home";
 }
 
 export function AuthForm({ mode, demo }: { mode: Mode; demo?: { email: string } }) {

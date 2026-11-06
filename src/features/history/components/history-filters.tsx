@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import type { GenerationMode, HistoryFilters, PublishStatus } from "../types";
 
-const MODES: GenerationMode[] = ["lifestyle", "recolor", "aplus"];
+const MODES: GenerationMode[] = ["create", "lifestyle", "recolor", "aplus"];
 const STATUSES: PublishStatus[] = ["pending", "uploaded", "failed"];
 
 export type FilterDraft = Pick<HistoryFilters, "sku" | "from" | "to" | "mode" | "status">;

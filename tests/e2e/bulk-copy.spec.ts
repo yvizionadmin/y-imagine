@@ -10,7 +10,7 @@ test("bulk copy: paste rows, run them, open a written product, download the CSV"
   await page.locator("#auth-email").fill(`bulk-${unique()}@e2e.test`);
   await page.locator("#auth-password").fill("e2e-password-123");
   await page.getByRole("button", { name: "Create account" }).click();
-  await page.waitForURL(/\/en\/generate/);
+  await page.waitForURL(/\/en\/home/);
 
   await page.goto("/en/copy");
   await page.getByRole("link", { name: "Bulk" }).click();

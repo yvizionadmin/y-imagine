@@ -25,7 +25,7 @@ const { startCopyBatch, getCopyBatch, listCopyBatches, cancelCopyBatch, retryFai
 
 type Made = Awaited<ReturnType<typeof makeOrg>>;
 const asWorkspace = (made: Made, role: Workspace["role"] = "admin", creditsRemaining = 500) => {
-  workspace = { orgId: made.org.id, orgName: made.org.name, role, user: { id: made.user.id, name: made.user.name, email: made.user.email }, isSuperAdmin: false, orgs: [], creditsMonthly: 500, creditsRemaining };
+  workspace = { orgId: made.org.id, orgName: made.org.name, role, plan: made.org.plan, user: { id: made.user.id, name: made.user.name, email: made.user.email }, isSuperAdmin: false, orgs: [], creditsMonthly: 500, creditsRemaining };
 };
 
 const settings = { category: "furniture", tone: "friendly", length: "short", channel: "website", languages: ["en", "ar"] } as const;

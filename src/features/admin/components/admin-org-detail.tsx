@@ -11,6 +11,7 @@ import { LATN } from "@/lib/format";
 import { ROLES, type Role } from "@/lib/team/roles";
 import {
   addAdminOrgMember,
+  adjustAdminOrgCredits,
   changeAdminOrgMemberRole,
   getAdminOrg,
   removeAdminOrgMember,
@@ -101,7 +102,13 @@ export function AdminOrgDetail({ id }: { id: string }) {
         <StatTile
           label={t("orgs.creditsThisMonth")}
           value={`${n(org.creditsUsed)} / ${n(org.creditsMonthly)}`}
-          detail={org.creditsOverride !== null ? t("orgs.custom") : t("creditsPerMonth", { display: n(org.creditsMonthly) })}
+          detail={
+            org.creditsAdjusted
+              ? t("orgs.adjustedThisMonth", { amount: `${org.creditsAdjusted > 0 ? "+" : "−"}${n(Math.abs(org.creditsAdjusted))}` })
+              : org.creditsOverride !== null
+                ? t("orgs.custom")
+                : t("creditsPerMonth", { display: n(org.creditsMonthly) })
+          }
           tone={org.creditsUsed >= org.creditsMonthly ? "warn" : undefined}
         />
         <StatTile label={t("orgs.columns.members")} value={n(org.members)} detail={org.invites ? t("orgs.invites", { count: org.invites, display: n(org.invites) }) : t("orgs.noInvites")} />
@@ -121,6 +128,8 @@ export function AdminOrgDetail({ id }: { id: string }) {
       <Card title={t("orgs.usage30")}>
         <ActivityChart days={data.daily} />
       </Card>
+
+      <CreditAdjustments orgId={org.id} orgName={org.name} adjustments={data.adjustments} onRun={run} />
 
       <Members orgId={org.id} members={data.members} onRun={run} />
 
@@ -259,6 +268,75 @@ function Members({
           </tr>
         ))}
       </Table>
+    </Card>
+  );
+}
+
+function CreditAdjustments({
+  orgId,
+  orgName,
+  adjustments,
+  onRun,
+}: {
+  orgId: string;
+  orgName: string;
+  adjustments: Detail["adjustments"];
+  onRun: (action: Promise<{ ok: true } | { ok: false; error: string }>, success: string) => Promise<void>;
+}) {
+  const t = useTranslations("Admin");
+  const format = useFormatter();
+  const now = useNow({ updateInterval: 60_000 });
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const value = Number(amount);
+  const valid = Number.isInteger(value) && value !== 0 && reason.trim().length > 0;
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!valid) return;
+    setBusy(true);
+    await onRun(adjustAdminOrgCredits(orgId, { amount: value, reason }), t("orgs.adjusted", { name: orgName }));
+    setBusy(false);
+    setAmount("");
+    setReason("");
+  }
+
+  return (
+    <Card title={t("orgs.adjustTitle")}>
+      <p className="-mt-2 text-xs text-muted-foreground">{t("orgs.adjustHint")}</p>
+      <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold">{t("orgs.adjustAmount")}</span>
+          <Input inputMode="numeric" dir="ltr" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="+100" className="h-10 w-32 text-[13px] tabular-nums" />
+        </label>
+        <label className="flex min-w-60 flex-1 flex-col gap-1.5">
+          <span className="text-xs font-semibold">{t("orgs.adjustReason")}</span>
+          <Input value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} placeholder={t("orgs.adjustReasonPlaceholder")} className="h-10 text-[13px]" />
+        </label>
+        <Button type="submit" disabled={!valid || busy} className="h-10 px-4 text-[13px] font-bold">
+          {busy && <Loader2 className="animate-spin" aria-hidden />}
+          {t("orgs.adjustSubmit")}
+        </Button>
+      </form>
+      {adjustments.length === 0 ? (
+        <p className="py-2 text-xs text-muted-foreground">{t("orgs.adjustmentsNone")}</p>
+      ) : (
+        <ul className="flex flex-col divide-y">
+          {adjustments.map((a) => (
+            <li key={a.id} className="flex items-center justify-between gap-3 py-2.5 text-[13px] first:pt-0 last:pb-0">
+              <span className="flex flex-col">
+                <span className="font-semibold">{a.reason}</span>
+                <span className="text-[11px] text-muted-foreground">{t("createdBy", { by: a.actor, when: format.relativeTime(new Date(a.at), now) })}</span>
+              </span>
+              <span className={a.amount > 0 ? "font-bold text-emerald-700 tabular-nums" : "font-bold text-danger tabular-nums"} dir="ltr">
+                {a.amount > 0 ? "+" : "−"}
+                {format.number(Math.abs(a.amount), LATN)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </Card>
   );
 }

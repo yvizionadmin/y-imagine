@@ -4,24 +4,27 @@ import { redirect } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 import { clerkEnabled } from "@/lib/auth/constants";
 import { getSession, signedOutPath } from "@/lib/auth/session";
-import { creditsFor, getOrganization, listOrganizations } from "@/lib/platform/organizations";
+import { monthlyAllowance } from "@/lib/platform/credit-adjustments";
+import { getOrganization, listOrganizations } from "@/lib/platform/organizations";
 import { getPlatformSettings } from "@/lib/platform/settings";
+import type { PlanId } from "@/lib/plans";
 import { listMembershipsForUser } from "@/lib/team/members";
 import { startOfMonth } from "@/lib/time";
-import { countSuccessfulJobs } from "@/lib/usage";
+import { creditsUsedSince } from "@/lib/usage";
 
 export type Workspace = {
   orgId: string;
   orgName: string;
   role: "admin" | "editor" | "viewer";
+  plan: PlanId;
   user: { id: string; name: string; email: string };
   /** Platform operator (super-admin console). Independent of the org role. */
   isSuperAdmin: boolean;
   /** Orgs the user belongs to, for the org switcher. */
   orgs: { id: string; name: string }[];
-  /** Jobs included in the org's plan each month. */
+  /** Credits the org has this month: plan (or override) plus admin adjustments. */
   creditsMonthly: number;
-  /** Remaining jobs in the org's monthly plan quota ("credits" in the UI). Failed jobs are free. */
+  /** Credits left this month. Jobs use their tool's cost; failed jobs are free. */
   creditsRemaining: number;
 };
 
@@ -53,13 +56,14 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
   Sentry.setUser({ id: user.id });
   Sentry.setTag("org", org.id);
 
-  const creditsMonthly = creditsFor(org);
-  const used = await countSuccessfulJobs(org.id, startOfMonth());
+  const since = startOfMonth();
+  const [creditsMonthly, used] = await Promise.all([monthlyAllowance(org, settings.creditRules, since), creditsUsedSince(org.id, since)]);
 
   return {
     orgId: org.id,
     orgName: org.name,
     role: membership.role,
+    plan: org.plan,
     user: { id: user.id, name: user.name, email: user.email },
     isSuperAdmin,
     orgs: known.map((m) => ({ id: m.orgId, name: orgs.find((o) => o.id === m.orgId)!.name })),
@@ -72,6 +76,6 @@ export const getWorkspace = cache(async (): Promise<Workspace> => {
 export const requireSuperAdmin = cache(async () => {
   const session = await getSession();
   if (!session) redirect(await signedOutPath());
-  if (session.user.platformRole !== "super_admin") redirect("/generate");
+  if (session.user.platformRole !== "super_admin") redirect("/home");
   return { id: session.user.id, name: session.user.name, email: session.user.email };
 });

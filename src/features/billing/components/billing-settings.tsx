@@ -205,7 +205,7 @@ export function BillingSettings() {
                 ) : null}
               </p>
               <ul className="flex flex-col gap-2 text-[13px]">
-                <Feature>{t("creditsPerMonth", { count: PLANS[plan].creditsMonthly, display: format.number(PLANS[plan].creditsMonthly, LATN) })}</Feature>
+                <Feature>{t("creditsPerMonth", { count: billing.planCredits[plan], display: format.number(billing.planCredits[plan], LATN) })}</Feature>
                 <Feature>{PLANS[plan].seats === null ? t("unlimitedSeats") : t("seatsCount", { count: PLANS[plan].seats! })}</Feature>
                 <Feature>{t("byok")}</Feature>
               </ul>

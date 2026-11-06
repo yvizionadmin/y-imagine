@@ -9,19 +9,24 @@ import { blobStore } from "./blob-store";
 // development). Callers only see opaque asset ids, and /api/assets/[id] serves an asset only to its org.
 
 const EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
+/** Studio video clips; kept apart so upload checks that call isAssetMime stay image-only. */
+const VIDEO_EXT: Record<string, string> = { "video/mp4": "mp4", "video/webm": "webm" };
+const ALL_EXT: Record<string, string> = { ...EXT, ...VIDEO_EXT };
 const ID = /^[0-9a-f-]{36}$/;
 const ORG = /^[A-Za-z0-9_-]{1,64}$/;
 
-export type AssetKind = "generation" | "look-product" | "room-background" | "look-background" | "look" | "swatch";
+export type AssetKind = "generation" | "look-product" | "room-background" | "look-background" | "look" | "swatch" | "video" | "video-frame";
 
 const { assets } = schema;
 
+/** Image types accepted as uploads and stored as image assets. */
 export const isAssetMime = (mime: string) => mime in EXT;
+export const isVideoMime = (mime: string) => mime in VIDEO_EXT;
 export const assetUrl = (id: string) => `/api/assets/${id}`;
 
 function key(orgId: string, id: string, mime: string) {
-  if (!ORG.test(orgId) || !ID.test(id) || !isAssetMime(mime)) throw new Error("invalid asset reference");
-  return `${orgId}/${id}.${EXT[mime]}`;
+  if (!ORG.test(orgId) || !ID.test(id) || !(mime in ALL_EXT)) throw new Error("invalid asset reference");
+  return `${orgId}/${id}.${ALL_EXT[mime]}`;
 }
 
 export async function saveAsset(orgId: string, bytes: Uint8Array, mime: string, kind: AssetKind = "generation") {

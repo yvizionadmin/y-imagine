@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { JOB_FEATURES, type JobFeature } from "@/features/analytics/config";
 import { LATN } from "@/lib/format";
-import { PLAN_IDS, PLANS, type PlanId } from "@/lib/plans";
+import { PLAN_IDS, type PlanId } from "@/lib/plans";
 import { getAdminControls, saveAdminControls } from "../actions";
 import { Card, NoticeBar, PageHeader, selectClass, type Notice } from "./admin-ui";
+import { usePlanCredits } from "./use-plan-credits";
 
 type Form = { maintenance: { enabled: boolean; message: string }; signupsEnabled: boolean; defaultPlan: PlanId; disabledFeatures: string[] };
 
@@ -24,11 +25,13 @@ export function AdminControls() {
   const [meta, setMeta] = useState<{ updatedAt: string | null; updatedBy: string | null }>({ updatedAt: null, updatedBy: null });
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
+  const planCredits = usePlanCredits();
 
   useEffect(() => {
     getAdminControls().then((r) => {
       if (!r.ok) return;
-      const { updatedAt, updatedBy, ...rest } = r.settings;
+      const { updatedAt, updatedBy, creditRules: _rules, ...rest } = r.settings;
+      void _rules;
       setForm(rest);
       setMeta({ updatedAt, updatedBy });
     });
@@ -104,7 +107,7 @@ export function AdminControls() {
           <select id="default-plan" value={form.defaultPlan} onChange={(e) => patch({ defaultPlan: e.target.value as PlanId })} className={selectClass}>
             {PLAN_IDS.map((p) => (
               <option key={p} value={p}>
-                {t(`plans.${p}`)} · {t("creditsPerMonth", { display: format.number(PLANS[p].creditsMonthly, LATN) })}
+                {t(`plans.${p}`)} · {t("creditsPerMonth", { display: format.number(planCredits[p], LATN) })}
               </option>
             ))}
           </select>

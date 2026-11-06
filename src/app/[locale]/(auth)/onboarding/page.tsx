@@ -20,7 +20,7 @@ async function Onboarding() {
   const session = await getSession();
   if (!session) redirect(await signedOutPath());
   // Invited people (and anyone who already has a workspace) go straight in.
-  if ((await listMembershipsForUser(session.user.id)).length) redirect("/generate");
+  if ((await listMembershipsForUser(session.user.id)).length) redirect("/home");
   const { signupsEnabled } = await getPlatformSettings();
   return <OnboardingForm email={session.user.email} signupsOpen={signupsEnabled} />;
 }

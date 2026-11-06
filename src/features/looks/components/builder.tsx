@@ -19,7 +19,6 @@ import { CategoryFields } from "@/features/image-batch/components/bulk-fields";
 import { addLookProduct, generateLook, getLookById, getRoomBackgrounds, saveLook, searchLookProducts, uploadLookBackground } from "../actions";
 import {
   DEFAULT_LOOK_CATEGORY,
-  LOOK_COST,
   LOOK_RATIOS,
   MAX_LOOK_PRODUCTS,
   categoryBackgrounds,
@@ -29,6 +28,7 @@ import {
   type LookRatio,
 } from "../config";
 import { LookCanvas } from "./look-canvas";
+import { useJobCost } from "@/features/credits/use-job-cost";
 
 type Settings = { title: string; prompt: string; category: string; style: string | null; ratio: LookRatio; backgroundId: string | null };
 type Result = { image: GeneratedImage; saved: "none" | "look" | "board" };
@@ -41,6 +41,7 @@ export function LooksBuilder() {
 }
 
 function Builder({ lookId }: { lookId: string | null }) {
+  const lookCost = useJobCost("looks");
   const t = useTranslations("Looks");
   const tp = useTranslations("Presets");
   const format = useFormatter();
@@ -404,7 +405,7 @@ function Builder({ lookId }: { lookId: string | null }) {
             {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-[11px] text-danger">{error}</p>}
             <div className="flex items-center justify-between text-[11px]">
               <span className="text-muted-foreground">{t("cost")}</span>
-              <span className="font-mono font-bold">{tw("cost", { count: LOOK_COST, display: format.number(LOOK_COST, LATN) })}</span>
+              <span className="font-mono font-bold">{tw("cost", { count: lookCost, display: format.number(lookCost, LATN) })}</span>
             </div>
             <Button onClick={generate} disabled={generating || items.length === 0} className="h-10 font-bold">
               {generating ? <Loader2 className="animate-spin" aria-hidden /> : <Sparkles aria-hidden />}

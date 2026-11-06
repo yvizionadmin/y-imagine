@@ -14,6 +14,11 @@ export const IMAGE_BATCH_QUEUE = "image-batch";
 
 export type ImageItemJob = { orgId: string; itemId: string };
 
+/** Studio videos: one job per video. */
+export const VIDEO_QUEUE = "video";
+
+export type VideoJobData = { orgId: string; jobId: string };
+
 export const SCHEDULES = {
   /** Daily at 03:00 UTC. */
   "revalidate-keys": { pattern: "0 3 * * *", tz: "UTC" },

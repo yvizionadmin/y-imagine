@@ -8,7 +8,7 @@ import { getImageProvider } from "@/lib/ai/registry";
 import type { LifestyleRequest } from "@/lib/ai/types";
 import { savePlatformSettings, getPlatformSettings } from "@/lib/platform/settings";
 import { updateOrganization } from "@/lib/platform/organizations";
-import { countSuccessfulJobs, listUsage } from "@/lib/usage";
+import { creditsUsedSince, listUsage } from "@/lib/usage";
 import { startOfMonth } from "@/lib/time";
 import { makeOrg } from "../helpers";
 
@@ -242,7 +242,7 @@ describe("provider errors", () => {
     expect((await listProviderKeys(org.id))[0].status).toBe("invalid");
     const usage = await listUsage(org.id);
     expect(usage.filter((e) => !e.ok)).toHaveLength(3);
-    expect(await countSuccessfulJobs(org.id, startOfMonth())).toBe(0);
+    expect(await creditsUsedSince(org.id, startOfMonth())).toBe(0);
   });
 
   it("falls back from a preferred provider whose key is invalid", async () => {

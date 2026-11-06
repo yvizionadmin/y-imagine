@@ -1,12 +1,13 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { and, asc, count, eq, gte, lt, ne, or, sql } from "drizzle-orm";
+import { and, asc, eq, gte, lt, ne, or, sql, sum } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import type { Feature, ProviderId } from "@/lib/ai/types";
 
 // One row per provider job (usage_events). Written by the registry, so every feature is covered
 // without call sites doing anything. Feeds Analytics and the credit quota. A job is inserted as
-// `running` before the provider call, which reserves its credit, and finished afterwards.
+// `running` before the provider call, which reserves its credits (its tool's cost from the
+// admin's credit rules), and finished afterwards. Failed jobs give their credits back.
 
 export type UsageEvent = {
   id: string;
@@ -20,6 +21,8 @@ export type UsageEvent = {
   ok: boolean;
   error: string | null;
   durationMs: number;
+  /** Credits the job used (counted only when it succeeded). */
+  credits: number;
   at: string;
 };
 
@@ -36,17 +39,29 @@ const holdsCredit = () =>
   or(eq(usageEvents.status, "ok"), and(eq(usageEvents.status, "running"), gte(usageEvents.at, new Date(Date.now() - STALE_RUNNING_MS).toISOString())));
 
 /**
- * Reserves one credit and records the job as running. Serialised per org with an advisory lock,
- * so parallel jobs can't overshoot the quota. Returns null when the quota is used up.
+ * Reserves the job's credits and records it as running. Serialised per org with an advisory lock,
+ * so parallel jobs can't overshoot the quota. Returns null when the credits left don't cover it.
  */
-export async function startJob(input: { orgId: string; feature: Feature; userId: string; userName: string; provider: ProviderId; quota: number; since: Date }) {
+export async function startJob(input: {
+  orgId: string;
+  feature: Feature;
+  userId: string;
+  userName: string;
+  provider: ProviderId;
+  quota: number;
+  since: Date;
+  /** Credits this job costs (default 1). A free job (0) still needs the org to be within quota. */
+  credits?: number;
+}) {
+  const credits = input.credits ?? 1;
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`usage:${input.orgId}`}))`);
-    const [{ n }] = await tx
-      .select({ n: count() })
+    const [{ used }] = await tx
+      .select({ used: sum(usageEvents.credits) })
       .from(usageEvents)
       .where(and(eq(usageEvents.orgId, input.orgId), gte(usageEvents.at, input.since.toISOString()), holdsCredit()));
-    if (n >= input.quota) return null;
+    const usedNow = Number(used ?? 0);
+    if (usedNow >= input.quota || usedNow + credits > input.quota) return null;
     const id = randomUUID();
     await db.forOrg(input.orgId, tx).insert(usageEvents, {
       id,
@@ -55,6 +70,7 @@ export async function startJob(input: { orgId: string; feature: Feature; userId:
       userName: input.userName,
       provider: input.provider,
       status: "running",
+      credits,
     });
     return id;
   });
@@ -82,14 +98,17 @@ export async function releaseStaleJobs() {
   return rows.length;
 }
 
-/** Successful jobs since a date (the credit badge). */
-export async function countSuccessfulJobs(orgId: string, since: Date) {
-  const [{ n }] = await db
-    .select({ n: count() })
+/** Credits used by successful jobs since a date (the credit badge). */
+export async function creditsUsedSince(orgId: string, since: Date) {
+  const [{ used }] = await db
+    .select({ used: sum(usageEvents.credits) })
     .from(usageEvents)
     .where(and(eq(usageEvents.orgId, orgId), eq(usageEvents.status, "ok"), gte(usageEvents.at, since.toISOString())));
-  return n;
+  return Number(used ?? 0);
 }
+
+/** Credits the successful jobs in a list used. */
+export const creditsOf = (events: Pick<UsageEvent, "ok" | "credits">[]) => events.reduce((total, e) => total + (e.ok ? e.credits : 0), 0);
 
 /** Finished jobs, oldest first. */
 export async function listUsage(orgId: string, since?: Date) {

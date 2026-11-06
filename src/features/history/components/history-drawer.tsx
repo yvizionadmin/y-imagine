@@ -8,7 +8,7 @@ import { Link } from "@/i18n/navigation";
 import type { HistoryItem } from "../types";
 import { ModeBadge, StatusLabel } from "./history-items";
 
-const TOOL_ROUTE = { lifestyle: "/generate", recolor: "/recolor", aplus: "/aplus" } as const;
+const TOOL_ROUTE = { create: "/home", lifestyle: "/generate", recolor: "/recolor", aplus: "/aplus" } as const;
 const TEXT_SETTINGS = ["instructions", "notes"];
 const PRESET_SETTINGS: Record<string, "categories" | "scenes" | "styles"> = { category: "categories", scene: "scenes", style: "styles" };
 
@@ -113,7 +113,7 @@ export function HistoryDrawer({
               <Button onClick={() => onDownload(item)} className="h-10 font-semibold">
                 {t("downloadImage")}
               </Button>
-              {onPublish && item.status !== "uploaded" && (
+              {onPublish && item.sku !== "" && item.status !== "uploaded" && (
                 <Button variant="outline" disabled={publishing} onClick={() => onPublish(item)} className="h-9 border-primary text-primary">
                   {publishing ? <Loader2 className="animate-spin" aria-hidden /> : <Upload aria-hidden />}
                   {publishing ? t("uploading") : t("uploadToWebsite")}

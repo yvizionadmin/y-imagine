@@ -18,9 +18,12 @@ import { decodeImage } from "@/lib/storage/decode-image";
 import { getWorkspace } from "@/lib/workspace";
 import { HISTORY_PAGE_SIZES, type HistoryFilters, type HistoryItem } from "./types";
 
-const MODES: GenerationMode[] = ["lifestyle", "recolor", "aplus"];
+const MODES: GenerationMode[] = ["create", "lifestyle", "recolor", "aplus"];
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const ORG_TZ_OFFSET = "+04:00"; // Asia/Dubai, matches the next-intl default until per-org time zones
+
+/** Studio images have no SKU, so they can't be uploaded to a store product. */
+const publishable = (g: Generation) => g.sku !== "";
 
 async function canEdit() {
   const workspace = await getWorkspace();
@@ -123,7 +126,7 @@ export async function queryHistory(filters: HistoryFilters): Promise<{
     items: matches.slice((page - 1) * pageSize, page * pageSize).map(toItem),
     total: matches.length,
     hasAny: all.length > 0,
-    pendingCount: all.filter((g) => g.status !== "uploaded").length,
+    pendingCount: all.filter((g) => publishable(g) && g.status !== "uploaded").length,
     publishTarget: loaded && canPublish(loaded.connection.type) ? { name: loaded.connection.name } : null,
     canEdit: workspace.role !== "viewer",
   };
@@ -165,7 +168,7 @@ export async function publishGenerations(
 
   const all = await listGenerations(workspace.orgId);
   const wanted = ids === "all-pending" ? null : new Set(cleanIds(ids));
-  const targets = all.filter((g) => (wanted ? wanted.has(g.id) : g.status !== "uploaded"));
+  const targets = all.filter(publishable).filter((g) => (wanted ? wanted.has(g.id) : g.status !== "uploaded"));
 
   const results: PublishResult[] = [];
   for (const generation of targets) {

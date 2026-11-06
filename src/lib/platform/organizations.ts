@@ -2,7 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { asc, eq } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
-import { PLANS, type BillingStatus, type PlanId } from "@/lib/plans";
+import type { BillingStatus, PlanId } from "@/lib/plans";
 
 // Tenants (becomes Clerk Organizations + this `organizations` table for plan/status). Platform
 // scope: only the auth layer and the super-admin console read this list across orgs.
@@ -31,8 +31,6 @@ export type Organization = {
 const { organizations } = schema;
 
 const toOrganization = ({ roomBackgroundsSeeded, ...org }: typeof organizations.$inferSelect): Organization => (void roomBackgroundsSeeded, org);
-
-export const creditsFor = (org: Pick<Organization, "plan" | "creditsOverride">) => org.creditsOverride ?? PLANS[org.plan].creditsMonthly;
 
 export async function listOrganizations() {
   return (await db.select().from(organizations).orderBy(asc(organizations.createdAt))).map(toOrganization);

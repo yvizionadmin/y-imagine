@@ -23,7 +23,7 @@ async function fakeOpenAi(input: RequestInfo | URL, init?: RequestInit) {
 
 async function asAdmin() {
   const made = await makeOrg();
-  workspace = { orgId: made.org.id, orgName: made.org.name, role: "admin", user: { id: made.user.id, name: made.user.name, email: made.user.email }, isSuperAdmin: false, orgs: [], creditsMonthly: 500, creditsRemaining: 500 };
+  workspace = { orgId: made.org.id, orgName: made.org.name, role: "admin", plan: made.org.plan, user: { id: made.user.id, name: made.user.name, email: made.user.email }, isSuperAdmin: false, orgs: [], creditsMonthly: 500, creditsRemaining: 500 };
   return made;
 }
 

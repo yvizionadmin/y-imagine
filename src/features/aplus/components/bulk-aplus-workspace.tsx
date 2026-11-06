@@ -16,6 +16,7 @@ import { IMAGE_BATCH_MAX_ROWS, parseAplusRows } from "@/lib/image-batch/rows";
 import type { AspectRatio, Resolution } from "@/lib/image-formats";
 import { startAplusBatch } from "../batch-actions";
 import { layoutPresets } from "../config";
+import { useJobCost } from "@/features/credits/use-job-cost";
 
 const TEMPLATE = {
   name: "imagine-bulk-aplus-template.csv",
@@ -48,6 +49,7 @@ export function BulkAplusWorkspace() {
   const [pending, startTransition] = useTransition();
   const parsed = useMemo(() => parseAplusRows(text), [text]);
   const count = parsed.rows.length;
+  const unitCost = useJobCost("aplus");
   const preset = findCategory(category) ?? categoryPresets[0];
 
   function start() {
@@ -61,7 +63,7 @@ export function BulkAplusWorkspace() {
       });
       if (!result.ok) {
         const blocked = blockedReason(result.error);
-        return setError(startError(result.error, count, blocked ? tw(`blocked.${blocked}.title`) : null));
+        return setError(startError(result.error, count * unitCost, blocked ? tw(`blocked.${blocked}.title`) : null));
       }
       runs.started(result.batch);
       setText("");
@@ -157,7 +159,7 @@ export function BulkAplusWorkspace() {
         </PanelBody>
 
         <PanelFooter
-          cost={count}
+          cost={count * unitCost}
           submitLabel={t("start", { count })}
           canSubmit={count > 0}
           busy={pending}

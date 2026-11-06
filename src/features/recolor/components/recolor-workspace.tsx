@@ -32,9 +32,9 @@ import { SubcategoryField } from "@/components/app/subcategory-field";
 import { saveGeneration } from "@/features/history/actions";
 import { BulkModeTabs } from "@/features/image-batch/components/bulk-mode-tabs";
 import { analyzeSwatch, recolorProduct } from "../actions";
-import { RECOLOR_COST } from "../config";
 import { RecolorCanvas, type RecolorCanvasState } from "./recolor-canvas";
 import { swatchDisplayName, SwatchPicker, type SwatchState } from "./swatch-picker";
+import { useJobCost } from "@/features/credits/use-job-cost";
 
 type FormState = {
   category: string;
@@ -63,6 +63,7 @@ const initialState: FormState = {
 };
 
 export function RecolorWorkspace() {
+  const jobCost = useJobCost("recolor");
   const t = useTranslations("Recolor");
   const tp = useTranslations("Presets");
   const th = useTranslations("PromptHints");
@@ -301,7 +302,7 @@ export function RecolorWorkspace() {
         </PanelBody>
 
         <PanelFooter
-          cost={RECOLOR_COST}
+          cost={jobCost}
           submitLabel={tk("submit")}
           canSubmit={canSubmit}
           busy={generating}

@@ -5,18 +5,20 @@ export const AI_PROVIDERS = ["openai", "anthropic", "gemini", "openrouter"] as c
 export type AiProviderId = (typeof AI_PROVIDERS)[number];
 export const isAiProvider = (value: unknown): value is AiProviderId => (AI_PROVIDERS as readonly unknown[]).includes(value);
 
-export const CAPABILITIES = ["chat", "tools", "vision", "imageGen", "imageEdit"] as const;
+export const CAPABILITIES = ["chat", "tools", "vision", "imageGen", "imageEdit", "videoGen"] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 
 export const PROVIDER_INFO: Record<AiProviderId, { capabilities: readonly Capability[]; keyPrefix: string; consoleUrl: string }> = {
   openai: { capabilities: ["chat", "tools", "vision", "imageGen", "imageEdit"], keyPrefix: "sk-", consoleUrl: "https://platform.openai.com/api-keys" },
   anthropic: { capabilities: ["chat", "tools", "vision"], keyPrefix: "sk-ant-", consoleUrl: "https://console.anthropic.com/settings/keys" },
-  gemini: { capabilities: ["chat", "tools", "vision", "imageGen", "imageEdit"], keyPrefix: "AIza", consoleUrl: "https://aistudio.google.com/apikey" },
+  gemini: { capabilities: ["chat", "tools", "vision", "imageGen", "imageEdit", "videoGen"], keyPrefix: "AIza", consoleUrl: "https://aistudio.google.com/apikey" },
   openrouter: { capabilities: ["chat", "tools", "vision"], keyPrefix: "sk-or-", consoleUrl: "https://openrouter.ai/settings/keys" },
 };
 
 /** Which capability each app feature needs, for the coverage table. */
 export const FEATURE_NEEDS = {
+  create: "imageGen",
+  video: "videoGen",
   generate: "imageGen",
   recolor: "imageEdit",
   aplus: "imageGen",

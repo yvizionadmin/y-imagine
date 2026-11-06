@@ -1,7 +1,5 @@
 import { findCategory } from "@/lib/catalog-presets";
 
-/** Plan-quota jobs consumed by one generated look. */
-export const LOOK_COST = 1;
 export const MAX_LOOK_PRODUCTS = 20;
 
 export const LOOK_STYLES = ["contemporary", "scandinavian", "minimalist", "industrial", "bohemian", "traditional", "luxury"] as const;

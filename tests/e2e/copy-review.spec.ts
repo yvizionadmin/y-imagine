@@ -11,7 +11,7 @@ test("submit copy for review, request changes, resubmit and approve", async ({ p
   await page.locator("#auth-email").fill(`review-${unique()}@e2e.test`);
   await page.locator("#auth-password").fill("e2e-password-123");
   await page.getByRole("button", { name: "Create account" }).click();
-  await page.waitForURL(/\/en\/generate/);
+  await page.waitForURL(/\/en\/home/);
 
   await page.goto("/en/copy");
   await page.locator("#copy-sku").fill("SOFA-2041");

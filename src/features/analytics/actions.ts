@@ -4,7 +4,7 @@ import { listGenerations, type GenerationMode } from "@/lib/generations";
 import { listLooks } from "@/lib/looks/looks";
 import { assetUrl } from "@/lib/storage/assets";
 import { dayKey, lastDays, startOfDay, startOfMonth } from "@/lib/time";
-import { creatorKey, listUsage, type UsageEvent } from "@/lib/usage";
+import { creatorKey, creditsOf, listUsage, type UsageEvent } from "@/lib/usage";
 import { getWorkspace } from "@/lib/workspace";
 import { ANALYTICS_RANGES, JOB_FEATURES, type AnalyticsRange, type JobFeature } from "./config";
 
@@ -41,7 +41,7 @@ export type Analytics = {
   credits: { used: number; allocated: number };
 };
 
-const MODE_TOOL: Record<GenerationMode, JobFeature> = { lifestyle: "generate", recolor: "recolor", aplus: "aplus" };
+const MODE_TOOL: Record<GenerationMode, JobFeature> = { create: "create", lifestyle: "generate", recolor: "recolor", aplus: "aplus" };
 const isJob = (e: UsageEvent): e is UsageEvent & { feature: JobFeature } => (JOB_FEATURES as readonly string[]).includes(e.feature);
 
 function summarize(events: UsageEvent[]) {
@@ -134,7 +134,7 @@ export async function getAnalytics(rangeInput: number): Promise<Analytics> {
     ),
     creators: [...perCreator.values()].sort((x, y) => y.jobs - x.jobs).slice(0, 4),
     recent,
-    // Failed jobs don't consume a credit.
-    credits: { used: events.filter((e) => e.ok && new Date(e.at) >= monthStart).length, allocated: workspace.creditsMonthly },
+    // Failed jobs don't consume credits.
+    credits: { used: creditsOf(events.filter((e) => new Date(e.at) >= monthStart)), allocated: workspace.creditsMonthly },
   };
 }

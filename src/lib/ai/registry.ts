@@ -1,5 +1,7 @@
 import "server-only";
-import { creditsFor, getOrganization } from "@/lib/platform/organizations";
+import { jobCost, planAllows } from "@/lib/credits";
+import { monthlyAllowance } from "@/lib/platform/credit-adjustments";
+import { getOrganization } from "@/lib/platform/organizations";
 import { getPlatformSettings } from "@/lib/platform/settings";
 import { reportError } from "@/lib/observability/report";
 import { hit, LIMITS } from "@/lib/rate-limit";
@@ -7,14 +9,31 @@ import { startOfMonth } from "@/lib/time";
 import { finishJob, startJob } from "@/lib/usage";
 import { ProviderError, type ProviderErrorCode } from "./errors";
 import { getModelPreference } from "./model-preferences";
-import { IMAGE_PROVIDERS, imageModelsFor, isImageFeature, isTextFeature, pickModel, TEXT_PROVIDERS, textModelsFor, VISION_MODELS, type ImageProviderId, type ModelFeature, type TextFeature } from "./models";
+import {
+  IMAGE_PROVIDERS,
+  imageModelsFor,
+  isImageFeature,
+  isTextFeature,
+  pickModel,
+  TEXT_PROVIDERS,
+  textModelsFor,
+  VIDEO_PROVIDERS,
+  videoModelsFor,
+  VISION_MODELS,
+  type ImageProviderId,
+  type ModelFeature,
+  type TextFeature,
+  type VideoProviderId,
+} from "./models";
 import { loadProviderKey, recordKeyCheck } from "./provider-keys";
 import { createAiImageProvider } from "./providers/ai-sdk";
 import { createAiTextProvider } from "./providers/ai-sdk-text";
+import { createAiVideoProvider } from "./providers/ai-sdk-video";
+import { demoVideoProvider } from "./providers/demo-video";
 import { demoProvider } from "./providers/demo";
 import { demoTextProvider } from "./providers/demo-text";
 import type { AiProviderId } from "./providers-info";
-import type { Feature, GeneratedImage, ImageProvider, ProviderId, TextProvider } from "./types";
+import type { Feature, GeneratedImage, ImageProvider, ProviderId, TextProvider, VideoProvider } from "./types";
 import { measureSwatch } from "@/lib/image/swatch";
 
 /**
@@ -54,6 +73,47 @@ export async function getTextProvider(actor: JobActor, feature: TextFeature): Pr
       return provider.improvePrompt(request);
     },
   };
+}
+
+/**
+ * The org's video provider. `credits` is the job's cost (videoCost: length × resolution), reserved
+ * when the job starts like every tool's. Called from the worker, which runs video jobs.
+ */
+export async function getVideoProvider(actor: JobActor, credits: number): Promise<VideoProvider> {
+  const resolved = await resolveVideoProvider(actor.orgId);
+  if (!resolved.ok) {
+    return {
+      id: "demo",
+      model: "",
+      generateVideo: async () => {
+        throw new ProviderError(resolved.code);
+      },
+    };
+  }
+  const provider = resolved.provider;
+  return {
+    id: provider.id,
+    model: provider.model,
+    generateVideo: (request) => runJob(actor, "video", provider.id, () => provider.generateVideo(request), (r) => r.model, credits),
+  };
+}
+
+/** The video model the org would use now (for the Studio's options), or why there is none. */
+export async function videoModelFor(orgId: string): Promise<{ ok: true; model: string } | { ok: false; code: ProviderErrorCode }> {
+  const resolved = await resolveVideoProvider(orgId);
+  return resolved.ok ? { ok: true, model: resolved.provider.model } : resolved;
+}
+
+async function resolveVideoProvider(orgId: string): Promise<Resolved<VideoProvider>> {
+  for (const provider of VIDEO_PROVIDERS as readonly VideoProviderId[]) {
+    const stored = await loadProviderKey(orgId, provider);
+    if (!stored || stored.status !== "valid") continue;
+    if (demoMode() && stored.key.startsWith("demo-")) return { ok: true, provider: demoVideoProvider };
+    const model = videoModelsFor(provider, stored.models)[0];
+    if (!model) continue;
+    return { ok: true, provider: createAiVideoProvider({ provider, apiKey: stored.key, model, onKeyRejected: keyRejected(orgId, provider) }) };
+  }
+  return demoMode() ? { ok: true, provider: demoVideoProvider } : { ok: false, code: "no_provider" };
 }
 
 /** Why no text provider can serve the tool right now, or null when one can (checked before queuing bulk work). */
@@ -128,22 +188,24 @@ function unavailable(code: ProviderErrorCode): ImageProvider {
   const refuse = async (): Promise<never> => {
     throw new ProviderError(code);
   };
-  return { id: "demo", generateLifestyle: refuse, analyzeSwatch: measureSwatch, recolor: refuse, generateAplus: refuse, generateLook: refuse };
+  return { id: "demo", createImage: refuse, generateLifestyle: refuse, analyzeSwatch: measureSwatch, recolor: refuse, generateAplus: refuse, generateLook: refuse };
 }
 
 // Methods that produce a job (one credit). analyzeSwatch is a helper step of Recolor, not a job.
-const JOB_METHODS = ["generateLifestyle", "recolor", "generateAplus", "generateLook"] as const;
+const JOB_METHODS = ["createImage", "generateLifestyle", "recolor", "generateAplus", "generateLook"] as const;
 
 /**
  * Platform controls checked before a job reaches the provider: a feature switched off by a super
- * admin, per-user and per-org rate limits (bursts, scripts), and the org's monthly job quota
- * (reserved atomically, so parallel jobs can't overshoot).
+ * admin, a tool the org's plan doesn't include, per-user and per-org rate limits (bursts, scripts),
+ * and the org's monthly credits: the tool's cost from Admin → Credits is reserved atomically, so
+ * parallel jobs can't overshoot.
  * Blocked jobs are not usage events. Returns the usage event id of the reserved job.
  */
-async function reserveJob(actor: JobActor, feature: Feature, provider: ProviderId) {
+async function reserveJob(actor: JobActor, feature: Feature, provider: ProviderId, credits?: number) {
   const [settings, org] = await Promise.all([getPlatformSettings(), getOrganization(actor.orgId)]);
   if (settings.disabledFeatures.includes(feature)) throw new ProviderError("feature_disabled");
   if (!org) throw new ProviderError("generation_failed");
+  if (!planAllows(settings.creditRules, org.plan, feature)) throw new ProviderError("not_in_plan");
   const [perUser, perOrg] = await Promise.all([hit("jobs-user", actor.user.id, LIMITS.jobsPerUser), hit("jobs-org", actor.orgId, LIMITS.jobsPerOrg)]);
   if (!perUser.ok || !perOrg.ok) throw new ProviderError("rate_limited");
   const jobId = await startJob({
@@ -152,16 +214,17 @@ async function reserveJob(actor: JobActor, feature: Feature, provider: ProviderI
     userId: actor.user.id,
     userName: actor.user.name,
     provider,
-    quota: creditsFor(org),
+    quota: await monthlyAllowance(org, settings.creditRules),
     since: startOfMonth(),
+    credits: credits ?? jobCost(settings.creditRules, feature),
   });
   if (!jobId) throw new ProviderError("quota_exceeded");
   return jobId;
 }
 
 /** Reserves a credit, runs the job, and records the outcome (user, model, error, duration). */
-async function runJob<T>(actor: JobActor, feature: Feature, provider: ProviderId, call: () => Promise<T>, modelOf: (result: T) => string | null): Promise<T> {
-  const jobId = await reserveJob(actor, feature, provider);
+async function runJob<T>(actor: JobActor, feature: Feature, provider: ProviderId, call: () => Promise<T>, modelOf: (result: T) => string | null, credits?: number): Promise<T> {
+  const jobId = await reserveJob(actor, feature, provider, credits);
   const started = performance.now();
   const finish = (ok: boolean, error: string | null, model: string | null) =>
     finishJob(actor.orgId, jobId, { ok, error, model, durationMs: Math.round(performance.now() - started) }).catch((e) =>

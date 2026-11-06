@@ -10,7 +10,7 @@ async function signUp(page: Page, company: string) {
   await page.locator("#auth-email").fill(email);
   await page.locator("#auth-password").fill("e2e-password-123");
   await page.getByRole("button", { name: "Create account" }).click();
-  await page.waitForURL(/\/en\/generate/);
+  await page.waitForURL(/\/en\/home/);
   return email;
 }
 
@@ -56,7 +56,7 @@ test("signed-out visitors are sent to sign-in, keeping where they were going", a
 test("org admins who aren't super admins can't open the console", async ({ page }) => {
   await signUp(page, `Gamma ${unique()}`);
   await page.goto("/en/admin");
-  await expect(page).toHaveURL(/\/en\/generate/);
+  await expect(page).toHaveURL(/\/en\/home/);
 });
 
 test("Arabic renders right-to-left, and Billing shows the plan without Stripe", async ({ page }) => {

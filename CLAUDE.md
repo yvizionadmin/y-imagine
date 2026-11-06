@@ -17,8 +17,10 @@ OpenRouter keys and use AI product-content features (recolor, lookbooks, A+ cont
 - Rate limits: `hit(name, id, LIMITS.x)` from `src/lib/rate-limit.ts` (Redis, per-process fallback). AI jobs are limited
   centrally in the registry; new scheduled work goes in `src/lib/jobs/` + `SCHEDULES`. Bulk work is one idempotent job
   per item (claim `pending` first), dispatched to a BullMQ queue run by `src/worker.ts`, or in-process without Redis.
-- Never hardcode an AI provider. Resolve them through `getImageProvider(actor, feature)` / `getTextProvider(actor, feature)` in
-  `src/lib/ai/registry.ts` (per-tool `model_preferences`, else Automatic). Both charge one credit per job via `runJob`.
+- Never hardcode an AI provider. Resolve them through `getImageProvider(actor, feature)` / `getTextProvider(actor, feature)` /
+  `getVideoProvider(actor, credits)` in `src/lib/ai/registry.ts` (per-tool `model_preferences`, else Automatic). All charge
+  through `runJob`: a tool's cost from Admin → Credits (`src/lib/credits.ts`), video by length × resolution. Video options come
+  from the model capability registry (`src/lib/ai/video-models.ts`), never hardcoded in the UI.
 - Provider keys: encrypted at rest (AES-256-GCM envelope), decrypted only server-side, never sent to
   the client or logged. Only org `admin` can manage keys. Every key action is audit-logged.
 - E-commerce catalogs: never hardcode a platform. Add a connector in `src/lib/catalog/connectors/` (definition + factory), register it in `src/lib/catalog/registry.ts`, add labels under `Integrations` in messages. Store/API fetches go through `src/lib/safe-fetch.ts`.

@@ -15,6 +15,7 @@ import { getCopyBatch, listCopyBatches, startCopyBatch, type BatchFailure, type 
 import { BulkCanvas } from "./bulk-canvas";
 import { CategorySelect, CopyModeTabs, CopyStyleFields, type BrandSummary, type CopyStyle } from "./copy-fields";
 import { download } from "./copy-export";
+import { useJobCost } from "@/features/credits/use-job-cost";
 
 const CATEGORY_KEYS = categoryPresets.map((c) => c.key);
 const POLL_MS = 2500;
@@ -40,6 +41,7 @@ export function BulkCopyWorkspace() {
   const fileRef = useRef<HTMLInputElement>(null);
   const parsed = useMemo(() => parseBatchInput(text, CATEGORY_KEYS), [text]);
   const count = parsed.rows.length;
+  const unitCost = useJobCost("copy");
 
   useEffect(() => {
     listCopyBatches().then(setRuns);
@@ -74,7 +76,7 @@ export function BulkCopyWorkspace() {
     startTransition(async () => {
       const result = await startCopyBatch({ text, name: fileName ?? undefined, settings: { category, ...style } });
       if (!result.ok) {
-        setError(failure(result, count));
+        setError(failure(result, count * unitCost));
         return;
       }
       setRuns((r) => [result.batch, ...r]);
@@ -161,7 +163,7 @@ export function BulkCopyWorkspace() {
         </PanelBody>
 
         <PanelFooter
-          cost={count}
+          cost={count * unitCost}
           submitLabel={t("start", { count })}
           canSubmit={count > 0 && style.languages.length > 0}
           busy={pending}

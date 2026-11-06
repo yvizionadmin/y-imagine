@@ -32,10 +32,10 @@ import { categoryPresets, findCategory, findScene } from "@/lib/catalog-presets"
 import { formatDimensions, SHOT_SET_ANGLES, type CameraAngle } from "@/lib/camera-angles";
 import { useCategoryParam, useCategorySync, useSubcategorySync } from "@/lib/use-category-param";
 import type { AspectRatio, Resolution } from "@/lib/image-formats";
-import { GENERATE_COST } from "../config";
 import { GenerateCanvas, type CanvasState } from "./generate-canvas";
 import { DimensionsField, ShotFields, type Dimensions, type ShotSettings } from "./shot-fields";
 import { BulkModeTabs } from "@/features/image-batch/components/bulk-mode-tabs";
+import { useJobCost } from "@/features/credits/use-job-cost";
 
 type FormState = {
   sku: string;
@@ -86,6 +86,7 @@ const initialState: FormState = {
 };
 
 export function GenerateWorkspace() {
+  const jobCost = useJobCost("generate");
   const t = useTranslations("Generate");
   const tp = useTranslations("Presets");
   const th = useTranslations("PromptHints");
@@ -346,7 +347,7 @@ export function GenerateWorkspace() {
         </PanelBody>
 
         <PanelFooter
-          cost={GENERATE_COST * shotCount}
+          cost={jobCost * shotCount}
           submitLabel={shotCount > 1 ? t("generateShots", { count: shotCount }) : t("generate")}
           canSubmit={canSubmit}
           busy={pending}

@@ -6,6 +6,7 @@ import { reportError } from "@/lib/observability/report";
 import { releaseStaleItems } from "@/lib/copy/batches";
 import { releaseStaleImageItems } from "@/lib/image-batch/batches";
 import { releaseStaleJobs } from "@/lib/usage";
+import { releaseStaleVideoJobs } from "@/lib/video/jobs";
 
 // Scheduled platform jobs, run by the worker (src/worker.ts). Each returns a small summary for the log.
 
@@ -51,5 +52,10 @@ export async function revalidateAllKeys() {
 }
 
 export async function closeStaleJobs() {
-  return { closed: await releaseStaleJobs(), batchItems: await releaseStaleItems(), imageItems: await releaseStaleImageItems() };
+  return {
+    closed: await releaseStaleJobs(),
+    batchItems: await releaseStaleItems(),
+    imageItems: await releaseStaleImageItems(),
+    videoJobs: await releaseStaleVideoJobs(),
+  };
 }

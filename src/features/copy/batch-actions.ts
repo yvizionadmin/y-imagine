@@ -11,6 +11,7 @@ import { recordAudit } from "@/lib/audit";
 import { getCopies, reviewCopies } from "@/lib/copy/copies";
 import type { ReviewStatus } from "@/lib/copy/review-status";
 import { reportError } from "@/lib/observability/report";
+import { jobCost, planAllows } from "@/lib/credits";
 import { getPlatformSettings } from "@/lib/platform/settings";
 import { getWorkspace, type Workspace } from "@/lib/workspace";
 
@@ -48,9 +49,10 @@ export async function startCopyBatch(input: { text: string; name?: string; setti
   if (!settings.category || !settings.tone || !settings.length || !settings.channel || !settings.languages.length) return { ok: false, error: "invalid_input" };
   const { rows } = parseBatchInput(input.text, CATEGORY_KEYS);
   if (!rows.length) return { ok: false, error: "empty" };
-  if (rows.length > workspace.creditsRemaining) return { ok: false, error: "not_enough_credits" };
-
-  if ((await getPlatformSettings()).disabledFeatures.includes("copy")) return { ok: false, error: "feature_disabled" };
+  const platform = await getPlatformSettings();
+  if (platform.disabledFeatures.includes("copy")) return { ok: false, error: "feature_disabled" };
+  if (!planAllows(platform.creditRules, workspace.plan, "copy")) return { ok: false, error: "not_in_plan" };
+  if (rows.length * jobCost(platform.creditRules, "copy") > workspace.creditsRemaining) return { ok: false, error: "not_enough_credits" };
   const problem = await textProviderProblem(workspace.orgId, "copy");
   if (problem) return { ok: false, error: problem };
 

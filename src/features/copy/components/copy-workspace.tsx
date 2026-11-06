@@ -15,8 +15,8 @@ import { getBrandKitSummary } from "@/features/brand/actions";
 import { generateProductCopy, getCopyReviewRights, getSavedCopy, listRecentCopies, saveCopyEdits, type CopyView, type ReviewRights } from "../actions";
 import { CopyCanvas, type CopyCanvasState, type RecentFilter } from "./copy-canvas";
 import { CategorySelect, CopyModeTabs, CopyStyleFields, type BrandSummary } from "./copy-fields";
+import { useJobCost } from "@/features/credits/use-job-cost";
 
-const COPY_COST = 1;
 
 type FormState = {
   sku: string;
@@ -48,6 +48,7 @@ const initialState: FormState = {
 
 /** Product copy (EN/AR) tool: same config-panel + canvas layout as the image tools. */
 export function CopyWorkspace() {
+  const jobCost = useJobCost("copy");
   const t = useTranslations("Copy");
   const locale = useLocale();
   const searchParams = useSearchParams();
@@ -175,7 +176,7 @@ export function CopyWorkspace() {
         </PanelBody>
 
         <PanelFooter
-          cost={COPY_COST}
+          cost={jobCost}
           submitLabel={t("write")}
           canSubmit={canSubmit}
           busy={pending}

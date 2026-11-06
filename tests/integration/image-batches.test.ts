@@ -28,7 +28,7 @@ const { getImageBatchRun, listImageBatchRuns, cancelImageBatchRun, retryFailedIm
 
 type Made = Awaited<ReturnType<typeof makeOrg>>;
 const as = (made: Made, role: Workspace["role"] = "editor", creditsRemaining = 500) => {
-  workspace = { orgId: made.org.id, orgName: made.org.name, role, user: { id: made.user.id, name: made.user.name, email: made.user.email }, isSuperAdmin: false, orgs: [], creditsMonthly: 500, creditsRemaining };
+  workspace = { orgId: made.org.id, orgName: made.org.name, role, plan: made.org.plan, user: { id: made.user.id, name: made.user.name, email: made.user.email }, isSuperAdmin: false, orgs: [], creditsMonthly: 500, creditsRemaining };
 };
 const settings = { category: "furniture", scene: "livingRoom", customScene: null, style: null, aspectRatio: "1:1", resolution: "HD", instructions: "", title: "Living room" };
 const start = (text: string, patch: Record<string, unknown> = {}) => startImageBatch({ text, settings: { ...settings, ...patch } });

@@ -9,7 +9,7 @@ test("write English + Arabic copy, edit it, and find it in recent copy", async (
   await page.locator("#auth-email").fill(`copy-${unique()}@e2e.test`);
   await page.locator("#auth-password").fill("e2e-password-123");
   await page.getByRole("button", { name: "Create account" }).click();
-  await page.waitForURL(/\/en\/generate/);
+  await page.waitForURL(/\/en\/home/);
 
   await page.getByRole("link", { name: "Copy" }).click();
   await expect(page).toHaveURL(/\/en\/copy/);

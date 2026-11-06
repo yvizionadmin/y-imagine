@@ -780,3 +780,56 @@ key re-validation cron service, marketing pages, production deploy on Railway (c
   existing rows default to furniture); the Room Backgrounds admin has a category filter and field. The look prompt now
   names the products (`productKind`) instead of assuming an interior. **Not yet:** uploaded backgrounds are not deleted
   with a look (duplicates may share them); history/board filters by category.
+- **2026-11-06, Creative Studio step 1: manual credit settings (local).** Start of the Creative Studio work (image +
+  video studio, plan in `~/.claude/plans/pasted-content-id-2ce8-personal-iridescent-kitten.md`). Credits are now set by
+  super admins, not hardcoded: new console page **Admin → Credits** (`/admin/credits`) edits monthly credits per plan,
+  credits per job for each tool (0 = free), video pricing ((base + per second × seconds) × resolution multiplier,
+  rounded up; used from step 3) and which tools each plan includes. Rules live in `platform_settings.credit_rules`
+  (`src/lib/credits.ts`: parse/validate, defaults, `jobCost`, `videoCost`, `planAllows`); tools added after a save
+  default to on. **Video is paid plans only** (`planHasVideo`, fixed, shown locked in the grid). `reserveJob` refuses
+  a tool outside the plan (`not_in_plan` → blocked reason `plan`) and reserves the tool's cost atomically
+  (`usage_events.credits`); credit badges, billing, analytics, team and admin now sum credits instead of counting jobs.
+  Per-org **add/remove credits** for the current month with a reason (`credit_adjustments`, org detail page), counted in
+  the allowance (`monthlyAllowance`). Bulk runs check rows × cost and plan access before queuing. Tools show the
+  configured cost before Generate (`useJobCost`). Every change is audited (`platform.credits_updated`,
+  `org.credits_adjusted`). Migration `0011`. Verified: tsc + eslint clean; 159 Vitest tests (+15: rule parsing, defaults
+  merge, video pricing, plan access, weighted reservation, quota with cost, adjustments). **Next:** step 2 prompt home
+  `/home` with the Image | Video switch; step 3 video generation (Veo first) via `getVideoProvider` + `video` queue;
+  later an Audio feature (Gemini TTS / Lyria songs, e.g. kids' cartoon music) once model availability is confirmed.
+- **2026-11-06, Creative Studio step 2: Studio home with the Image | Video switch (local).** After sign-in everyone
+  lands on **`/home`** (Studio, first in the rail; `/`, sign-in/up, onboarding, blocked page and the console's "back to
+  app" all point there; `/generate` stays as the product-photo tool). The page: one prompt box (Cmd/Ctrl+Enter submits)
+  with reference/start-frame upload and the cost, the **Image | Video switch right below it** (`MediaModeSwitch`, state
+  in `?mode=video`, so refresh/back/links keep it), the chosen mode's options, and recent results.
+  **Image** = new text-to-image tool `create` (Feature + `JOB_FEATURES` + `IMAGE_FEATURES`, `ImageProvider.createImage`,
+  OpenAI/Gemini through the AI SDK: plain generation, or an edit when 1–2 references are attached; demo provider too):
+  1–4 images, ratios 1:1 / 4:5 / 9:16 / 16:9 / 3:2, HD / 2K, one job and one charge (Admin → Credits cost) per image,
+  credit badge refreshed (`refresh()`). Results are saved to History as mode `create` with no SKU, so they are never
+  counted as pending or uploaded to a store. **Video** shows its options (duration 4/6/8 s, 9:16 / 16:9 / 1:1 / 4:5,
+  480p–1080p, motion, camera move, start frame) and the video credit estimate; Free sees a locked switch and an upgrade
+  prompt, paid plans see that generation opens with step 3. Labels in the `Studio` namespace (en + ar).
+  Verified: tsc + eslint clean; 163 Vitest tests (+4 `studio.test.ts`); 15 Playwright specs (+`studio.spec.ts`: lands
+  on /home, generates an image, video locked on Free and kept in the URL, Arabic RTL; other specs updated for the new
+  landing page); `next build` clean; screenshots en, ar (video) and 390 px. **Next:** step 3 video generation
+  (`getVideoProvider`, Veo first, `video` BullMQ queue with provider job polling, `<video>` results, `assets` kind video).
+- **2026-11-06, Creative Studio step 3: video generation (local).** **Provider change:** Google shut the Veo 3.1 preview
+  models down in the Gemini API on 2026-10-22 and points to **Gemini Omni Flash** (`gemini-omni-1.2-flash`, GA, via the
+  Interactions API), so that is the first video model (org's own Gemini key, `videoGen` capability). New
+  `getVideoProvider(actor, credits)` in the registry (Automatic over `VIDEO_PROVIDERS`, demo key/mode → offline demo
+  clip), adapter `providers/ai-sdk-video.ts` (AI SDK `google.interactions` + `responseFormat` video, inline delivery),
+  and the **model capability registry** `src/lib/ai/video-models.ts` (Omni Flash: 16:9 / 9:16, 4–15 s, 360p / 720p /
+  1080p, start frame, audio); the Studio's video options are built from it and the server rejects anything outside it.
+  Camera move and motion are prompt direction (`video-prompt.ts`), labelled as such in the UI. Jobs: `video_jobs` table
+  (migration `0012`), one BullMQ job per video on the `video` queue (worker concurrency 4, 12 min lock; in-process
+  without Redis), claimed `pending` → `running` → `ok` / `failed`, rate limits re-queue, stale `running` jobs failed by
+  `close-stale-jobs`, max 3 open videos per org. Credits: `videoCost` (base + per second × seconds) × resolution,
+  reserved when the provider call starts, refunded on failure; `video` is a job feature (analytics, kill switch) but not
+  a flat-priced one (`PRICED_FEATURES`), and plan access is the fixed paid-only rule. Clips are stored as assets
+  (`video/mp4` / `video/webm`, kinds `video` and `video-frame`), served with HTTP byte ranges (`src/lib/storage/range.ts`)
+  so they play and seek. The page polls open videos every 4 s, plays finished ones inline, refreshes the credit badge.
+  Verified: tsc + eslint clean; 171 Vitest tests (+8: video lifecycle with the demo provider, image-to-video, failure
+  refund, paid-only, capability checks, credits/viewer/limit/no-key, byte ranges); 16 Playwright specs (+1: paid org
+  queues a video and plays it); `next build` clean; screenshots. **Not yet / risks:** the Omni adapter is not yet run
+  against a live key (inline delivery may need `uri` delivery for large clips); video model picker in Settings → API
+  Keys; video in History; other providers (BytePlus Seedance, Kling, OpenAI). **Next (PRD):** Cinema controls,
+  FFmpeg editor/export, AI Director, Audio (Gemini TTS / music).

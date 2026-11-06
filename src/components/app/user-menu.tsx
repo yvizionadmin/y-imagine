@@ -92,7 +92,7 @@ export function UserMenu({ user, isSuperAdmin, org }: UserMenuProps) {
           </DropdownMenuItem>
         )}
         {isSuperAdmin && (
-          <DropdownMenuItem onClick={() => router.push(org ? "/admin" : "/generate")}>
+          <DropdownMenuItem onClick={() => router.push(org ? "/admin" : "/home")}>
             <ShieldCheck aria-hidden />
             {org ? t("adminConsole") : t("backToApp")}
           </DropdownMenuItem>

@@ -3,6 +3,7 @@ import {
   Building2,
   ChartColumn,
   Clock,
+  Coins,
   Crop,
   Image,
   KeyRound,
@@ -13,6 +14,7 @@ import {
   Plug,
   QrCode,
   SlidersHorizontal,
+  Sparkles,
   Star,
   Users,
   UsersRound,
@@ -21,6 +23,7 @@ import {
 } from "lucide-react";
 
 export type ToolKey =
+  | "create"
   | "generate"
   | "recolor"
   | "aplus"
@@ -39,6 +42,7 @@ export type NavItem = { key: ToolKey; href: `/${string}`; icon: LucideIcon; soon
 // "Dashboard" item of the dark design (30:6), placed with History since both look back at jobs.
 // Copy (product descriptions) has no Figma rail item; it sits after the image tools.
 export const navItems: NavItem[] = [
+  { key: "create", href: "/home", icon: Sparkles },
   { key: "generate", href: "/generate", icon: WandSparkles },
   { key: "recolor", href: "/recolor", icon: Palette },
   { key: "aplus", href: "/aplus", icon: Image },
@@ -72,5 +76,6 @@ export const adminItems: MoreItem[] = [
   { key: "adminOrgs", href: "/admin/organizations", icon: Building2 },
   { key: "adminUsers", href: "/admin/users", icon: Users },
   { key: "adminActivity", href: "/admin/activity", icon: Activity },
+  { key: "adminCredits", href: "/admin/credits", icon: Coins },
   { key: "adminControls", href: "/admin/controls", icon: SlidersHorizontal },
 ];

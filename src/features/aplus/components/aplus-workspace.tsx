@@ -28,9 +28,10 @@ import type { AspectRatio, Resolution } from "@/lib/image-formats";
 import { saveGeneration } from "@/features/history/actions";
 import { generateAplusImage } from "../actions";
 import { BulkModeTabs } from "@/features/image-batch/components/bulk-mode-tabs";
-import { APLUS_COST, TEXT_LIMITS } from "../config";
+import { TEXT_LIMITS } from "../config";
 import { AplusCanvas, type AplusCanvasState, type AplusDraft } from "./aplus-canvas";
 import { FeatureBlocks, ProductSourceInput, ReferencePicker, type ProductSource, type ReferenceChoice } from "./aplus-inputs";
+import { useJobCost } from "@/features/credits/use-job-cost";
 
 type FormState = {
   sku: string;
@@ -66,6 +67,7 @@ const initialState: FormState = {
 };
 
 export function AplusWorkspace() {
+  const jobCost = useJobCost("aplus");
   const t = useTranslations("Aplus");
   const tp = useTranslations("Presets");
   const locale = useLocale();
@@ -326,7 +328,7 @@ export function AplusWorkspace() {
         </PanelBody>
 
         <PanelFooter
-          cost={APLUS_COST}
+          cost={jobCost}
           submitLabel={t("submit")}
           canSubmit={canSubmit}
           busy={generating}

@@ -1,11 +1,11 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { asc, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 
 // Repository for saved generations (History), the `generations` table. Image bytes live in asset storage, referenced by assetId.
 
-export type GenerationMode = "lifestyle" | "recolor" | "aplus";
+export type GenerationMode = "create" | "lifestyle" | "recolor" | "aplus";
 export type PublishStatus = "pending" | "uploaded" | "failed";
 
 export type Generation = {
@@ -33,6 +33,11 @@ const { generations } = schema;
 
 export async function listGenerations(orgId: string): Promise<Generation[]> {
   return db.forOrg(orgId).select(generations, undefined, { orderBy: [asc(generations.createdAt)] });
+}
+
+/** Newest generations of one mode (the Studio's recent results). */
+export async function listRecentGenerations(orgId: string, mode: GenerationMode, limit: number): Promise<Generation[]> {
+  return db.forOrg(orgId).select(generations, and(eq(generations.mode, mode)), { orderBy: [desc(generations.createdAt)], limit });
 }
 
 export async function insertGeneration(input: Omit<Generation, "id" | "status" | "publishedTo" | "publishedAt" | "publishError" | "createdAt">): Promise<Generation> {

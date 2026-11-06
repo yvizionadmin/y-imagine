@@ -23,7 +23,7 @@ const { startCopyBatch, getCopyBatch } = await import("@/features/copy/batch-act
 
 type Made = Awaited<ReturnType<typeof makeOrg>>;
 const asWorkspace = (made: Made, role: Workspace["role"] = "admin") => {
-  workspace = { orgId: made.org.id, orgName: made.org.name, role, user: { id: made.user.id, name: made.user.name, email: made.user.email }, isSuperAdmin: false, orgs: [], creditsMonthly: 500, creditsRemaining: 500 };
+  workspace = { orgId: made.org.id, orgName: made.org.name, role, plan: made.org.plan, user: { id: made.user.id, name: made.user.name, email: made.user.email }, isSuperAdmin: false, orgs: [], creditsMonthly: 500, creditsRemaining: 500 };
 };
 
 const kit = (patch: Partial<BrandKit> = {}): BrandKit => ({

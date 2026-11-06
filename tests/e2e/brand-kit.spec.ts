@@ -10,7 +10,7 @@ test("set up a brand kit and write copy in the brand voice", async ({ page }) =>
   await page.locator("#auth-email").fill(`brand-${unique()}@e2e.test`);
   await page.locator("#auth-password").fill("e2e-password-123");
   await page.getByRole("button", { name: "Create account" }).click();
-  await page.waitForURL(/\/en\/generate/);
+  await page.waitForURL(/\/en\/home/);
 
   // No kit yet: the Copy panel points to the settings page.
   await page.goto("/en/copy");

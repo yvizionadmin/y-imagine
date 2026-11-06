@@ -5,6 +5,7 @@ import type { Feature } from "@/lib/ai/types";
 import { loadConnection } from "@/lib/catalog/connections";
 import type { BatchCounts } from "@/lib/copy/batches";
 import { reportError } from "@/lib/observability/report";
+import { jobCost, planAllows } from "@/lib/credits";
 import { getPlatformSettings } from "@/lib/platform/settings";
 import type { Workspace } from "@/lib/workspace";
 import { countImageBatchItems, insertImageBatch, type ImageBatch, type ImageBatchItem } from "./batches";
@@ -35,8 +36,10 @@ const FEATURE: Record<ImageBatchTool, Feature> = { generate: "generate", recolor
 export async function imageBatchProblem(workspace: Workspace, tool: ImageBatchTool, rowCount: number): Promise<ImageBatchFailure["error"] | null> {
   if (workspace.role === "viewer") return "forbidden";
   if (!rowCount) return "empty";
-  if (rowCount > workspace.creditsRemaining) return "not_enough_credits";
-  if ((await getPlatformSettings()).disabledFeatures.includes(FEATURE[tool])) return "feature_disabled";
+  const settings = await getPlatformSettings();
+  if (settings.disabledFeatures.includes(FEATURE[tool])) return "feature_disabled";
+  if (!planAllows(settings.creditRules, workspace.plan, FEATURE[tool])) return "not_in_plan";
+  if (rowCount * jobCost(settings.creditRules, FEATURE[tool]) > workspace.creditsRemaining) return "not_enough_credits";
   if (!(await loadConnection(workspace.orgId))) return "no_connection";
   return imageProviderProblem(workspace.orgId, FEATURE[tool]);
 }

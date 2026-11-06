@@ -89,6 +89,8 @@ export const platformSettings = pgTable("platform_settings", {
   signupsEnabled: boolean().notNull(),
   defaultPlan: text().$type<PlanId>().notNull(),
   disabledFeatures: jsonb().$type<Feature[]>().notNull(),
+  /** Credit rules from Admin → Credits (src/lib/credits.ts); null until an admin saves them. */
+  creditRules: jsonb().$type<Record<string, unknown>>(),
   updatedAt: timestamp(),
   updatedBy: text(),
 });
@@ -150,9 +152,25 @@ export const usageEvents = pgTable(
     status: text().$type<"running" | "ok" | "error">().notNull(),
     error: text(),
     durationMs: integer().notNull().default(0),
+    /** Credits the job reserved (its tool's cost when it started). */
+    credits: integer().notNull().default(1),
     at: now(),
   },
   (t) => [index().on(t.orgId, t.at), index().on(t.at)],
+);
+
+/** Credits a super admin added (positive) or removed (negative) for one org, counted in the month made. */
+export const creditAdjustments = pgTable(
+  "credit_adjustments",
+  {
+    id: text().primaryKey(),
+    orgId: orgId(),
+    amount: integer().notNull(),
+    reason: text().notNull(),
+    actor: text().notNull(),
+    at: now(),
+  },
+  (t) => [index().on(t.orgId, t.at)],
 );
 
 export const assets = pgTable(
@@ -161,7 +179,7 @@ export const assets = pgTable(
     id: text().primaryKey(),
     orgId: orgId(),
     mimeType: text().notNull(),
-    kind: text().$type<"generation" | "look-product" | "room-background" | "look-background" | "look" | "swatch">().notNull(),
+    kind: text().$type<"generation" | "look-product" | "room-background" | "look-background" | "look" | "swatch" | "video" | "video-frame">().notNull(),
     byteSize: integer(),
     createdAt: now(),
   },
@@ -173,7 +191,7 @@ export const generations = pgTable(
   {
     id: text().primaryKey(),
     orgId: orgId(),
-    mode: text().$type<"lifestyle" | "recolor" | "aplus">().notNull(),
+    mode: text().$type<"create" | "lifestyle" | "recolor" | "aplus">().notNull(),
     sku: text().notNull(),
     title: text().notNull(),
     assetId: text().notNull(),
@@ -191,6 +209,38 @@ export const generations = pgTable(
     createdAt: now(),
   },
   (t) => [index().on(t.orgId, t.createdAt)],
+);
+
+/**
+ * Studio video jobs, one row per video. `pending` → claimed `running` by one worker → `ok` (asset
+ * saved) or `failed`. The credit is reserved in usage_events when the provider call starts.
+ */
+export const videoJobs = pgTable(
+  "video_jobs",
+  {
+    id: text().primaryKey(),
+    orgId: orgId(),
+    status: text().$type<"pending" | "running" | "ok" | "failed">().notNull(),
+    prompt: text().notNull(),
+    /** aspectRatio, seconds, resolution, camera, motion. */
+    settings: jsonb().$type<Record<string, string | number>>().notNull(),
+    /** First frame for image-to-video (asset kind video-frame). */
+    startFrameAssetId: text(),
+    startFrameMime: text(),
+    /** The finished clip (asset kind video). */
+    assetId: text(),
+    mimeType: text(),
+    credits: integer().notNull(),
+    provider: text(),
+    model: text(),
+    error: text(),
+    createdBy: text().notNull(),
+    createdById: text().notNull(),
+    createdAt: now(),
+    updatedAt: now(),
+    finishedAt: timestamp(),
+  },
+  (t) => [index().on(t.orgId, t.createdAt), index().on(t.status, t.updatedAt)],
 );
 
 export const looks = pgTable(

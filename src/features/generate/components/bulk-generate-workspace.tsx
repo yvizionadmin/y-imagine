@@ -16,6 +16,7 @@ import { categoryPresets, findCategory, PRODUCT_SIZE_MAX } from "@/lib/catalog-p
 import { IMAGE_BATCH_MAX_ROWS, parseImageRows } from "@/lib/image-batch/rows";
 import type { AspectRatio, Resolution } from "@/lib/image-formats";
 import { startImageBatch } from "../batch-actions";
+import { useJobCost } from "@/features/credits/use-job-cost";
 
 const TEMPLATE = { name: "imagine-bulk-images-template.csv", csv: "sku,product_size\nSOFA-2041,220 × 90 × 85 cm\nCHAIR-118,\n" };
 
@@ -47,6 +48,7 @@ export function BulkGenerateWorkspace() {
   const [pending, startTransition] = useTransition();
   const parsed = useMemo(() => parseImageRows(text, PRODUCT_SIZE_MAX), [text]);
   const count = parsed.rows.length;
+  const unitCost = useJobCost("generate");
   const preset = findCategory(category) ?? categoryPresets[0];
 
   function chooseCategory(key: string) {
@@ -87,7 +89,7 @@ export function BulkGenerateWorkspace() {
       });
       if (!result.ok) {
         const blocked = blockedReason(result.error);
-        return setError(startError(result.error, count, blocked ? tw(`blocked.${blocked}.title`) : null));
+        return setError(startError(result.error, count * unitCost, blocked ? tw(`blocked.${blocked}.title`) : null));
       }
       runs.started(result.batch);
       setText("");
@@ -156,7 +158,7 @@ export function BulkGenerateWorkspace() {
         </PanelBody>
 
         <PanelFooter
-          cost={count}
+          cost={count * unitCost}
           submitLabel={t("start", { count })}
           canSubmit={canSubmit}
           busy={pending}

@@ -5,7 +5,7 @@ import type { Feature } from "./types";
 // Model ids are matched against the list the provider returned when the key was validated, so an
 // org only sees (and is only routed to) models its key can actually call.
 
-export const IMAGE_FEATURES = ["generate", "recolor", "aplus", "looks"] as const satisfies readonly Feature[];
+export const IMAGE_FEATURES = ["create", "generate", "recolor", "aplus", "looks"] as const satisfies readonly Feature[];
 export type ImageFeature = (typeof IMAGE_FEATURES)[number];
 export const isImageFeature = (value: unknown): value is ImageFeature => (IMAGE_FEATURES as readonly unknown[]).includes(value);
 
@@ -70,6 +70,30 @@ export function textModelsFor(provider: AiProviderId, available: readonly string
   const { preferred, pattern } = TEXT_MODELS[provider];
   if (!available) return [...preferred];
   return available.filter((id) => pattern.test(id) && !/-\d{4}-\d{2}-\d{2}$/.test(id)).sort((a, b) => rank(preferred, a) - rank(preferred, b) || a.localeCompare(b));
+}
+
+// ── Video ────────────────────────────────────────────────────────────────────────────────────
+
+export const VIDEO_FEATURES = ["video"] as const satisfies readonly Feature[];
+export type VideoFeature = (typeof VIDEO_FEATURES)[number];
+
+/** Providers with video generation, in the order "Automatic" tries them. */
+export const VIDEO_PROVIDERS = ["gemini"] as const satisfies readonly AiProviderId[];
+export type VideoProviderId = (typeof VIDEO_PROVIDERS)[number];
+
+/**
+ * Video models, best first. Google shut the Veo 3.1 previews down in the Gemini API (2026-10-22)
+ * and points to Gemini Omni Flash (GA). Capabilities per model live in video-models.ts.
+ */
+const VIDEO_MODELS: Record<VideoProviderId, { preferred: readonly string[]; pattern: RegExp }> = {
+  gemini: { preferred: ["gemini-omni-1.2-flash"], pattern: /^gemini-omni-[\d.]+-flash$/ },
+};
+
+/** Video models this key can use, best first; the preferred list when the key reports none. */
+export function videoModelsFor(provider: VideoProviderId, available: readonly string[] | null): string[] {
+  const { preferred, pattern } = VIDEO_MODELS[provider];
+  const listed = available?.filter((id) => pattern.test(id)).sort((a, b) => rank(preferred, a) - rank(preferred, b) || b.localeCompare(a)) ?? [];
+  return listed.length ? listed : [...preferred];
 }
 
 // ── Per-tool choice ──────────────────────────────────────────────────────────────────────────

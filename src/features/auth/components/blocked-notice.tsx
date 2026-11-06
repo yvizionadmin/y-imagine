@@ -34,7 +34,7 @@ export function BlockedNotice({ maintenanceMessage }: { maintenanceMessage: stri
         )}
       </div>
       <div className="flex gap-3">
-        <Button variant="outline" onClick={() => router.push("/generate")} className="h-10 px-4 text-[13px] font-semibold">
+        <Button variant="outline" onClick={() => router.push("/home")} className="h-10 px-4 text-[13px] font-semibold">
           {t("retry")}
         </Button>
         <Button onClick={() => startTransition(() => signOut())} disabled={pending} className="h-10 px-4 text-[13px] font-bold">

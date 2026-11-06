@@ -9,6 +9,7 @@
     "notifications": "Notifications",
     "toggleNav": "Toggle side navigation",
     "nav": {
+      "create": "Studio",
       "newJob": "New Job",
       "generate": "Generate",
       "recolor": "Recolor",
@@ -20,9 +21,11 @@
       "qr": "QR Gen",
       "links": "Bitly",
       "more": "More",
-      "copy": "Copy"
+      "copy": "Copy",
+      "video": "Video"
     },
     "tools": {
+      "create": "Image & Video Studio",
       "generate": "Generate Lifestyle Image",
       "recolor": "Recolor Product",
       "aplus": "A+ Images",
@@ -50,7 +53,8 @@
       "adminOrgs": "Organizations",
       "adminUsers": "Users",
       "adminActivity": "Monitoring",
-      "adminControls": "Controls"
+      "adminControls": "Controls",
+      "adminCredits": "Credits"
     },
     "switchOrg": "Switch organization",
     "adminConsole": "Admin console",
@@ -129,6 +133,10 @@
       "unsupported": {
         "title": "Model can't do this",
         "body": "The AI model selected for this tool can't process this request. Ask your admin to choose another model in Settings → API Keys."
+      },
+      "plan": {
+        "title": "Not included in your plan",
+        "body": "Your organization's plan doesn't include this tool. Ask your admin to upgrade in Settings → Billing."
       }
     }
   },
@@ -809,11 +817,13 @@
     "chipStatus": "Status: {value}",
     "chipDate": "Date: {from} – {to}",
     "modes": {
+      "create": "Studio",
       "lifestyle": "Lifestyle",
       "recolor": "Fabric Recolor",
       "aplus": "A+"
     },
     "tools": {
+      "create": "Studio",
       "lifestyle": "Generate",
       "recolor": "Recolor",
       "aplus": "A+ Images"
@@ -1278,7 +1288,8 @@
       "tools": "Tools",
       "vision": "Vision",
       "imageGen": "Image generation",
-      "imageEdit": "Image editing"
+      "imageEdit": "Image editing",
+      "videoGen": "Video generation"
     },
     "supported": "(supported)",
     "notSupported": "(not supported)",
@@ -1314,11 +1325,13 @@
     "automaticDemo": "Automatic (demo provider)",
     "notApplicable": "Not applicable",
     "features": {
+      "create": "Studio (text to image)",
       "generate": "Generate",
       "recolor": "Recolor",
       "aplus": "A+ Images",
       "looks": "Shop the Look",
-      "copy": "Product copy"
+      "copy": "Product copy",
+      "video": "Studio (video)"
     },
     "activityTitle": "Recent key activity",
     "noActivity": "No key changes yet.",
@@ -1366,11 +1379,13 @@
     "emptyBody": "Every image you generate, recolor or compose shows up here, including failed attempts.",
     "emptyCta": "Generate an image",
     "tools": {
+      "create": "Studio",
       "generate": "Generate",
       "recolor": "Recolor",
       "aplus": "A+ Images",
       "looks": "Shop the Look",
-      "copy": "Product Copy"
+      "copy": "Product Copy",
+      "video": "Video"
     },
     "byToolTitle": "Jobs by Tool",
     "recentTitle": "Recent Activity",
@@ -1642,7 +1657,8 @@
         "created": "created organization",
         "updated": "updated organization",
         "suspended": "suspended organization",
-        "reactivated": "reactivated organization"
+        "reactivated": "reactivated organization",
+        "credits_adjusted": "adjusted credits for"
       },
       "user": {
         "created": "created user",
@@ -1654,7 +1670,8 @@
         "super_admin_revoked": "removed super admin from"
       },
       "platform": {
-        "settings_updated": "changed platform controls on"
+        "settings_updated": "changed platform controls on",
+        "credits_updated": "changed credit settings on"
       },
       "bitly": {
         "connected": "connected Bitly for",
@@ -1767,7 +1784,16 @@
       "removeConfirm": "Remove {name} from this organization?",
       "memberRemoved": "{name} removed.",
       "noInvites": "No pending invites",
-      "storesNone": "No store connected"
+      "storesNone": "No store connected",
+      "adjustTitle": "Add or remove credits",
+      "adjustHint": "One-off change for this month only, on top of the plan. Use a negative number to remove credits.",
+      "adjustAmount": "Credits (+/−)",
+      "adjustReason": "Reason",
+      "adjustReasonPlaceholder": "e.g. Goodwill top-up after provider outage",
+      "adjustSubmit": "Apply",
+      "adjusted": "Credits updated for {name}.",
+      "adjustmentsNone": "No adjustments yet.",
+      "adjustedThisMonth": "{amount} adjusted this month"
     },
     "users": {
       "title": "Users",
@@ -1843,6 +1869,30 @@
       "featuresHint": "Switch a tool off for every organization, for example during a provider outage. Jobs are refused before they reach the provider and don't use credits.",
       "featureOff": "Off for everyone",
       "featureOn": "Available"
+    },
+    "credits": {
+      "title": "Credits",
+      "subtitle": "Monthly credits per plan, what each job costs, and which tools each plan includes. Changes apply to new jobs.",
+      "lastChanged": "Last changed by {by} {when}.",
+      "saved": "Credit settings saved.",
+      "invalid": "Check the highlighted values: whole numbers for credits and costs, multipliers above 0.",
+      "resetDefaults": "Reset to defaults",
+      "plans": "Monthly credits per plan",
+      "plansHint": "An organization with a custom quota keeps it. Admin adjustments are added on top.",
+      "costs": "Credits per job",
+      "costsHint": "Charged when a job succeeds. 0 makes a tool free (it still needs credits left).",
+      "perJob": "credits / job",
+      "video": "Video pricing",
+      "videoHint": "Credits = (base + per second × seconds) × resolution multiplier, rounded up. Video is for paid plans only.",
+      "base": "Base credits",
+      "perSecond": "Credits per second",
+      "multiplier": "{resolution} multiplier",
+      "example": "Example: {seconds}s at {resolution} = {credits} credits",
+      "access": "Tools per plan",
+      "accessHint": "A tool that's off for a plan is refused before it reaches the AI provider.",
+      "tool": "Tool",
+      "videoRow": "Video",
+      "paidOnly": "Paid plans only (fixed)"
     }
   },
   "Templates": {
@@ -2134,7 +2184,8 @@
       "no_provider": "No AI provider connected",
       "invalid_key": "AI provider key rejected",
       "no_credits": "AI provider account is out of credits",
-      "unsupported": "The selected model can't write copy"
+      "unsupported": "The selected model can't write copy",
+      "not_in_plan": "Copy isn't included in your plan"
     },
     "approval": "Approval",
     "submitAll": "Submit all for review",
@@ -2366,7 +2417,8 @@
       "no_provider": "No AI key can make images",
       "invalid_key": "Your AI key was rejected",
       "no_credits": "Your AI provider account is out of credit",
-      "unsupported": "Your AI provider can't make this kind of image"
+      "unsupported": "Your AI provider can't make this kind of image",
+      "not_in_plan": "This tool isn't included in your plan"
     },
     "problemRow": "Row {row}: {reason}"
   },
@@ -2386,5 +2438,71 @@
     "emptyTitle": "A+ images for a whole catalog",
     "emptyBody": "Upload a CSV with each product's title and features. Every product gets an A+ image with the layout and scene you pick, in the background, one credit each, saved to History.",
     "layoutAuto": "Let the AI design it"
+  },
+  "Studio": {
+    "title": "What do you want to create?",
+    "subtitle": "Describe it, pick Image or Video, and generate with your own AI keys.",
+    "promptLabel": "Prompt",
+    "promptImage": "A cozy reading corner at golden hour, soft film grain, 35mm…",
+    "promptVideo": "Slow push-in on a steaming cup of coffee on a wooden table, morning light…",
+    "modeLabel": "What to create",
+    "modes": {
+      "image": "Image",
+      "video": "Video"
+    },
+    "paidOnly": "Paid plans only",
+    "addReference": "Reference",
+    "addStartFrame": "Start frame",
+    "removeReference": "Remove image",
+    "generate": "Generate",
+    "generating": "Generating…",
+    "cost": "{count, plural, one {{display} credit} other {{display} credits}}",
+    "aspectRatio": "Aspect ratio",
+    "resolution": "Resolution",
+    "count": "Images",
+    "duration": "Duration",
+    "seconds": "{count}s",
+    "motion": "Motion",
+    "camera": "Camera",
+    "motionLevels": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "cameraMoves": {
+      "static": "Static",
+      "pushIn": "Push in",
+      "pullOut": "Pull out",
+      "pan": "Pan",
+      "tilt": "Tilt",
+      "orbit": "Orbit",
+      "tracking": "Tracking",
+      "handheld": "Handheld"
+    },
+    "videoLockedTitle": "Video is on paid plans",
+    "videoLockedBody": "Upgrade to Starter, Pro or Enterprise to generate videos.",
+    "upgrade": "See plans",
+    "viewerNote": "Viewers can browse results but not generate.",
+    "notEnoughCredits": "Not enough credits left this month ({count} needed).",
+    "partial": "{made} made, {failed} failed. Failed images don't use credits.",
+    "errors": {
+      "forbidden": "You don't have permission to generate.",
+      "invalid_input": "Check the prompt and images (PNG, JPG or WebP up to 10 MB).",
+      "failed": "Couldn't generate. Try again.",
+      "too_many_jobs": "You already have 3 videos in progress. Wait for one to finish."
+    },
+    "recent": "Recent",
+    "viewHistory": "View all in History",
+    "emptyRecent": "Your images will appear here.",
+    "promptDirection": "Camera and motion are added to your prompt as direction; the model has no separate setting for them.",
+    "promptDirectionAudio": "Camera and motion are added to your prompt as direction. The model also makes a soundtrack.",
+    "videoNeedsKey": "Videos need a Google Gemini key with video access.",
+    "addKey": "Add it in Settings → API Keys",
+    "videoQueued": "Your video is being made. It usually takes 1–3 minutes; you can keep working.",
+    "videoPending": "Waiting to start…",
+    "videoRunning": "Making your video…",
+    "videoFailed": "Video failed",
+    "videoFailedHint": "No credits were used. Try again or change the prompt.",
+    "videoTimedOut": "It took too long. No credits were used."
   }
 }

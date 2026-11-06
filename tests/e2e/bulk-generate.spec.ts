@@ -11,9 +11,10 @@ test("bulk generate: connect a catalog, run SKUs, see the images and find them i
   await page.locator("#auth-email").fill(`imager-${unique()}@e2e.test`);
   await page.locator("#auth-password").fill("e2e-password-123");
   await page.getByRole("button", { name: "Create account" }).click();
-  await page.waitForURL(/\/en\/generate/);
+  await page.waitForURL(/\/en\/home/);
 
   // Without a catalog the run is refused, with a way to connect one.
+  await page.goto("/en/generate");
   await page.getByRole("link", { name: "Bulk" }).click();
   await expect(page).toHaveURL(/\/en\/generate\/bulk/);
   await page.locator("#bulk-skus").fill("SOFA-12345");

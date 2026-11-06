@@ -6,6 +6,7 @@ import { recordAudit } from "@/lib/audit";
 import { changePlan, createCheckout, createPortal, hasLiveSubscription, setCancelAtPeriodEnd } from "@/lib/billing/billing";
 import { billingEnabled, planPrices, priceId, trialDays, type Interval, type PlanPrice } from "@/lib/billing/stripe";
 import { getOrganization } from "@/lib/platform/organizations";
+import { getPlatformSettings } from "@/lib/platform/settings";
 import { isPaidPlan, PAID_PLANS, type BillingStatus, type PaidPlanId, type PlanId } from "@/lib/plans";
 import { listMembers } from "@/lib/team/members";
 import { getWorkspace } from "@/lib/workspace";
@@ -21,6 +22,8 @@ export type BillingView = {
   hasCustomer: boolean;
   creditsMonthly: number;
   creditsRemaining: number;
+  /** Monthly credits each plan includes (Admin → Credits). */
+  planCredits: Record<PlanId, number>;
   seatsUsed: number;
   canManage: boolean;
   /** Stripe configured on this deployment. */
@@ -42,7 +45,7 @@ const billingUrl = async () => `${await appUrl()}/${await getLocale()}/settings/
 
 export async function getBilling(): Promise<BillingView> {
   const workspace = await getWorkspace();
-  const [org, members] = await Promise.all([getOrganization(workspace.orgId), listMembers(workspace)]);
+  const [org, members, settings] = await Promise.all([getOrganization(workspace.orgId), listMembers(workspace), getPlatformSettings()]);
   const enabled = billingEnabled();
   // Prices come from Stripe; the page still works (without amounts) if Stripe can't be reached.
   const loaded = enabled ? await planPrices().catch(() => null) : null;
@@ -64,6 +67,7 @@ export async function getBilling(): Promise<BillingView> {
     hasCustomer: !!org!.stripeCustomerId,
     creditsMonthly: workspace.creditsMonthly,
     creditsRemaining: workspace.creditsRemaining,
+    planCredits: settings.creditRules.planCredits,
     seatsUsed: members.length,
     canManage: workspace.role === "admin",
     enabled,

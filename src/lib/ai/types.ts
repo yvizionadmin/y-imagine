@@ -3,7 +3,7 @@ import type { CameraAngle } from "@/lib/camera-angles";
 
 export type ProviderId = "demo" | "openai" | "anthropic" | "gemini" | "openrouter" | "openai-compatible";
 
-export type Feature = "generate" | "recolor" | "aplus" | "looks" | "copy" | "chat";
+export type Feature = "create" | "video" | "generate" | "recolor" | "aplus" | "looks" | "copy" | "chat";
 
 export type LifestyleRequest = {
   sku: string;
@@ -104,8 +104,51 @@ export type LookRequest = {
   subcategory?: string | null;
 };
 
+/** Studio text-to-image (home prompt). References are optional images to follow (image-to-image). */
+export const CREATE_ASPECT_RATIOS = ["1:1", "4:5", "9:16", "16:9", "3:2"] as const;
+export type CreateAspectRatio = (typeof CREATE_ASPECT_RATIOS)[number];
+export type CreateImageRequest = {
+  prompt: string;
+  aspectRatio: CreateAspectRatio;
+  resolution: "HD" | "2K";
+  references: ImageInput[];
+};
+
+// ── Video ────────────────────────────────────────────────────────────────────────────────────
+
+export const CAMERA_MOVES = ["static", "pushIn", "pullOut", "pan", "tilt", "orbit", "tracking", "handheld"] as const;
+export type CameraMove = (typeof CAMERA_MOVES)[number];
+export const MOTION_LEVELS = ["low", "medium", "high"] as const;
+export type MotionLevel = (typeof MOTION_LEVELS)[number];
+
+export type VideoRequest = {
+  prompt: string;
+  aspectRatio: "16:9" | "9:16";
+  seconds: number;
+  resolution: "360p" | "720p" | "1080p";
+  /** Image-to-video: the first frame. */
+  startFrame: ImageInput | null;
+  /** Prompt-based direction (not native model parameters). */
+  camera: CameraMove;
+  motion: MotionLevel;
+};
+
+export type GeneratedVideo = {
+  bytes: Uint8Array;
+  mimeType: "video/mp4" | "video/webm";
+  provider: ProviderId;
+  model: string;
+};
+
+export interface VideoProvider {
+  id: ProviderId;
+  model: string;
+  generateVideo(request: VideoRequest): Promise<GeneratedVideo>;
+}
+
 export interface ImageProvider {
   id: ProviderId;
+  createImage(request: CreateImageRequest): Promise<GeneratedImage>;
   generateLifestyle(request: LifestyleRequest): Promise<GeneratedImage>;
   analyzeSwatch(swatch: ImageInput): Promise<SwatchAnalysis>;
   recolor(request: RecolorRequest): Promise<RecolorResult>;

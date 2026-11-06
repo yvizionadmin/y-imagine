@@ -108,7 +108,7 @@ export function createAiImageProvider(config: AiProviderConfig): ImageProvider {
     try {
       const { image } = await generateImage({
         model: imageModel,
-        prompt: { images: input.images.map((i) => i.bytes), text: input.prompt },
+        prompt: input.images.length ? { images: input.images.map((i) => i.bytes), text: input.prompt } : input.prompt,
         ...(config.provider === "openai" ? { size: openAiSize(input.ratio) as `${number}x${number}` } : { aspectRatio: geminiRatio(input.ratio) as `${number}:${number}` }),
         providerOptions:
           config.provider === "openai"
@@ -175,6 +175,19 @@ export function createAiImageProvider(config: AiProviderConfig): ImageProvider {
 
   return {
     id: config.provider,
+
+    async createImage(request) {
+      // The user's own prompt, as written; references (if any) guide subject and style.
+      const refs = request.references.length
+        ? `Use the ${request.references.length > 1 ? "reference images" : "reference image"} for subject and style. `
+        : "";
+      return render({
+        images: request.references,
+        prompt: `${refs}${request.prompt}`,
+        ratio: ratioOf(request.aspectRatio),
+        resolution: request.resolution,
+      });
+    },
 
     async generateLifestyle(request) {
       // A later shot of a set reuses the first shot's room, so the scene sources aren't sent again.

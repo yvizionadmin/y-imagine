@@ -9,9 +9,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Input } from "@/components/ui/input";
 import { Link, useRouter } from "@/i18n/navigation";
 import { LATN } from "@/lib/format";
-import { PLAN_IDS, PLANS, type PlanId } from "@/lib/plans";
+import { PLAN_IDS, type PlanId } from "@/lib/plans";
 import { createAdminOrg, listAdminOrgs, setAdminOrgStatus, updateAdminOrg, type AdminOrgRow } from "../actions";
 import { Field, filterSelectClass, NoticeBar, PageHeader, selectClass, StatusBadge, Table, td, th, type Notice } from "./admin-ui";
+import { usePlanCredits } from "./use-plan-credits";
 
 export function AdminOrganizations() {
   const t = useTranslations("Admin");
@@ -182,13 +183,14 @@ export function AdminOrganizations() {
 function PlanFields({ plan, setPlan, credits, setCredits }: { plan: PlanId; setPlan: (p: PlanId) => void; credits: string; setCredits: (c: string) => void }) {
   const t = useTranslations("Admin");
   const format = useFormatter();
+  const planCredits = usePlanCredits();
   return (
     <div className="grid grid-cols-2 gap-3">
       <Field label={t("orgs.plan")} htmlFor="org-plan">
         <select id="org-plan" value={plan} onChange={(e) => setPlan(e.target.value as PlanId)} className={selectClass}>
           {PLAN_IDS.map((p) => (
             <option key={p} value={p}>
-              {t(`plans.${p}`)} · {t("creditsPerMonth", { display: format.number(PLANS[p].creditsMonthly, LATN) })}
+              {t(`plans.${p}`)} · {t("creditsPerMonth", { display: format.number(planCredits[p], LATN) })}
             </option>
           ))}
         </select>
@@ -203,7 +205,7 @@ function PlanFields({ plan, setPlan, credits, setCredits }: { plan: PlanId; setP
           dir="ltr"
           value={credits}
           onChange={(e) => setCredits(e.target.value)}
-          placeholder={String(PLANS[plan].creditsMonthly)}
+          placeholder={String(planCredits[plan])}
           className="h-10 text-[13px]"
         />
       </Field>

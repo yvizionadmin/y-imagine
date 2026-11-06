@@ -36,6 +36,17 @@ function failIfRequested(sku: string) {
 export const demoProvider: ImageProvider = {
   id: "demo",
 
+  // A library photo cropped to the requested shape. Include "FAIL" in the prompt for the failure state.
+  async createImage(request) {
+    await wait(LATENCY_MS);
+    failIfRequested(request.prompt);
+    const [w, h] = request.aspectRatio.split(":").map(Number);
+    const edge = MAX_EDGE[request.resolution];
+    const [width, height] = w >= h ? [edge, Math.round((edge * h) / w)] : [Math.round((edge * w) / h), edge];
+    const data = await sharp(path.join(process.cwd(), "public", "scenes/minimalist-studio.png")).resize(width, height, { fit: "cover" }).webp({ quality: 85 }).toBuffer();
+    return { url: `data:image/webp;base64,${data.toString("base64")}`, width, height, provider: "demo", model: "demo-create-v1" };
+  },
+
   async generateLifestyle(request) {
     await wait(LATENCY_MS);
     failIfRequested(request.sku);

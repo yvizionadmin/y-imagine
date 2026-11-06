@@ -14,6 +14,7 @@ import {
 import type { GenerationMode, HistoryItem, PublishStatus } from "../types";
 
 const modeBadge: Record<GenerationMode, string> = {
+  create: "bg-[#8b5cf6]",
   lifestyle: "bg-primary",
   recolor: "bg-[#ec4899]",
   aplus: "bg-[#06b6d4]",
@@ -123,7 +124,7 @@ export function HistoryCard({
         </div>
         {item.title && <span className="truncate text-xs text-muted-foreground">{item.title}</span>}
         <span className="text-[10px] text-subtle">{format.dateTime(new Date(item.createdAt), { dateStyle: "medium", timeStyle: "short", numberingSystem: "latn" })}</span>
-        {showUpload && actions.onPublish && item.status !== "uploaded" && (
+        {showUpload && actions.onPublish && item.sku !== "" && item.status !== "uploaded" && (
           <button
             type="button"
             disabled={publishing}

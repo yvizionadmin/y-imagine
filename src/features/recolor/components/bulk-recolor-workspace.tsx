@@ -20,6 +20,7 @@ import type { AspectRatio, Resolution } from "@/lib/image-formats";
 import { analyzeSwatch } from "../actions";
 import { startRecolorBatch } from "../batch-actions";
 import { swatchDisplayName, SwatchPicker, type SwatchState } from "./swatch-picker";
+import { useJobCost } from "@/features/credits/use-job-cost";
 
 const TEMPLATE = { name: "imagine-bulk-recolor-template.csv", csv: "sku\nSOFA-2041\nSOFA-2042\n" };
 
@@ -49,6 +50,7 @@ export function BulkRecolorWorkspace() {
   const swatchPreview = useObjectUrl(swatch);
   const parsed = useMemo(() => parseImageRows(text, PRODUCT_SIZE_MAX), [text]);
   const count = parsed.rows.length;
+  const unitCost = useJobCost("recolor");
   const kind = (findCategory(category) ?? categoryPresets[0]).recolorKind;
   const tk = (key: string) => tr(`kinds.${kind}.${key}`);
   const hex = swatchState?.status === "ready" ? swatchState.analysis.hex : null;
@@ -88,7 +90,7 @@ export function BulkRecolorWorkspace() {
       const result = await startRecolorBatch(data);
       if (!result.ok) {
         const blocked = blockedReason(result.error);
-        return setError(startError(result.error, count, blocked ? tw(`blocked.${blocked}.title`) : null));
+        return setError(startError(result.error, count * unitCost, blocked ? tw(`blocked.${blocked}.title`) : null));
       }
       runs.started(result.batch);
       setText("");
@@ -183,7 +185,7 @@ export function BulkRecolorWorkspace() {
         </PanelBody>
 
         <PanelFooter
-          cost={count}
+          cost={count * unitCost}
           submitLabel={t("start", { count })}
           canSubmit={canSubmit}
           busy={pending}

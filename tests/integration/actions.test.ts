@@ -23,7 +23,7 @@ const { recolorProduct } = await import("@/features/recolor/actions");
 
 async function asAdminOf(plan: "free" | "pro" = "free") {
   const made = await makeOrg(plan);
-  workspace = { orgId: made.org.id, orgName: made.org.name, role: "admin", user: { id: made.user.id, name: made.user.name, email: made.user.email }, isSuperAdmin: false, orgs: [], creditsMonthly: 50, creditsRemaining: 50 };
+  workspace = { orgId: made.org.id, orgName: made.org.name, role: "admin", plan: made.org.plan, user: { id: made.user.id, name: made.user.name, email: made.user.email }, isSuperAdmin: false, orgs: [], creditsMonthly: 50, creditsRemaining: 50 };
   return made;
 }
 

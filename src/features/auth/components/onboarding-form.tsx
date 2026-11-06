@@ -27,7 +27,7 @@ export function OnboardingForm({ email, signupsOpen }: { email: string; signupsO
       setBusy(false);
       return setError(t(`errors.${response.error}`));
     }
-    router.replace("/generate");
+    router.replace("/home");
   }
 
   return (

@@ -11,7 +11,7 @@ async function signUpWithCatalog(page: Page) {
   await page.locator("#auth-email").fill(`tools-${unique()}@e2e.test`);
   await page.locator("#auth-password").fill("e2e-password-123");
   await page.getByRole("button", { name: "Create account" }).click();
-  await page.waitForURL(/\/en\/generate/);
+  await page.waitForURL(/\/en\/home/);
   await page.goto("/en/settings/integrations");
   await page.getByRole("button", { name: "Add connection" }).first().click();
   await page.getByRole("button", { name: /Demo/ }).click();

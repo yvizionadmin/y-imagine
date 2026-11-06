@@ -10,6 +10,8 @@ export type ProviderErrorCode =
   | "no_credits"
   /** The org's monthly Imagine AI job quota is used up. */
   | "quota_exceeded"
+  /** The org's plan doesn't include this tool (Admin → Credits → plan access). */
+  | "not_in_plan"
   | "rate_limited"
   | "unsupported"
   | "feature_disabled";

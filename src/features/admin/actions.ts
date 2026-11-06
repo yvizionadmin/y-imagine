@@ -12,13 +12,15 @@ import { countActiveSessions, getSession, revokeUserSessions } from "@/lib/auth/
 import { findUserByEmail, insertUser, listUsers, normalizeEmail, setUserPassword, setUserStatus, toView, updateUser, type UserView } from "@/lib/auth/users";
 import { hasLiveSubscription } from "@/lib/billing/billing";
 import { listConnections } from "@/lib/catalog/connections";
-import { isPlan, PLANS, type PlanId } from "@/lib/plans";
-import { creditsFor, getOrganization, insertOrganization, listOrganizations, updateOrganization, type Organization } from "@/lib/platform/organizations";
+import { isPlan, type PlanId } from "@/lib/plans";
+import { DEFAULT_CREDIT_RULES, parseCreditRules, planCreditsFor, type CreditRules, type PricedFeature } from "@/lib/credits";
+import { ADJUSTMENT_LIMIT, addCreditAdjustment, adjustmentTotalsByOrg, listCreditAdjustments, type CreditAdjustment } from "@/lib/platform/credit-adjustments";
+import { getOrganization, insertOrganization, listOrganizations, updateOrganization, type Organization } from "@/lib/platform/organizations";
 import { getPlatformSettings, savePlatformSettings, type PlatformSettings } from "@/lib/platform/settings";
 import { sendInvitationEmail } from "@/lib/team/invitations";
 import { ensureMembership, insertInvite, isRole, listAllMembers, removeMember, updateMember, type Member, type Role } from "@/lib/team/members";
 import { dayKey, lastDays, startOfDay, startOfMonth } from "@/lib/time";
-import { creatorKey, isJobBy, listAllUsage, type UsageEvent } from "@/lib/usage";
+import { creatorKey, creditsOf, isJobBy, listAllUsage, type UsageEvent } from "@/lib/usage";
 
 // Super-admin console. Platform scope by design: these are the only actions that read across
 // orgs, and every one of them re-checks the platform role (never trust the page that called it).
@@ -142,7 +144,10 @@ export async function getAdminOverview(range = 30): Promise<Result<{ data: Admin
 // ---------- Organizations ----------
 
 export type AdminOrgRow = Organization & {
+  /** Plan credits (or override) plus this month's adjustments. */
   creditsMonthly: number;
+  /** Net credits added or removed by super admins this month. */
+  creditsAdjusted: number;
   creditsUsed: number;
   members: number;
   invites: number;
@@ -150,14 +155,23 @@ export type AdminOrgRow = Organization & {
 };
 
 async function orgRows(): Promise<AdminOrgRow[]> {
-  const [orgs, members, usage] = await Promise.all([listOrganizations(), listAllMembers(), listAllUsage(startOfMonth())]);
+  const since = startOfMonth();
+  const [orgs, members, usage, settings, adjusted] = await Promise.all([
+    listOrganizations(),
+    listAllMembers(),
+    listAllUsage(since),
+    getPlatformSettings(),
+    adjustmentTotalsByOrg(since),
+  ]);
   return orgs.map((o) => {
     const mine = members.filter((m) => m.orgId === o.id);
     const events = usage.filter((e) => e.orgId === o.id);
+    const creditsAdjusted = adjusted.get(o.id) ?? 0;
     return {
       ...o,
-      creditsMonthly: creditsFor(o),
-      creditsUsed: events.filter((e) => e.ok).length,
+      creditsMonthly: Math.max(0, planCreditsFor(settings.creditRules, o) + creditsAdjusted),
+      creditsAdjusted,
+      creditsUsed: creditsOf(events),
       members: mine.filter((m) => m.status === "active").length,
       invites: mine.filter((m) => m.status === "invited").length,
       lastJobAt: events.at(-1)?.at ?? null,
@@ -255,6 +269,7 @@ export type AdminOrgDetail = {
   keys: Pick<ProviderKeyView, "provider" | "hint" | "status" | "lastError" | "validatedAt">[];
   connections: { id: string; type: string; name: string; isDefault: boolean; lastTestOk: boolean | null }[];
   audit: AuditEntry[];
+  adjustments: CreditAdjustment[];
 };
 
 export async function getAdminOrg(id: string): Promise<Result<{ data: AdminOrgDetail }>> {
@@ -262,12 +277,13 @@ export async function getAdminOrg(id: string): Promise<Result<{ data: AdminOrgDe
   const row = (await orgRows()).find((o) => o.id === id);
   if (!row) return { ok: false, error: "not_found" };
   const days = lastDays(30);
-  const [members, usage, keys, connections, audit] = await Promise.all([
+  const [members, usage, keys, connections, audit, adjustments] = await Promise.all([
     listAllMembers().then((all) => all.filter((m) => m.orgId === id)),
     listAllUsage(startOfDay(days[0])).then((all) => all.filter((e) => e.orgId === id && isJob(e))),
     listProviderKeys(id),
     listConnections(id),
     listAllAudit({ orgId: id, limit: 20 }),
+    listCreditAdjustments(id),
   ]);
   return {
     ok: true,
@@ -288,8 +304,23 @@ export async function getAdminOrg(id: string): Promise<Result<{ data: AdminOrgDe
       keys: keys.map((k) => ({ provider: k.provider, hint: k.hint, status: k.status, lastError: k.lastError, validatedAt: k.validatedAt })),
       connections: connections.map((c) => ({ id: c.id, type: c.type, name: c.name, isDefault: c.isDefault, lastTestOk: c.lastTest?.ok ?? null })),
       audit,
+      adjustments,
     },
   };
+}
+
+/** Adds (positive) or removes (negative) credits for this month only, with a reason for the audit log. */
+export async function adjustAdminOrgCredits(orgId: string, input: { amount: string | number; reason: string }): Promise<Result> {
+  const actor = await admin();
+  if (!actor) return { ok: false, error: "forbidden" };
+  const org = await getOrganization(orgId);
+  if (!org) return { ok: false, error: "not_found" };
+  const amount = Number(input.amount);
+  const reason = clean(input.reason, 200);
+  if (!Number.isInteger(amount) || amount === 0 || Math.abs(amount) > ADJUSTMENT_LIMIT || !reason) return { ok: false, error: "invalid_input" };
+  await addCreditAdjustment(orgId, { amount, reason, actor: actor.name });
+  await recordAudit({ orgId, action: "org.credits_adjusted", actor: actor.name, target: org.name, meta: { amount: (amount > 0 ? "+" : "") + amount, reason } });
+  return { ok: true };
 }
 
 export async function addAdminOrgMember(orgId: string, input: { email: string; role: string }): Promise<Result<{ joined: boolean }>> {
@@ -484,9 +515,9 @@ export async function getAdminActivity(filter: { orgId?: string; status?: "ok" |
 
 // ---------- Controls ----------
 
-export async function getAdminControls(): Promise<Result<{ settings: PlatformSettings; plans: typeof PLANS }>> {
+export async function getAdminControls(): Promise<Result<{ settings: PlatformSettings }>> {
   if (!(await admin())) return { ok: false, error: "forbidden" };
-  return { ok: true, settings: await getPlatformSettings(), plans: PLANS };
+  return { ok: true, settings: await getPlatformSettings() };
 }
 
 export async function saveAdminControls(input: {
@@ -517,4 +548,44 @@ export async function saveAdminControls(input: {
   ].filter(Boolean) as string[];
   await recordAudit({ orgId: PLATFORM_ORG, action: "platform.settings_updated", actor: actor.name, target: "platform", meta: { changes: changed.join(", ") || "none" } });
   return { ok: true, settings };
+}
+
+// ---------- Credits ----------
+
+export async function getAdminCredits(): Promise<Result<{ rules: CreditRules; defaults: CreditRules; updatedAt: string | null; updatedBy: string | null }>> {
+  if (!(await admin())) return { ok: false, error: "forbidden" };
+  const settings = await getPlatformSettings();
+  return { ok: true, rules: settings.creditRules, defaults: DEFAULT_CREDIT_RULES, updatedAt: settings.updatedAt, updatedBy: settings.updatedBy };
+}
+
+/** What changed between two rule sets, for the audit log ("pro credits 500→800, video perSecond 2→3"). */
+function creditChanges(before: CreditRules, after: CreditRules) {
+  const changes: string[] = [];
+  for (const [plan, n] of Object.entries(after.planCredits)) if (before.planCredits[plan as PlanId] !== n) changes.push(`${plan} credits ${before.planCredits[plan as PlanId]}→${n}`);
+  for (const [tool, n] of Object.entries(after.featureCosts)) if (before.featureCosts[tool as PricedFeature] !== n) changes.push(`${tool} cost ${before.featureCosts[tool as PricedFeature]}→${n}`);
+  if (before.video.base !== after.video.base) changes.push(`video base ${before.video.base}→${after.video.base}`);
+  if (before.video.perSecond !== after.video.perSecond) changes.push(`video perSecond ${before.video.perSecond}→${after.video.perSecond}`);
+  for (const [res, m] of Object.entries(after.video.resolution)) {
+    const was = before.video.resolution[res as keyof CreditRules["video"]["resolution"]];
+    if (was !== m) changes.push(`video ${res} ×${was}→×${m}`);
+  }
+  for (const [plan, tools] of Object.entries(after.planFeatures)) {
+    const was = before.planFeatures[plan as PlanId];
+    if (was.join() !== tools.join()) changes.push(`${plan} tools ${tools.join("|") || "none"}`);
+  }
+  return changes;
+}
+
+/** Saves the credit rules. They apply to jobs started after this; running jobs keep what they reserved. */
+export async function saveAdminCredits(input: unknown): Promise<Result<{ rules: CreditRules; updatedAt: string | null; updatedBy: string | null }>> {
+  const actor = await admin();
+  if (!actor) return { ok: false, error: "forbidden" };
+  const rules = parseCreditRules(input);
+  if (!rules) return { ok: false, error: "invalid_input" };
+  const { creditRules: before, updatedAt: _at, updatedBy: _by, ...switches } = await getPlatformSettings();
+  void [_at, _by];
+  const saved = await savePlatformSettings({ ...switches, creditRules: rules }, actor.name);
+  const changes = creditChanges(before, rules);
+  await recordAudit({ orgId: PLATFORM_ORG, action: "platform.credits_updated", actor: actor.name, target: "platform", meta: { changes: changes.join(", ").slice(0, 1000) || "none" } });
+  return { ok: true, rules: saved.creditRules, updatedAt: saved.updatedAt, updatedBy: saved.updatedBy };
 }

@@ -15,7 +15,7 @@ export function AdminTopBar({ user }: { user: { name: string; email: string } })
   const t = useTranslations("Admin");
   return (
     <header className="flex h-topbar shrink-0 items-center gap-6 bg-topbar px-[27px] font-ui text-topbar-foreground">
-      <Link href="/generate" className="text-xl font-bold tracking-tight">
+      <Link href="/home" className="text-xl font-bold tracking-tight">
         {t("brand")}
       </Link>
       <div className="flex items-center gap-2 rounded-[20px] bg-white/10 px-4 py-2 font-sans text-[13px] font-semibold">
@@ -23,7 +23,7 @@ export function AdminTopBar({ user }: { user: { name: string; email: string } })
         {t("console")}
       </div>
       <div className="ms-auto flex items-center gap-3">
-        <Link href="/generate" className="rounded-full px-3 py-1.5 text-[13px] font-medium text-white/80 hover:bg-white/10 hover:text-white">
+        <Link href="/home" className="rounded-full px-3 py-1.5 text-[13px] font-medium text-white/80 hover:bg-white/10 hover:text-white">
           {t("backToApp")}
         </Link>
         <UserMenu user={user} isSuperAdmin />

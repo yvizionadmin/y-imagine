@@ -7,12 +7,12 @@ import { PLANS } from "@/lib/plans";
 import { sendInvitationEmail } from "@/lib/team/invitations";
 import { insertInvite, isRole, listMembers, removeMember, updateMember, type Member, type Role } from "@/lib/team/members";
 import { startOfMonth } from "@/lib/time";
-import { isJobBy, listUsage } from "@/lib/usage";
+import { creditsOf, isJobBy, listUsage } from "@/lib/usage";
 import { getWorkspace } from "@/lib/workspace";
 
 export type MemberView = Omit<Member, "orgId" | "userId" | "invitedBy"> & {
   isYou: boolean;
-  /** Successful jobs this calendar month in the org time zone ("credits used"). */
+  /** Credits used by successful jobs this calendar month in the org time zone. */
   creditsUsed: number;
   lastActiveAt: string | null;
 };
@@ -47,7 +47,7 @@ export async function getTeam(): Promise<{ members: MemberView[]; departments: s
       createdAt: member.createdAt,
       updatedAt: member.updatedAt,
       isYou,
-      creditsUsed: own.filter((j) => j.ok && j.at >= monthStart).length,
+      creditsUsed: creditsOf(own.filter((j) => j.at >= monthStart)),
       lastActiveAt: member.status === "invited" ? null : isYou ? new Date().toISOString() : latest,
     };
   });
