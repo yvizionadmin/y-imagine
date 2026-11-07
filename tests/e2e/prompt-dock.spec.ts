@@ -93,3 +93,35 @@ test("Resize runs from the prompt dock: add images, pick a platform, resize, dow
   await expect(page.getByText("Done", { exact: true })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole("button", { name: "Download as ZIP" })).toBeEnabled();
 });
+
+test("Looks: the catalog shows as cards, the room is visible, and products land on it", async ({ page }) => {
+  await page.goto("/en/sign-up");
+  await page.locator("#auth-name").fill("Looks E2E");
+  await page.locator("#auth-company").fill(`Looks Co ${unique()}`);
+  await page.locator("#auth-email").fill(`looks-${unique()}@e2e.test`);
+  await page.locator("#auth-password").fill("e2e-password-123");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await page.waitForURL(/\/en\/home/);
+
+  // No catalog yet: the panel says how to connect one.
+  await page.goto("/en/looks");
+  await expect(page.getByText("Connect your store")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Build a shop-the-look photo" })).toBeVisible();
+
+  await page.goto("/en/settings/integrations");
+  await page.getByRole("button", { name: "Add connection" }).first().click();
+  await page.getByRole("button", { name: /Demo/ }).click();
+  await page.getByRole("button", { name: "Save connection" }).click();
+  await expect(page.getByText("Default", { exact: true })).toBeVisible();
+
+  // The catalog opens as cards; adding one marks it Added and places it on the room.
+  await page.goto("/en/looks");
+  const add = page.getByRole("button", { name: /^Add .* to the look$/ }).first();
+  await expect(add).toBeVisible();
+  await expect(page.getByRole("button", { name: "Generate Look" })).toBeDisabled();
+  await add.click();
+  await expect(page.getByText("Added", { exact: true })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole("heading", { name: "Layers" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Undo" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Generate Look" })).toBeEnabled();
+});

@@ -68,29 +68,49 @@ export function LookCanvas({
   }
 
   const selected = items.find((i) => i.id === selectedId);
+  // The room fits the screen above the prompt dock: as wide as allowed, but never taller than the space left.
+  const fitWidth = `min(560px, 100%, calc((100dvh - 27rem) * ${ratio.w} / ${ratio.h}))`;
 
+  // Empty: the room the look will use, with the three steps on top.
   if (items.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3">
-        <div className="flex w-full max-w-[380px] flex-col items-center gap-3 rounded-2xl border-2 border-dashed px-8 py-14 text-center">
-          <LayoutTemplate className="size-8 text-primary" strokeWidth={1.5} aria-hidden />
-          <h2 className="text-base font-bold">{t("arrangeTitle")}</h2>
-          <p className="text-xs text-muted-foreground">{t("arrangeBody")}</p>
-          <button type="button" onClick={onAddClick} className="mt-1 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground">
-            {t("addFirst")}
-          </button>
+      <div className="flex items-start justify-center p-4 sm:p-6">
+        <div dir="ltr" className="relative overflow-hidden rounded-xl bg-muted shadow-sm" style={{ aspectRatio: `${ratio.w} / ${ratio.h}`, width: fitWidth }}>
+          {backgroundUrl && (
+            // eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route
+            <img src={backgroundUrl} alt="" className="absolute inset-0 size-full object-cover" />
+          )}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/35 p-4">
+            <div dir="auto" className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-background/95 p-5 shadow-lg backdrop-blur">
+              <h2 className="flex items-center gap-2 text-base font-bold">
+                <LayoutTemplate className="size-5 shrink-0 text-primary" strokeWidth={1.75} aria-hidden />
+                {t("steps.title")}
+              </h2>
+              <ol className="flex flex-col gap-2.5">
+                {(["add", "arrange", "generate"] as const).map((step, i) => (
+                  <li key={step} className="flex items-start gap-2.5 text-start text-xs leading-snug">
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">{i + 1}</span>
+                    <span className="pt-0.5">{t(`steps.${step}`)}</span>
+                  </li>
+                ))}
+              </ol>
+              <button type="button" onClick={onAddClick} className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90">
+                {t("addFirst")}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center overflow-hidden p-6" onPointerDown={() => onSelect(null)}>
+    <div className="flex items-start justify-center overflow-hidden p-4 sm:p-6" onPointerDown={() => onSelect(null)}>
       <div
         ref={frameRef}
         dir="ltr"
-        className="relative w-full max-w-[560px] touch-none overflow-hidden rounded-xl bg-muted shadow-sm select-none"
-        style={{ aspectRatio: `${ratio.w} / ${ratio.h}`, transform: `scale(${zoom / 100})` }}
+        className="relative touch-none overflow-hidden rounded-xl bg-muted shadow-sm select-none"
+        style={{ aspectRatio: `${ratio.w} / ${ratio.h}`, width: fitWidth, transform: `scale(${zoom / 100})` }}
       >
         {backgroundUrl && (
           // eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route

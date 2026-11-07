@@ -3,7 +3,7 @@
 import { blockedReason } from "@/components/app/job-errors";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Box, Eye, EyeOff, Image as ImageIcon, Link2, Loader2, Lock, Plus, Search, Shapes, Square, Type, Unlock, X } from "lucide-react";
+import { Box, Check, Eye, EyeOff, Image as ImageIcon, Link2, Loader2, Lock, Plus, Search, Shapes, Square, Type, Unlock, X } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { cn } from "cn";
 import { ConfigPanel, PanelBody, PanelFooter, PanelHeader, Section } from "@/components/app/config-panel";
@@ -366,9 +366,24 @@ function Builder({ lookId }: { lookId: string | null }) {
 
       {/* The work area: products to add, the arranging canvas, and the layers of what is placed. */}
       <div className="grid min-h-[34rem] shrink-0 grow grid-cols-1 gap-4 p-4 sm:p-6 lg:grid-cols-[280px_1fr] xl:grid-cols-[280px_1fr_240px]">
-        <ProductPanel searchRef={searchRef} disabled={items.length >= MAX_LOOK_PRODUCTS} onAdd={addItem} />
+        <ProductPanel searchRef={searchRef} disabled={items.length >= MAX_LOOK_PRODUCTS} addedSkus={items.map((i) => i.sku)} onAdd={addItem} />
 
         <section className="relative flex flex-col overflow-hidden rounded-2xl border bg-gradient-to-br from-background to-canvas">
+          {/* Canvas tools on top, so they stay in view above the prompt dock. */}
+          {items.length > 0 && (
+            <div className="mx-auto mt-4 flex items-center gap-4 rounded-full border bg-background px-4 py-1.5 text-[11px] font-medium shadow-sm">
+              <button type="button" disabled={past.length === 0} onClick={() => { setFuture((f) => [items, ...f]); setItems(past.at(-1)!); setPast((p) => p.slice(0, -1)); }} className="disabled:opacity-40">{t("undo")}</button>
+              <button type="button" disabled={future.length === 0} onClick={() => { setPast((p) => [...p, items]); setItems(future[0]); setFuture((f) => f.slice(1)); }} className="disabled:opacity-40">{t("redo")}</button>
+              <span className="flex items-center gap-1.5">
+                <button type="button" aria-label={t("zoomOut")} onClick={() => setZoom((z) => Math.max(50, z - 10))}>−</button>
+                <span className="w-10 text-center font-bold" dir="ltr">{zoom}%</span>
+                <button type="button" aria-label={t("zoomIn")} onClick={() => setZoom((z) => Math.min(150, z + 10))}>+</button>
+              </span>
+              <button type="button" aria-pressed={grid} onClick={() => setGrid((g) => !g)} className={cn(grid && "text-primary")}>{t("grid")}</button>
+              <button type="button" onClick={() => setZoom(100)}>{t("fit")}</button>
+              <button type="button" onClick={() => { commit([]); setSelectedId(null); }} className="text-[#ef4444]">{t("reset")}</button>
+            </div>
+          )}
           <LookCanvas
             items={items}
             selectedId={selectedId}
@@ -399,20 +414,7 @@ function Builder({ lookId }: { lookId: string | null }) {
           <p className="pb-2 text-center text-[11px] text-muted-foreground">
             {t("limit", { count: format.number(items.length, LATN), max: MAX_LOOK_PRODUCTS })}
           </p>
-          {items.length > 0 && (
-            <div className="mx-auto mb-4 flex items-center gap-4 rounded-full border bg-background px-4 py-1.5 text-[11px] font-medium shadow-sm">
-              <button type="button" disabled={past.length === 0} onClick={() => { setFuture((f) => [items, ...f]); setItems(past.at(-1)!); setPast((p) => p.slice(0, -1)); }} className="disabled:opacity-40">{t("undo")}</button>
-              <button type="button" disabled={future.length === 0} onClick={() => { setPast((p) => [...p, items]); setItems(future[0]); setFuture((f) => f.slice(1)); }} className="disabled:opacity-40">{t("redo")}</button>
-              <span className="flex items-center gap-1.5">
-                <button type="button" aria-label={t("zoomOut")} onClick={() => setZoom((z) => Math.max(50, z - 10))}>−</button>
-                <span className="w-10 text-center font-bold" dir="ltr">{zoom}%</span>
-                <button type="button" aria-label={t("zoomIn")} onClick={() => setZoom((z) => Math.min(150, z + 10))}>+</button>
-              </span>
-              <button type="button" aria-pressed={grid} onClick={() => setGrid((g) => !g)} className={cn(grid && "text-primary")}>{t("grid")}</button>
-              <button type="button" onClick={() => setZoom(100)}>{t("fit")}</button>
-              <button type="button" onClick={() => { commit([]); setSelectedId(null); }} className="text-[#ef4444]">{t("reset")}</button>
-            </div>
-          )}
+          {items.length > 0 && <p className="px-4 pb-2 text-center text-[11px] text-muted-foreground">{t("tip")}</p>}
         </section>
 
         {items.length > 0 && (
@@ -459,98 +461,169 @@ function ProductRow({ name, sku, category, imageUrl, action }: { name: string; s
   );
 }
 
+/**
+ * The products to place: the catalog opens as a grid of cards (search narrows it), products already in the
+ * scene are marked Added, and a product can also come from its web page. No catalog: a card says how to connect.
+ */
 function ProductPanel({
   searchRef,
   disabled,
+  addedSkus,
   onAdd,
 }: {
   searchRef: React.RefObject<HTMLInputElement | null>;
   disabled: boolean;
+  addedSkus: string[];
   onAdd: (product: { sku: string; name: string; category: string | null; assetId: string; imageUrl: string; aspect: number }) => void;
 }) {
   const t = useTranslations("Looks");
   const [query, setQuery] = useState("");
+  const [searched, setSearched] = useState("");
   const [results, setResults] = useState<CatalogProduct[] | null>(null);
-  const [state, setState] = useState<"idle" | "searching" | "no_connection" | "error">("idle");
+  const [state, setState] = useState<"idle" | "searching" | "no_connection" | "error">("searching");
   const [adding, setAdding] = useState<string | null>(null);
   const [urlOpen, setUrlOpen] = useState(false);
   const [url, setUrl] = useState("");
 
-  async function search() {
+  function load(term: string) {
     setState("searching");
-    const response = await searchLookProducts(query);
-    if (response.ok) {
-      setResults(response.products);
-      setState("idle");
-    } else setState(response.error === "no_connection" ? "no_connection" : "error");
+    setSearched(term);
+    searchLookProducts(term)
+      .then((response) => {
+        if (response.ok) {
+          setResults(response.products);
+          setState("idle");
+        } else setState(response.error === "no_connection" ? "no_connection" : "error");
+      })
+      .catch(() => setState("error"));
   }
+
+  // The catalog's products show as soon as the builder opens.
+  useEffect(() => {
+    let live = true;
+    searchLookProducts("")
+      .then((response) => {
+        if (!live) return;
+        if (response.ok) {
+          setResults(response.products);
+          setState("idle");
+        } else setState(response.error === "no_connection" ? "no_connection" : "error");
+      })
+      .catch(() => live && setState("error"));
+    return () => {
+      live = false;
+    };
+  }, []);
 
   async function add(input: Parameters<typeof addLookProduct>[0], key: string) {
     setAdding(key);
     const response = await addLookProduct(input);
     setAdding(null);
-    if (response.ok) onAdd(response.product);
-    else setState("error");
+    if (response.ok) {
+      onAdd(response.product);
+      if (input.source === "url") setUrl("");
+    } else setState("error");
   }
 
   return (
-    <aside className="flex flex-col gap-3 rounded-2xl border bg-background p-4">
-      <h2 className="text-sm font-bold">{t("addProduct")}</h2>
-      <form className="relative" onSubmit={(e) => { e.preventDefault(); search(); }}>
-        <input ref={searchRef} value={query} maxLength={100} onChange={(e) => setQuery(e.target.value)} placeholder={t("searchPlaceholder")} aria-label={t("searchPlaceholder")}
-          className="h-9 w-full rounded-lg border ps-3 pe-9 text-xs outline-none placeholder:text-subtle focus-visible:border-ring" />
-        {query ? (
-          <button type="button" aria-label={t("clearSearch")} onClick={() => { setQuery(""); setResults(null); }} className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
-            <X className="size-4" aria-hidden />
-          </button>
-        ) : (
-          <button type="submit" aria-label={t("search")} className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
-            <Search className="size-4" aria-hidden />
-          </button>
-        )}
-      </form>
-      <button type="button" aria-expanded={urlOpen} onClick={() => setUrlOpen((o) => !o)} className="flex items-center gap-1.5 self-start text-[11px] font-semibold text-primary">
-        <Link2 className="size-3.5" aria-hidden />
-        {t("importUrl")}
-      </button>
-      {urlOpen && (
-        <form className="flex gap-1.5" onSubmit={(e) => { e.preventDefault(); if (url.trim()) add({ source: "url", url: url.trim() }, "url"); }}>
-          <input type="url" dir="ltr" value={url} onChange={(e) => setUrl(e.target.value)} placeholder={t("urlPlaceholder")} className="h-8 min-w-0 flex-1 rounded-lg border px-2 text-[11px] outline-none focus-visible:border-ring" />
-          <Button type="submit" size="sm" disabled={disabled || adding !== null || !url.trim()}>{adding === "url" ? <Loader2 className="animate-spin" aria-hidden /> : t("importBtn")}</Button>
+    <aside className="flex max-h-[max(24rem,calc(100dvh-19rem))] min-h-0 flex-col gap-3 rounded-2xl border bg-background p-4">
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 className="text-sm font-bold">{t("yourProducts")}</h2>
+        <span className="text-[11px] text-muted-foreground" dir="ltr">
+          {addedSkus.length}/{MAX_LOOK_PRODUCTS}
+        </span>
+      </div>
+      {state !== "no_connection" && (
+        <form className="relative" onSubmit={(e) => { e.preventDefault(); load(query); }}>
+          <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <input ref={searchRef} value={query} maxLength={100} onChange={(e) => setQuery(e.target.value)} placeholder={t("searchPlaceholder")} aria-label={t("searchPlaceholder")}
+            className="h-10 w-full rounded-xl border border-input bg-muted/40 ps-9 pe-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:bg-background" />
+          {query && (
+            <button type="button" aria-label={t("clearSearch")} onClick={() => { setQuery(""); load(""); }} className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X className="size-4" aria-hidden />
+            </button>
+          )}
         </form>
       )}
 
-      {state === "searching" && <Loader2 className="mx-auto mt-6 size-5 animate-spin text-muted-foreground" aria-hidden />}
       {state === "no_connection" && (
-        <p className="rounded-lg bg-muted p-3 text-[11px] text-muted-foreground">
-          {t("noConnection")} <Link href="/settings/integrations" className="font-semibold text-primary underline">{t("connect")}</Link>
-        </p>
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-muted/40 p-4 text-center">
+          <Box className="size-7 text-primary" strokeWidth={1.5} aria-hidden />
+          <p className="text-sm font-semibold">{t("noCatalogTitle")}</p>
+          <p className="text-xs text-muted-foreground">{t("noCatalogBody")}</p>
+          <Link href="/settings/integrations" className="mt-1 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90">
+            {t("connect")}
+          </Link>
+        </div>
       )}
       {state === "error" && <p role="alert" className="rounded-lg bg-red-50 p-3 text-[11px] text-danger">{t("failed")}</p>}
       {disabled && <p className="text-[11px] text-muted-foreground">{t("limitReached", { max: MAX_LOOK_PRODUCTS })}</p>}
 
-      {state === "idle" && results && results.length > 0 ? (
-        <ul className="flex flex-col gap-2 overflow-y-auto">
-          {results.map((p) => (
-            <ProductRow key={p.sku} name={p.name} sku={p.sku} category={p.category} imageUrl={p.images[0]}
-              action={
-                <button type="button" disabled={disabled || adding !== null} onClick={() => add({ source: "catalog", sku: p.sku, imageUrl: p.images[0] }, p.sku)}
-                  className="rounded-md bg-accent px-2.5 py-1 text-[11px] font-semibold text-primary disabled:opacity-50">
-                  {adding === p.sku ? t("adding") : t("add")}
-                </button>
-              }
-            />
-          ))}
-        </ul>
-      ) : (
-        state === "idle" && (
-          <div className="flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
-            <Box className="size-7 text-subtle" strokeWidth={1.5} aria-hidden />
-            <p className="text-xs font-semibold">{t("noProducts")}</p>
-            <p className="max-w-[200px] text-[10px] text-muted-foreground">{t("noProductsBody")}</p>
-          </div>
-        )
-      )}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {state === "searching" ? (
+          <ul className="grid grid-cols-2 gap-2" aria-hidden>
+            {Array.from({ length: 6 }, (_, i) => (
+              <li key={i} className="aspect-square animate-pulse rounded-xl bg-muted" />
+            ))}
+          </ul>
+        ) : state === "idle" && results && results.length > 0 ? (
+          <ul className="grid grid-cols-2 gap-2">
+            {results.map((p) => {
+              const added = addedSkus.includes(p.sku);
+              return (
+                <li key={p.sku}>
+                  <button
+                    type="button"
+                    disabled={disabled || adding !== null}
+                    onClick={() => add({ source: "catalog", sku: p.sku, imageUrl: p.images[0] }, p.sku)}
+                    aria-label={t("addTo", { name: p.name })}
+                    className={cn(
+                      "group relative flex w-full flex-col overflow-hidden rounded-xl border bg-background text-start transition hover:border-primary/50 hover:shadow-sm disabled:cursor-not-allowed",
+                      added && "border-primary/50",
+                    )}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- catalog image */}
+                    <img src={p.images[0]} alt="" className="aspect-square w-full bg-muted object-contain p-2" />
+                    <span className="flex flex-col gap-0.5 border-t px-2 py-1.5">
+                      <span className="truncate text-[11px] font-semibold">{p.name}</span>
+                      <span className="truncate text-[10px] text-muted-foreground" dir="ltr">#{p.sku}</span>
+                    </span>
+                    <span
+                      className={cn(
+                        "absolute end-1.5 top-1.5 flex h-6 items-center gap-1 rounded-full px-2 text-[10px] font-semibold shadow-sm",
+                        added ? "bg-primary text-primary-foreground" : "bg-background/95 text-primary group-hover:bg-primary group-hover:text-primary-foreground",
+                      )}
+                    >
+                      {adding === p.sku ? <Loader2 className="size-3 animate-spin" aria-hidden /> : added ? <Check className="size-3" aria-hidden /> : <Plus className="size-3" aria-hidden />}
+                      {adding === p.sku ? t("adding") : added ? t("added") : t("add")}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          state === "idle" && (
+            <div className="flex h-full flex-col items-center justify-center gap-1.5 py-6 text-center">
+              <Box className="size-7 text-subtle" strokeWidth={1.5} aria-hidden />
+              <p className="text-xs font-semibold">{searched ? t("noMatch", { query: searched }) : t("noProducts")}</p>
+            </div>
+          )
+        )}
+      </div>
+
+      <div className="border-t pt-3">
+        <button type="button" aria-expanded={urlOpen} onClick={() => setUrlOpen((o) => !o)} className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+          <Link2 className="size-3.5" aria-hidden />
+          {t("orUrl")}
+        </button>
+        {urlOpen && (
+          <form className="mt-2 flex gap-1.5" onSubmit={(e) => { e.preventDefault(); if (url.trim()) add({ source: "url", url: url.trim() }, "url"); }}>
+            <input type="url" dir="ltr" value={url} onChange={(e) => setUrl(e.target.value)} placeholder={t("urlPlaceholder")} aria-label={t("urlPlaceholder")} className="h-9 min-w-0 flex-1 rounded-lg border px-2.5 text-xs outline-none focus-visible:border-ring" />
+            <Button type="submit" size="sm" className="h-9" disabled={disabled || adding !== null || !url.trim()}>{adding === "url" ? <Loader2 className="animate-spin" aria-hidden /> : t("importBtn")}</Button>
+          </form>
+        )}
+      </div>
     </aside>
   );
 }

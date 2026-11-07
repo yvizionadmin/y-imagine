@@ -1244,6 +1244,19 @@
       "scene": "Category & style",
       "format": "Format",
       "background": "Room background"
+    },
+    "yourProducts": "Your products",
+    "addTo": "Add {name} to the look",
+    "noMatch": "No products match “{query}”.",
+    "noCatalogTitle": "Connect your store",
+    "noCatalogBody": "Pick products straight from your catalog, or import one from its web page.",
+    "orUrl": "Import from a web page",
+    "tip": "Drag to move · drag the corner to resize · click a product to lock, bring forward or remove",
+    "steps": {
+      "title": "Build a shop-the-look photo",
+      "add": "Add products from your catalog or a product page",
+      "arrange": "Drag them into place on the room",
+      "generate": "Pick a style, then press ↑ to make the photo"
     }
   },
   "Resize": {

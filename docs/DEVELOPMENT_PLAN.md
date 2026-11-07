@@ -994,7 +994,11 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   Resize = add images inline + Platform / Output chips, ↑ resizes, Download ZIP beside it, queue + preview as results;
   Looks = scene prompt inline + Category & style / Room background / Format / Title chips, product search, arranging
   canvas and layers as the work area (the result view is unchanged). Verified: tsc + eslint clean; Vitest (+ upscale,
-  ai-jobs upscale, feed cases); `next build`; Playwright (+ Resize dock, Try it, upscale in the main flow). The app layout stacks canvas over dock
+  ai-jobs upscale, feed cases); `next build`; Playwright (+ Resize dock, Try it, upscale in the main flow).
+  **Looks, friendlier:** the catalog opens as a grid of product cards (search narrows it; Added marks what is on the
+  room; no catalog → a Connect your store card; import from a web page below), the empty canvas shows the chosen
+  room with a 3-step guide, the canvas fits the screen above the dock with its tools on top, and a one-line hint
+  explains drag / resize / lock. Playwright +1 (Looks: no-catalog card, cards, Added, layers, Generate enabled). The app layout stacks canvas over dock
   when a page has one (`has-[[data-dock]]`). Removed the decorative undo/redo/Fit header and the "Isolated Source Layer
   Connected" pill. Mockup: Artifact "Imagine AI – Studio Redesign". Verified: tsc + eslint clean; Vitest 203 passed
   (+3 `dock-label.test.ts`; the 4 `email.test.ts` failures are `._*` files the exFAT drive writes into the test
