@@ -2,7 +2,7 @@ import "server-only";
 import path from "node:path";
 import sharp from "sharp";
 import { ProviderError } from "../errors";
-import type { ImageProvider } from "../types";
+import { UPSCALE_EDGE, type ImageProvider } from "../types";
 import { composeLook } from "@/lib/image/compose-look";
 import { measureSwatch } from "@/lib/image/swatch";
 import { composeAplus } from "@/lib/image/compose-aplus";
@@ -91,6 +91,17 @@ export const demoProvider: ImageProvider = {
     await wait(LATENCY_MS);
     failIfRequested(request.sku);
     return { ...(await composeAplus(request)), provider: "demo", model: "demo-aplus-v1" };
+  },
+
+  // A plain resize to the target size (no added detail), so the flow runs offline.
+  async upscale(request) {
+    await wait(LATENCY_MS);
+    const meta = await sharp(request.image.bytes).metadata();
+    const k = UPSCALE_EDGE[request.size] / Math.max(meta.width ?? 1024, meta.height ?? 1024);
+    const width = Math.round((meta.width ?? 1024) * k);
+    const height = Math.round((meta.height ?? 1024) * k);
+    const data = await sharp(request.image.bytes).resize(width, height).webp({ quality: 88 }).toBuffer();
+    return { url: `data:image/webp;base64,${data.toString("base64")}`, width, height, provider: "demo", model: "demo-upscale-v1" };
   },
 
   async generateLook(request) {

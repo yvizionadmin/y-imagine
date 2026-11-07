@@ -2,7 +2,7 @@
 
 import { blockedReason, type BlockedReason } from "@/components/app/job-errors";
 import { useRef, useState } from "react";
-import { ChevronDown, CircleCheck } from "lucide-react";
+import { ChevronDown, CircleCheck, Package, Palette, Square } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { cn } from "cn";
@@ -11,13 +11,15 @@ import {
   Field,
   FormatFields,
   ImproveWithAiButton,
-  OptionalTag,
   PanelBody,
   PanelFooter,
   PanelHeader,
   ReadyTag,
   RequiredTag,
   Section,
+  chipLabel,
+  DockTile,
+  revealField,
 } from "@/components/app/config-panel";
 import { ProductDropzone, useObjectUrl } from "@/components/app/upload-inputs";
 import { PromptChips, PromptTips } from "@/components/app/prompt-assist";
@@ -30,6 +32,8 @@ import { categoryPresets } from "@/lib/catalog-presets";
 import { useCategoryParam, useCategorySync, useSubcategorySync } from "@/lib/use-category-param";
 import { SubcategoryField } from "@/components/app/subcategory-field";
 import { saveGeneration } from "@/features/history/actions";
+import { ResultFeed, useToolFeed } from "@/components/app/result-feed";
+import { promptOf } from "@/lib/feed-turns";
 import { BulkModeTabs } from "@/features/image-batch/components/bulk-mode-tabs";
 import { analyzeSwatch, recolorProduct } from "../actions";
 import { RecolorCanvas, type RecolorCanvasState } from "./recolor-canvas";
@@ -52,7 +56,8 @@ type Outcome =
   | { kind: "failed"; reason: "generation" | "input" | BlockedReason };
 
 const initialState: FormState = {
-  category: categoryPresets[0].key,
+  // Nothing is pre-picked: the merchant chooses the category.
+  category: "",
   sku: "",
   product: null,
   swatch: null,
@@ -67,6 +72,7 @@ export function RecolorWorkspace() {
   const t = useTranslations("Recolor");
   const tp = useTranslations("Presets");
   const th = useTranslations("PromptHints");
+  const tw = useTranslations("Workspace");
   const searchParams = useSearchParams();
   // History → "Open in tool" passes ?sku= so the merchant can regenerate for the same product;
   // the template picker and Generate pass ?category=, which sets the wording (fabric, finish…).
@@ -78,6 +84,7 @@ export function RecolorWorkspace() {
   }));
   const chooseCategory = useCategorySync(form.category, (category) => setForm((f) => ({ ...f, category })));
   const [subcategory, chooseSubcategory] = useSubcategorySync(form.category);
+  // Before a category is chosen, labels follow the first preset (a fabric recolor).
   const preset = categoryPresets.find((c) => c.key === form.category) ?? categoryPresets[0];
   const kind = preset.recolorKind;
   const tk = (key: string) => t(`kinds.${kind}.${key}`);
@@ -85,15 +92,27 @@ export function RecolorWorkspace() {
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [generating, setGenerating] = useState(false);
   const [used, setUsed] = useState(false);
+  const feed = useToolFeed("recolor");
+  // The current result's History id: it shows in the canvas, so it is hidden from the feed.
+  const [savedId, setSavedId] = useState<string | null>(null);
+  // Opened from History ("Open in tool"): put that result's notes back, once, to regenerate from them.
+  const [restoredFrom, setRestoredFrom] = useState<string | null>(null);
+  if (feed.origin && restoredFrom !== feed.origin.id) {
+    setRestoredFrom(feed.origin.id);
+    const prompt = promptOf(feed.origin);
+    if (prompt && !form.notes) setForm({ ...form, notes: prompt });
+  }
   // Monotonic ids let us ignore responses that were cancelled or superseded.
   const runId = useRef(0);
   const swatchRunId = useRef(0);
   const notesRef = useRef<HTMLTextAreaElement>(null);
+  const skuRef = useRef<HTMLInputElement>(null);
+  const swatchRef = useRef<HTMLSpanElement>(null);
 
   const productPreview = useObjectUrl(form.product);
   const swatchPreview = useObjectUrl(form.swatch);
   const hex = swatchState?.status === "ready" ? swatchState.analysis.hex : null;
-  const productReady = form.sku.trim() !== "" && form.product !== null;
+  const productReady = form.category !== "" && form.sku.trim() !== "" && form.product !== null;
   const canSubmit = productReady && hex !== null;
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -131,11 +150,13 @@ export function RecolorWorkspace() {
     if (id !== runId.current) return;
     setGenerating(false);
     setUsed(false);
+    setSavedId(null);
     setOutcome(
       result.ok
         ? { kind: "result", image: result.image, preserved: result.preserved }
         : { kind: "failed", reason: result.error === "invalid_input" ? "input" : (blockedReason(result.error) ?? "generation") },
     );
+    if (result.ok) void saveResult(result.image);
   }
 
   function cancel() {
@@ -159,16 +180,21 @@ export function RecolorWorkspace() {
   }
 
   async function useImage() {
-    if (outcome?.kind !== "result") return;
+    if (outcome?.kind !== "result" || used) return;
+    await saveResult(outcome.image);
+  }
+
+  // Every result is saved to History as it arrives (the results feed), so "Use Image" shows as saved.
+  async function saveResult(image: GeneratedImage) {
     const result = await saveGeneration({
       mode: "recolor",
       sku: form.sku.trim(),
       title: form.swatch ? swatchDisplayName(form.swatch.name) : "",
-      imageUrl: outcome.image.url,
-      width: outcome.image.width,
-      height: outcome.image.height,
-      provider: outcome.image.provider,
-      model: outcome.image.model,
+      imageUrl: image.url,
+      width: image.width,
+      height: image.height,
+      provider: image.provider,
+      model: image.model,
       settings: {
         category: form.category,
         subcategory,
@@ -179,8 +205,11 @@ export function RecolorWorkspace() {
         resolution: form.resolution,
         notes: form.notes || null,
       },
-    });
-    setUsed(result.ok);
+    }).catch(() => null);
+    if (!result?.ok) return;
+    setUsed(true);
+    setSavedId(result.id);
+    feed.track(result.id);
   }
 
   const canvasState: RecolorCanvasState = generating
@@ -195,12 +224,12 @@ export function RecolorWorkspace() {
 
   return (
     <>
-      <ConfigPanel onSubmit={() => canSubmit && recolor()}>
+      <ConfigPanel tool="recolor" onSubmit={() => canSubmit && recolor()}>
         <PanelHeader title={tk("panelTitle")} />
 
         <PanelBody disabled={generating}>
           <BulkModeTabs tool="/recolor" mode="single" />
-          <Section title={t("productInfo")} aside={productReady ? <ReadyTag /> : <RequiredTag />}>
+          <Section title={t("productInfo")} aside={productReady ? <ReadyTag /> : <RequiredTag />} summary={form.sku.trim() || form.product?.name} icon={<Package className="size-3.5 shrink-0" aria-hidden />}>
             <Field label={t("category")} htmlFor="category">
               <div className="relative">
                 <select
@@ -209,6 +238,9 @@ export function RecolorWorkspace() {
                   onChange={(e) => chooseCategory(e.target.value)}
                   className="w-full appearance-none rounded-lg border bg-transparent py-2 ps-3 pe-8 text-[13px] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
+                  <option value="" disabled>
+                    {tw("chooseCategory")}
+                  </option>
                   {categoryPresets.map((c) => (
                     <option key={c.key} value={c.key}>
                       {tp(`categories.${c.key}`)}
@@ -222,6 +254,7 @@ export function RecolorWorkspace() {
             <Field label={t("sku")} htmlFor="sku">
               <div className="relative">
                 <Input
+                  ref={skuRef}
                   id="sku"
                   value={form.sku}
                   maxLength={64}
@@ -244,8 +277,9 @@ export function RecolorWorkspace() {
             />
           </Section>
 
-          <Section title={tk("color")}>
+          <Section title={tk("color")} summary={[form.swatch?.name, t(`scopes.${form.scope}`)].filter(Boolean).join(" · ")} icon={<Palette className="size-3.5 shrink-0" aria-hidden />}>
             <p className="-mt-1 text-[11px] leading-[1.4] text-[#6b7280]">{tk("colorHint")}</p>
+            <span ref={swatchRef} tabIndex={-1} className="sr-only" />
             <SwatchPicker title={tk("swatchUploadTitle")} file={form.swatch} preview={swatchPreview} state={swatchState} onChange={changeSwatch} />
             <Field label={t("scope")} gap="gap-1.5">
               <div role="radiogroup" aria-label={t("scope")} className="flex flex-wrap gap-1.5">
@@ -268,7 +302,7 @@ export function RecolorWorkspace() {
             </Field>
           </Section>
 
-          <Section title={t("format")}>
+          <Section title={t("format")} summary={`${form.aspectRatio} · ${form.resolution}`} icon={<Square className="size-3.5 shrink-0" aria-hidden />}>
             <FormatFields
               aspectRatio={form.aspectRatio}
               onAspectRatioChange={(value) => set("aspectRatio", value)}
@@ -277,26 +311,29 @@ export function RecolorWorkspace() {
             />
           </Section>
 
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <label htmlFor="notes" className="text-[11px] font-bold uppercase">
-                {t("notes")}
-              </label>
-              <OptionalTag />
+          <div className="flex gap-3 sm:gap-4">
+            <div className="flex shrink-0 gap-1.5">
+              <DockTile label={tw("productTile")} preview={productPreview} onClick={() => revealField(skuRef.current)} />
+              <DockTile label={tw("swatchTile")} preview={swatchPreview} tilt={5} onClick={() => revealField(swatchRef.current)} />
             </div>
-            <Textarea
-              ref={notesRef}
-              id="notes"
-              value={form.notes}
-              maxLength={2000}
-              onChange={(e) => set("notes", e.target.value)}
-              placeholder={tk("notesPlaceholder")}
-              className="h-[52px] min-h-[52px] resize-none rounded-lg bg-muted px-2.5 py-2.5 text-[11px] placeholder:text-subtle md:text-[11px]"
-            />
-            <PromptChips chips={th.raw(`recolor.${kind}`) as string[]} value={form.notes} max={2000} onChange={(value) => set("notes", value)} />
-            <PromptTips text={form.notes} />
-            <div className="flex">
-              <ImproveWithAiButton value={form.notes} onChange={(value) => set("notes", value)} request={{ tool: "recolor", category: form.category }} />
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <label htmlFor="notes" className="sr-only">
+                {chipLabel(t("notes"))}
+              </label>
+              <Textarea
+                ref={notesRef}
+                id="notes"
+                value={form.notes}
+                maxLength={2000}
+                onChange={(e) => set("notes", e.target.value)}
+                placeholder={tk("notesPlaceholder")}
+                className="field-sizing-content max-h-40 min-h-16 cursor-text resize-none rounded-xl border border-input bg-muted/40 px-3 py-2.5 text-sm leading-relaxed shadow-none placeholder:text-muted-foreground hover:border-ring/50 focus-visible:border-ring focus-visible:bg-background focus-visible:ring-3 focus-visible:ring-ring/30 md:text-sm dark:bg-input/30"
+              />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <PromptChips chips={th.raw(`recolor.${kind}`) as string[]} value={form.notes} max={2000} limit={3} onChange={(value) => set("notes", value)} />
+                <ImproveWithAiButton value={form.notes} onChange={(value) => set("notes", value)} request={{ tool: "recolor", category: form.category }} />
+              </div>
+              <PromptTips text={form.notes} />
             </div>
           </div>
         </PanelBody>
@@ -317,6 +354,8 @@ export function RecolorWorkspace() {
           }}
         />
       </ConfigPanel>
+
+      <ResultFeed items={feed.items} hideIds={savedId ? [savedId] : []} onReuse={(prompt) => set("notes", prompt)} />
 
       <RecolorCanvas
         kind={kind}

@@ -26,6 +26,7 @@ import { useCategoryParam, useCategorySync, useSubcategorySync } from "@/lib/use
 import { SubcategoryField } from "@/components/app/subcategory-field";
 import type { AspectRatio, Resolution } from "@/lib/image-formats";
 import { saveGeneration } from "@/features/history/actions";
+import { ResultFeed, useToolFeed } from "@/components/app/result-feed";
 import { generateAplusImage } from "../actions";
 import { BulkModeTabs } from "@/features/image-batch/components/bulk-mode-tabs";
 import { TEXT_LIMITS } from "../config";
@@ -53,7 +54,8 @@ const initialState: FormState = {
   sku: "",
   product: { kind: "file", file: null },
   reference: { kind: "none" },
-  category: categoryPresets[0].key,
+  // Nothing is pre-picked: the merchant chooses the category (scene and style stay optional).
+  category: "",
   scene: null,
   style: null,
   title: "",
@@ -69,6 +71,7 @@ const initialState: FormState = {
 export function AplusWorkspace() {
   const jobCost = useJobCost("aplus");
   const t = useTranslations("Aplus");
+  const tw = useTranslations("Workspace");
   const tp = useTranslations("Presets");
   const locale = useLocale();
   const searchParams = useSearchParams();
@@ -85,6 +88,9 @@ export function AplusWorkspace() {
   );
   const [subcategory, chooseSubcategory] = useSubcategorySync(form.category);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const feed = useToolFeed("aplus");
+  // The current result's History id: it shows in the canvas, so it is hidden from the feed.
+  const [savedId, setSavedId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [comparing, setComparing] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -106,7 +112,7 @@ export function AplusWorkspace() {
   const preset = categoryPresets.find((c) => c.key === form.category) ?? categoryPresets[0];
   const hasProduct = form.product.kind === "file" ? productFile !== null : form.product.url.trim() !== "";
   const featuresComplete = form.features.every((f) => f.title.trim() && f.description.trim());
-  const canSubmit = form.sku.trim() !== "" && hasProduct && form.title.trim() !== "" && featuresComplete;
+  const canSubmit = form.category !== "" && form.sku.trim() !== "" && hasProduct && form.title.trim() !== "" && featuresComplete;
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -150,11 +156,42 @@ export function AplusWorkspace() {
     const result = await generateAplusImage(data);
     if (id !== runId.current) return;
     setGenerating(false);
+    setSavedId(null);
+    if (result.ok) void saveResult(result.image);
     setOutcome(
       result.ok
         ? { kind: "result", image: result.image }
         : { kind: "failed", reason: result.error === "invalid_input" ? "input" : result.error === "invalid_url" ? "url" : (blockedReason(result.error) ?? "generation") },
     );
+  }
+
+  // Every result is saved to History as it arrives (the results feed); Export then only downloads.
+  async function saveResult(image: GeneratedImage) {
+    const saved = await saveGeneration({
+      mode: "aplus",
+      sku: form.sku.trim(),
+      title: form.title.trim(),
+      imageUrl: image.url,
+      width: image.width,
+      height: image.height,
+      provider: image.provider,
+      model: image.model,
+      settings: {
+        title: form.title,
+        subtitle: form.subtitle || null,
+        features: JSON.stringify(form.features),
+        layout: draft.layout,
+        subcategory,
+        scene: form.scene,
+        style: form.style,
+        aspectRatio: form.aspectRatio,
+        resolution: form.resolution,
+      },
+    }).catch(() => null);
+    if (!saved?.ok) return false;
+    setSavedId(saved.id);
+    feed.track(saved.id);
+    return true;
   }
 
   function editDetails() {
@@ -183,7 +220,7 @@ export function AplusWorkspace() {
 
   return (
     <>
-      <ConfigPanel onSubmit={generate}>
+      <ConfigPanel tool="aplus" onSubmit={generate}>
         <PanelHeader title={t("panelTitle")} />
 
         <PanelBody disabled={generating}>
@@ -225,7 +262,7 @@ export function AplusWorkspace() {
             <ReferencePicker value={form.reference} preview={referencePreview} onChange={(value) => set("reference", value)} />
           </Section>
 
-          <Section title={t("sceneStyle")}>
+          <Section title={t("sceneStyle")} aside={form.category === "" ? <RequiredTag /> : undefined} summary={form.category ? tp(`categories.${form.category}`) : null}>
             <Field label={t("category")} htmlFor="category">
               <div className="relative">
                 <select
@@ -234,6 +271,9 @@ export function AplusWorkspace() {
                   onChange={(e) => chooseCategory(e.target.value)}
                   className="w-full appearance-none rounded-lg border bg-transparent py-2 ps-3 pe-8 text-[13px] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
+                  <option value="" disabled>
+                    {tw("chooseCategory")}
+                  </option>
                   {categoryPresets.map((c) => (
                     <option key={c.key} value={c.key}>
                       {tp(`categories.${c.key}`)}
@@ -244,52 +284,58 @@ export function AplusWorkspace() {
               </div>
             </Field>
             <SubcategoryField id="subcategory" category={form.category} value={subcategory} onChange={chooseSubcategory} />
-            <Field label={t("scenes")} gap="gap-1.5">
-              <div role="radiogroup" aria-label={t("scenes")} className="flex flex-wrap gap-2">
-                {preset.scenes.map((scene) => {
-                  const selected = form.scene === scene.key;
-                  return (
-                    <button
-                      key={scene.key}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      onClick={() => set("scene", selected ? null : scene.key)}
-                      className={cn(
-                        "flex h-[110px] w-[118px] flex-col overflow-hidden rounded-xl border bg-muted text-start",
-                        selected && "border-2 border-primary",
-                      )}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element -- tenant-configurable preset images */}
-                      <img src={scene.image} alt="" className="h-[70px] w-full shrink-0 object-cover" />
-                      <span className="w-full truncate p-1.5 text-[11px] font-semibold">{tp(`scenes.${scene.key}`)}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </Field>
-            <Field label={t("style")} gap="gap-1.5">
-              <div role="radiogroup" aria-label={t("style")} className="flex flex-wrap gap-1.5">
-                {preset.styles.map((style) => {
-                  const selected = form.style === style;
-                  return (
-                    <button
-                      key={style}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      onClick={() => set("style", selected ? null : style)}
-                      className={cn(
-                        "rounded-full border bg-muted px-3 py-2 text-xs font-medium text-muted-foreground",
-                        selected && "border-primary bg-primary text-primary-foreground",
-                      )}
-                    >
-                      {tp(`styles.${style}`)}
-                    </button>
-                  );
-                })}
-              </div>
-            </Field>
+            {form.category === "" ? (
+              <p className="text-xs text-muted-foreground">{tw("chooseFirst")}</p>
+            ) : (
+              <>
+                <Field label={t("scenes")} gap="gap-1.5">
+                  <div role="radiogroup" aria-label={t("scenes")} className="flex flex-wrap gap-2">
+                    {preset.scenes.map((scene) => {
+                      const selected = form.scene === scene.key;
+                      return (
+                        <button
+                          key={scene.key}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() => set("scene", selected ? null : scene.key)}
+                          className={cn(
+                            "flex h-[110px] w-[118px] flex-col overflow-hidden rounded-xl border bg-muted text-start",
+                            selected && "border-2 border-primary",
+                          )}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element -- tenant-configurable preset images */}
+                          <img src={scene.image} alt="" className="h-[70px] w-full shrink-0 object-cover" />
+                          <span className="w-full truncate p-1.5 text-[11px] font-semibold">{tp(`scenes.${scene.key}`)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Field>
+                <Field label={t("style")} gap="gap-1.5">
+                  <div role="radiogroup" aria-label={t("style")} className="flex flex-wrap gap-1.5">
+                    {preset.styles.map((style) => {
+                      const selected = form.style === style;
+                      return (
+                        <button
+                          key={style}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() => set("style", selected ? null : style)}
+                          className={cn(
+                            "rounded-full border bg-muted px-3 py-2 text-xs font-medium text-muted-foreground",
+                            selected && "border-primary bg-primary text-primary-foreground",
+                          )}
+                        >
+                          {tp(`styles.${style}`)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Field>
+              </>
+            )}
           </Section>
 
           <Section title={t("textContent")}>
@@ -343,6 +389,8 @@ export function AplusWorkspace() {
         />
       </ConfigPanel>
 
+      <ResultFeed items={feed.items} hideIds={savedId ? [savedId] : []} />
+
       <AplusCanvas
         state={canvasState}
         comparing={comparing}
@@ -366,31 +414,7 @@ export function AplusWorkspace() {
           filenameBase={`${form.sku.trim()}_aplus_v1`}
           aspectRatio={form.aspectRatio}
           resolution={form.resolution}
-          onSave={async () =>
-            (
-              await saveGeneration({
-              mode: "aplus",
-              sku: form.sku.trim(),
-              title: form.title.trim(),
-              imageUrl: outcome.image.url,
-              width: outcome.image.width,
-              height: outcome.image.height,
-              provider: outcome.image.provider,
-              model: outcome.image.model,
-              settings: {
-                title: form.title,
-                subtitle: form.subtitle || null,
-                features: JSON.stringify(form.features),
-                layout: draft.layout,
-                subcategory,
-                scene: form.scene,
-                style: form.style,
-                aspectRatio: form.aspectRatio,
-                resolution: form.resolution,
-              },
-              })
-            ).ok
-          }
+          onSave={async () => (savedId ? true : saveResult(outcome.image))}
         />
       )}
     </>

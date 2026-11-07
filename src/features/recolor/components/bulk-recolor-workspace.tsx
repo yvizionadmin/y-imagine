@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
+import { Palette, PenLine, Square } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
-import { ConfigPanel, Field, FormatFields, OptionalTag, PanelBody, PanelFooter, PanelHeader, Section } from "@/components/app/config-panel";
+import { chipLabel, ConfigPanel, shorten, Field, FormatFields, OptionalTag, ReadyTag, RequiredTag, PanelBody, PanelFooter, PanelHeader, Section } from "@/components/app/config-panel";
 import { blockedReason } from "@/components/app/job-errors";
 import { PromptChips, PromptTips } from "@/components/app/prompt-assist";
 import { useObjectUrl } from "@/components/app/upload-inputs";
@@ -32,10 +33,11 @@ export function BulkRecolorWorkspace() {
   const th = useTranslations("PromptHints");
   const tw = useTranslations("Workspace");
   const startError = useStartError();
-  const runs = useImageRuns("recolor");
+  const runs = useImageRuns();
   const [text, setText] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
-  const [category, setCategory] = useState(categoryPresets[0].key);
+  // Nothing is pre-picked: the merchant chooses the category.
+  const [category, setCategory] = useState("");
   const [subcategory, setSubcategory] = useState<string | null>(null);
   const [swatch, setSwatch] = useState<File | null>(null);
   const [swatchState, setSwatchState] = useState<SwatchState | null>(null);
@@ -54,7 +56,7 @@ export function BulkRecolorWorkspace() {
   const kind = (findCategory(category) ?? categoryPresets[0]).recolorKind;
   const tk = (key: string) => tr(`kinds.${kind}.${key}`);
   const hex = swatchState?.status === "ready" ? swatchState.analysis.hex : null;
-  const canSubmit = count > 0 && swatch !== null && hex !== null;
+  const canSubmit = count > 0 && category !== "" && swatch !== null && hex !== null;
 
   async function changeSwatch(file: File | null) {
     setSwatch(file);
@@ -100,7 +102,7 @@ export function BulkRecolorWorkspace() {
 
   return (
     <>
-      <ConfigPanel onSubmit={start}>
+      <ConfigPanel tool="recolor" onSubmit={start}>
         <PanelHeader title={t("panelTitle")} />
 
         <PanelBody disabled={pending}>
@@ -127,7 +129,7 @@ export function BulkRecolorWorkspace() {
             template={TEMPLATE}
           />
 
-          <Section title={tk("color")}>
+          <Section title={tk("color")} aside={swatch && category ? <ReadyTag /> : <RequiredTag />} summary={swatch?.name} icon={<Palette className="size-3.5 shrink-0" aria-hidden />}>
             <CategoryFields
               label={tr("category")}
               category={category}
@@ -158,28 +160,25 @@ export function BulkRecolorWorkspace() {
             </Field>
           </Section>
 
-          <Section title={tr("format")}>
+          <Section title={tr("format")} summary={`${aspectRatio} · ${resolution}`} icon={<Square className="size-3.5 shrink-0" aria-hidden />}>
             <FormatFields aspectRatio={aspectRatio} onAspectRatioChange={setAspectRatio} resolution={resolution} onResolutionChange={setResolution} />
           </Section>
 
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <label htmlFor="bulk-notes" className="text-[11px] font-bold uppercase">
-                {tr("notes")}
-              </label>
-              <OptionalTag />
-            </div>
+          <Section title={tr("notes")} aside={<OptionalTag />} summary={shorten(notes)} icon={<PenLine className="size-3.5 shrink-0" aria-hidden />}>
+            <label htmlFor="bulk-notes" className="sr-only">
+              {chipLabel(tr("notes"))}
+            </label>
             <Textarea
               id="bulk-notes"
               value={notes}
               maxLength={2000}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={tk("notesPlaceholder")}
-              className="h-[52px] min-h-[52px] resize-none rounded-lg bg-muted px-2.5 py-2.5 text-[11px] placeholder:text-subtle md:text-[11px]"
+              className="field-sizing-content max-h-40 min-h-16 cursor-text resize-none rounded-xl border border-input bg-muted/40 px-3 py-2.5 text-sm leading-relaxed shadow-none placeholder:text-muted-foreground hover:border-ring/50 focus-visible:border-ring focus-visible:bg-background focus-visible:ring-3 focus-visible:ring-ring/30 md:text-sm dark:bg-input/30"
             />
             <PromptChips chips={th.raw(`recolor.${kind}`) as string[]} value={notes} max={2000} onChange={setNotes} />
             <PromptTips text={notes} />
-          </div>
+          </Section>
 
           <StartErrorBox error={error} />
         </PanelBody>

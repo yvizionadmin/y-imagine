@@ -201,11 +201,11 @@ function unavailable(code: ProviderErrorCode): ImageProvider {
   const refuse = async (): Promise<never> => {
     throw new ProviderError(code);
   };
-  return { id: "demo", createImage: refuse, generateLifestyle: refuse, analyzeSwatch: measureSwatch, recolor: refuse, generateAplus: refuse, generateLook: refuse };
+  return { id: "demo", createImage: refuse, generateLifestyle: refuse, analyzeSwatch: measureSwatch, recolor: refuse, generateAplus: refuse, generateLook: refuse, upscale: refuse };
 }
 
 // Methods that produce a job (one credit). analyzeSwatch is a helper step of Recolor, not a job.
-const JOB_METHODS = ["createImage", "generateLifestyle", "recolor", "generateAplus", "generateLook"] as const;
+const JOB_METHODS = ["createImage", "generateLifestyle", "recolor", "generateAplus", "generateLook", "upscale"] as const;
 
 /**
  * Platform controls checked before a job reaches the provider: a feature switched off by a super

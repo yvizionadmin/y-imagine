@@ -2,7 +2,7 @@
 
 import { blockedReason, type BlockedReason } from "@/components/app/job-errors";
 import { useRef, useState, useTransition } from "react";
-import { ChevronDown } from "lucide-react";
+import { Camera, ChevronDown, Image as ImageIcon, Package, Square } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { cn } from "cn";
@@ -11,13 +11,19 @@ import {
   Field,
   FormatFields,
   ImproveWithAiButton,
+  revealField,
   PanelBody,
   PanelFooter,
   PanelHeader,
   RequiredTag,
   Section,
+  chipLabel,
+  DockTile,
 } from "@/components/app/config-panel";
 import { ExportDialog } from "@/components/app/export-dialog";
+import { ExampleCards } from "@/components/app/example-cards";
+import { ResultFeed, useToolFeed } from "@/components/app/result-feed";
+import { promptOf } from "@/lib/feed-turns";
 import { FilePickerRow, ProductDropzone, useObjectUrl } from "@/components/app/upload-inputs";
 import { Input } from "@/components/ui/input";
 import { CatalogFetch } from "@/features/catalog/components/catalog-fetch";
@@ -51,11 +57,13 @@ type FormState = {
   instructions: string;
 };
 
-/** Each category starts on its top recommendation, so Generate works without picking a scene. */
-const defaultScene = (category: string): SceneChoice => {
-  const first = findCategory(category)?.scenes[0];
-  return first ? { kind: "preset", key: first.key } : null;
-};
+
+/** The start screen's "Try it" examples: each fills the category, scene, style and prompt. */
+const EXAMPLES = [
+  { key: "livingSofa", category: "furniture", scene: "livingRoom", style: "scandinavian" },
+  { key: "patioSet", category: "outdoor", scene: "patioTerrace", style: "mediterranean" },
+  { key: "diningLight", category: "lighting", scene: "duskDining", style: "contemporary" },
+] as const;
 
 type Outcome = { kind: "result"; image: GeneratedImage } | { kind: "failed"; reason: "generation" | "input" | BlockedReason };
 /** One camera angle of a run: one image, one credit. */
@@ -75,8 +83,9 @@ const initialState: FormState = {
   sku: "",
   product: null,
   reference: null,
-  category: categoryPresets[0].key,
-  scene: defaultScene(categoryPresets[0].key),
+  // Nothing is pre-picked: the merchant chooses the category and the scene.
+  category: "",
+  scene: null,
   style: null,
   dimensions: { w: "", h: "", d: "" },
   shots: { shotSet: "single", angles: SHOT_SET_ANGLES.single, keepScene: true, minimalProps: false },
@@ -89,6 +98,7 @@ export function GenerateWorkspace() {
   const jobCost = useJobCost("generate");
   const t = useTranslations("Generate");
   const tp = useTranslations("Presets");
+  const tw = useTranslations("Workspace");
   const th = useTranslations("PromptHints");
   const searchParams = useSearchParams();
   // History → "Open in tool" passes ?sku= so the merchant can regenerate for the same product;
@@ -97,29 +107,40 @@ export function GenerateWorkspace() {
   const [form, setForm] = useState<FormState>(() => ({
     ...initialState,
     sku: searchParams.get("sku")?.slice(0, 64) ?? "",
-    ...(paramCategory ? { category: paramCategory, scene: defaultScene(paramCategory) } : {}),
+    ...(paramCategory ? { category: paramCategory } : {}),
   }));
   const chooseCategory = useCategorySync(form.category, (category) =>
     // A described or uploaded scene isn't tied to a category, so it survives the switch.
-    setForm((f) => ({ ...f, category, scene: f.scene?.kind === "custom" || f.scene?.kind === "upload" ? f.scene : defaultScene(category), style: null })),
+    setForm((f) => ({ ...f, category, scene: f.scene?.kind === "custom" || f.scene?.kind === "upload" ? f.scene : null, style: null })),
   );
   const [subcategory, chooseSubcategory] = useSubcategorySync(form.category);
   const [shots, setShots] = useState<Shot[] | null>(null);
   const [activeShot, setActiveShot] = useState(0);
   const [exportOpen, setExportOpen] = useState(false);
+  const feed = useToolFeed("lifestyle");
+  // History ids of this job's saved shots, by shot index (shown in the canvas, so hidden from the feed).
+  const [savedIds, setSavedIds] = useState<Record<number, string>>({});
+  // Opened from History ("Open in tool"): put that result's prompt back, once, to regenerate from it.
+  const [restoredFrom, setRestoredFrom] = useState<string | null>(null);
+  if (feed.origin && restoredFrom !== feed.origin.id) {
+    setRestoredFrom(feed.origin.id);
+    const prompt = promptOf(feed.origin);
+    if (prompt && !form.instructions) setForm({ ...form, instructions: prompt });
+  }
   const [pending, startTransition] = useTransition();
   const skuRef = useRef<HTMLInputElement>(null);
   const productPreview = useObjectUrl(form.product);
 
-  const preset = categoryPresets.find((c) => c.key === form.category) ?? categoryPresets[0];
+  const preset = findCategory(form.category) ?? null;
   const scenePreview = useObjectUrl(form.scene?.kind === "upload" ? form.scene.file : null);
   const sceneImage = form.scene?.kind === "preset" ? (findScene(form.scene.key)?.image ?? null) : scenePreview;
   const previewSrc = sceneImage ?? productPreview;
   const shot = shots?.[activeShot] ?? null;
   const outcome = shot?.outcome ?? null;
   const shotCount = form.shots.angles.length;
+  const sceneChosen = form.category !== "" && form.scene !== null;
   const canSubmit =
-    form.sku.trim() !== "" && form.product !== null && (form.scene?.kind !== "custom" || form.scene.prompt.trim() !== "");
+    form.sku.trim() !== "" && form.product !== null && sceneChosen && (form.scene?.kind !== "custom" || form.scene.prompt.trim() !== "");
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -159,6 +180,53 @@ export function GenerateWorkspace() {
   const setShot = (index: number, outcome: Shot["outcome"]) =>
     setShots((list) => list?.map((s, i) => (i === index ? { ...s, outcome } : s)) ?? null);
 
+  // Every result is saved to History as it arrives (the results feed); Export then only downloads.
+  async function saveShot(index: number, angle: CameraAngle, image: GeneratedImage) {
+    const saved = await saveGeneration({
+      mode: "lifestyle",
+      sku: form.sku.trim(),
+      title: [
+        form.scene?.kind === "preset"
+          ? tp(`scenes.${form.scene.key}`)
+          : form.scene?.kind === "custom"
+            ? t("customScene")
+            : form.scene?.kind === "upload"
+              ? t("uploadedScene")
+              : subcategory
+                ? tp(`subcategories.${subcategory}`)
+                : tp(`categories.${form.category}`),
+        form.style ? tp(`styles.${form.style}`) : null,
+        angle === "auto" ? null : t(`shots.angleNames.${angle}`),
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      imageUrl: image.url,
+      width: image.width,
+      height: image.height,
+      provider: image.provider,
+      model: image.model,
+      settings: {
+        category: form.category,
+        subcategory,
+        scene: form.scene?.kind === "preset" ? form.scene.key : null,
+        customScene: form.scene?.kind === "custom" ? form.scene.prompt.trim() : null,
+        sceneUpload: form.scene?.kind === "upload" ? form.scene.file.name : null,
+        style: form.style,
+        productSize: formatDimensions(form.dimensions) || null,
+        angle: angle,
+        minimalProps: form.shots.minimalProps ? "true" : null,
+        matchedFirstShot: keepScene && index > 0 ? "true" : null,
+        aspectRatio: form.aspectRatio,
+        resolution: form.resolution,
+        instructions: form.instructions || null,
+      },
+    }).catch(() => null);
+    if (!saved?.ok) return false;
+    setSavedIds((ids) => ({ ...ids, [index]: saved.id }));
+    feed.track(saved.id);
+    return true;
+  }
+
   async function runShot(index: number, angle: CameraAngle, matchShot: File | null): Promise<Outcome> {
     let next: Outcome;
     try {
@@ -170,6 +238,7 @@ export function GenerateWorkspace() {
       next = { kind: "failed", reason: "generation" };
     }
     setShot(index, next);
+    if (next.kind === "result") void saveShot(index, angle, next.image);
     return next;
   }
 
@@ -180,6 +249,7 @@ export function GenerateWorkspace() {
     if (!form.product || pending) return;
     const angles = form.shots.angles;
     setShots(angles.map((angle) => ({ angle, outcome: { kind: "pending" } })));
+    setSavedIds({});
     setActiveShot(0);
 
     startTransition(async () => {
@@ -206,20 +276,45 @@ export function GenerateWorkspace() {
     });
   }
 
+  function tryExample(key: string) {
+    const example = EXAMPLES.find((e) => e.key === key);
+    if (!example) return;
+    chooseCategory(example.category);
+    setForm((f) => ({ ...f, scene: { kind: "preset", key: example.scene }, style: example.style, instructions: t(`examples.${example.key}.prompt`) }));
+    // The example needs only the product now.
+    revealField(skuRef.current);
+  }
+
   function editDetails() {
     setShots((list) => (list?.length === 1 && list[0].outcome.kind === "failed" ? null : list));
-    skuRef.current?.focus();
-    skuRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    revealField(skuRef.current);
   }
+
+  const sceneSummary = [
+    form.scene?.kind === "preset"
+      ? tp(`scenes.${form.scene.key}`)
+      : form.scene?.kind === "custom"
+        ? t("customScene")
+        : form.scene?.kind === "upload"
+          ? t("uploadedScene")
+          : subcategory
+            ? tp(`subcategories.${subcategory}`)
+            : form.category
+              ? tp(`categories.${form.category}`)
+              : null,
+    form.style ? tp(`styles.${form.style}`) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <>
-      <ConfigPanel onSubmit={() => canSubmit && generate()}>
+      <ConfigPanel tool="generate" onSubmit={() => canSubmit && generate()}>
         <PanelHeader title={form.sku.trim() || t("panelTitle")} />
 
         <PanelBody disabled={pending}>
           <BulkModeTabs tool="/generate" mode="single" />
-          <Section title={t("productInfo")} aside={<RequiredTag />}>
+          <Section title={t("productInfo")} aside={<RequiredTag />} summary={form.sku.trim() || form.product?.name} icon={<Package className="size-3.5 shrink-0" aria-hidden />}>
             <Field label={t("sku")} htmlFor="sku">
               <Input
                 ref={skuRef}
@@ -227,7 +322,7 @@ export function GenerateWorkspace() {
                 value={form.sku}
                 maxLength={64}
                 onChange={(e) => set("sku", e.target.value)}
-                placeholder={t("skuPlaceholder", { sku: preset.skuPlaceholder })}
+                placeholder={t("skuPlaceholder", { sku: (preset ?? categoryPresets[0]).skuPlaceholder })}
                 className="h-auto rounded-lg px-3 py-2 font-mono text-[13px] placeholder:text-subtle md:text-[13px]"
               />
             </Field>
@@ -249,7 +344,12 @@ export function GenerateWorkspace() {
             </Field>
           </Section>
 
-          <Section title={t("sceneSettings")}>
+          <Section
+            title={t("sceneSettings")}
+            aside={sceneChosen ? undefined : <RequiredTag />}
+            summary={form.scene ? sceneSummary : form.category ? tp(`categories.${form.category}`) : null}
+            icon={<ImageIcon className="size-3.5 shrink-0" aria-hidden />}
+          >
             <Field label={t("category")} htmlFor="category">
               <div className="relative">
                 <select
@@ -258,6 +358,9 @@ export function GenerateWorkspace() {
                   onChange={(e) => chooseCategory(e.target.value)}
                   className="w-full appearance-none rounded-lg border bg-transparent py-2 ps-3 pe-8 text-[13px] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
+                  <option value="" disabled>
+                    {tw("chooseCategory")}
+                  </option>
                   {categoryPresets.map((c) => (
                     <option key={c.key} value={c.key}>
                       {tp(`categories.${c.key}`)}
@@ -271,44 +374,47 @@ export function GenerateWorkspace() {
             <SubcategoryField id="subcategory" category={form.category} value={subcategory} onChange={chooseSubcategory} />
 
             <Field label={t("scenes")} gap="gap-1.5">
+              {!preset && <p className="text-xs text-muted-foreground">{tw("chooseFirst")}</p>}
               <ScenePicker
                 label={t("scenes")}
-                recommended={preset.scenes}
+                recommended={preset?.scenes ?? []}
                 value={form.scene}
                 onChange={(scene) => set("scene", scene)}
-                chips={th.raw(`scenes.${form.category}`) as string[]}
+                chips={preset ? (th.raw(`scenes.${form.category}`) as string[]) : []}
               />
             </Field>
 
-            <Field label={tp(`styleLabels.${preset.styleLabel}`)} gap="gap-1.5">
-              <div role="radiogroup" aria-label={tp(`styleLabels.${preset.styleLabel}`)} className="flex flex-wrap gap-1.5">
-                {preset.styles.map((style) => {
-                  const selected = form.style === style;
-                  return (
-                    <button
-                      key={style}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      onClick={() => set("style", selected ? null : style)}
-                      className={cn(
-                        "rounded-full border bg-muted px-3 py-2 text-xs font-medium text-muted-foreground",
-                        selected && "border-primary bg-primary text-primary-foreground",
-                      )}
-                    >
-                      {tp(`styles.${style}`)}
-                    </button>
-                  );
-                })}
-              </div>
-            </Field>
+            {preset && (
+              <Field label={tp(`styleLabels.${preset.styleLabel}`)} gap="gap-1.5">
+                <div role="radiogroup" aria-label={tp(`styleLabels.${preset.styleLabel}`)} className="flex flex-wrap gap-1.5">
+                  {preset.styles.map((style) => {
+                    const selected = form.style === style;
+                    return (
+                      <button
+                        key={style}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => set("style", selected ? null : style)}
+                        className={cn(
+                          "rounded-full border bg-muted px-3 py-2 text-xs font-medium text-muted-foreground",
+                          selected && "border-primary bg-primary text-primary-foreground",
+                        )}
+                      >
+                        {tp(`styles.${style}`)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+            )}
           </Section>
 
-          <Section title={t("shots.title")}>
+          <Section title={t("shots.title")} summary={t("shots.chipSummary", { count: shotCount })} icon={<Camera className="size-3.5 shrink-0" aria-hidden />}>
             <ShotFields value={form.shots} onChange={(value) => set("shots", value)} />
           </Section>
 
-          <Section title={t("format")}>
+          <Section title={t("format")} summary={`${form.aspectRatio} · ${form.resolution}`} icon={<Square className="size-3.5 shrink-0" aria-hidden />}>
             <FormatFields
               aspectRatio={form.aspectRatio}
               onAspectRatioChange={(value) => set("aspectRatio", value)}
@@ -317,32 +423,35 @@ export function GenerateWorkspace() {
             />
           </Section>
 
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <label htmlFor="instructions" className="text-[11px] font-bold text-muted-foreground uppercase">
-                {t("instructions")}
+          <div className="flex gap-3 sm:gap-4">
+            <DockTile label={tw("productTile")} preview={productPreview} onClick={() => revealField(skuRef.current)} />
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <label htmlFor="instructions" className="sr-only">
+                {chipLabel(t("instructions"))}
               </label>
-              <ImproveWithAiButton
+              <Textarea
+                id="instructions"
                 value={form.instructions}
-                onChange={(value) => set("instructions", value)}
-                request={{
-                  tool: "generate",
-                  category: form.category,
-                  scene: form.scene?.kind === "preset" ? form.scene.key : null,
-                  customScene: form.scene?.kind === "custom" ? form.scene.prompt : null,
-                }}
+                maxLength={2000}
+                onChange={(e) => set("instructions", e.target.value)}
+                placeholder={t("instructionsPlaceholder")}
+                className="field-sizing-content max-h-40 min-h-16 cursor-text resize-none rounded-xl border border-input bg-muted/40 px-3 py-2.5 text-sm leading-relaxed shadow-none placeholder:text-muted-foreground hover:border-ring/50 focus-visible:border-ring focus-visible:bg-background focus-visible:ring-3 focus-visible:ring-ring/30 md:text-sm dark:bg-input/30"
               />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <PromptChips chips={th.raw("details") as string[]} value={form.instructions} max={2000} limit={3} onChange={(value) => set("instructions", value)} />
+                <ImproveWithAiButton
+                  value={form.instructions}
+                  onChange={(value) => set("instructions", value)}
+                  request={{
+                    tool: "generate",
+                    category: form.category,
+                    scene: form.scene?.kind === "preset" ? form.scene.key : null,
+                    customScene: form.scene?.kind === "custom" ? form.scene.prompt : null,
+                  }}
+                />
+              </div>
+              <PromptTips text={form.instructions} />
             </div>
-            <Textarea
-              id="instructions"
-              value={form.instructions}
-              maxLength={2000}
-              onChange={(e) => set("instructions", e.target.value)}
-              placeholder={t("instructionsPlaceholder")}
-              className="h-20 min-h-20 resize-none rounded-lg bg-muted p-3 text-xs leading-[1.4] placeholder:text-subtle md:text-xs"
-            />
-            <PromptChips chips={th.raw("details") as string[]} value={form.instructions} max={2000} onChange={(value) => set("instructions", value)} />
-            <PromptTips text={form.instructions} />
           </div>
         </PanelBody>
 
@@ -353,13 +462,22 @@ export function GenerateWorkspace() {
           busy={pending}
           onReset={() => {
             // Reset clears the job but keeps the campaign's category (the template it started from).
-            setForm((f) => ({ ...initialState, category: f.category, scene: defaultScene(f.category) }));
+            setForm((f) => ({ ...initialState, category: f.category }));
             setShots(null);
           }}
         />
       </ConfigPanel>
 
+      <ResultFeed items={feed.items} hideIds={Object.values(savedIds)} onReuse={(prompt) => set("instructions", prompt)} />
+
       <GenerateCanvas
+        empty={
+          <ExampleCards
+            heading={tw.rich("heroes.generate", { em: (chunks) => <em className="font-serif font-bold italic rtl:font-sans rtl:not-italic rtl:text-primary">{chunks}</em> })}
+            examples={EXAMPLES.map((e) => ({ key: e.key, image: findScene(e.scene)?.image ?? "", title: t(`examples.${e.key}.title`), body: t(`examples.${e.key}.body`) }))}
+            onTry={tryExample}
+          />
+        }
         state={canvasState}
         shots={(shots ?? []).map((s) => ({
           angle: s.angle,
@@ -381,49 +499,7 @@ export function GenerateWorkspace() {
           filenameBase={`${form.sku.trim()}_lifestyle${shot.angle === "auto" ? "" : `_${shot.angle}`}_v1`}
           aspectRatio={form.aspectRatio}
           resolution={form.resolution}
-          onSave={async () =>
-            (
-              await saveGeneration({
-              mode: "lifestyle",
-              sku: form.sku.trim(),
-              title: [
-                form.scene?.kind === "preset"
-                  ? tp(`scenes.${form.scene.key}`)
-                  : form.scene?.kind === "custom"
-                    ? t("customScene")
-                    : form.scene?.kind === "upload"
-                      ? t("uploadedScene")
-                      : subcategory
-                        ? tp(`subcategories.${subcategory}`)
-                        : tp(`categories.${form.category}`),
-                form.style ? tp(`styles.${form.style}`) : null,
-                shot.angle === "auto" ? null : t(`shots.angleNames.${shot.angle}`),
-              ]
-                .filter(Boolean)
-                .join(" · "),
-              imageUrl: outcome.image.url,
-              width: outcome.image.width,
-              height: outcome.image.height,
-              provider: outcome.image.provider,
-              model: outcome.image.model,
-              settings: {
-                category: form.category,
-                subcategory,
-                scene: form.scene?.kind === "preset" ? form.scene.key : null,
-                customScene: form.scene?.kind === "custom" ? form.scene.prompt.trim() : null,
-                sceneUpload: form.scene?.kind === "upload" ? form.scene.file.name : null,
-                style: form.style,
-                productSize: formatDimensions(form.dimensions) || null,
-                angle: shot.angle,
-                minimalProps: form.shots.minimalProps ? "true" : null,
-                matchedFirstShot: keepScene && activeShot > 0 ? "true" : null,
-                aspectRatio: form.aspectRatio,
-                resolution: form.resolution,
-                instructions: form.instructions || null,
-              },
-              })
-            ).ok
-          }
+          onSave={async () => (savedIds[activeShot] ? true : saveShot(activeShot, shot.angle, outcome.image))}
         />
       )}
     </>

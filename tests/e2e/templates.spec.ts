@@ -23,6 +23,7 @@ test("pick a category, then a product type, and Generate opens with both", async
   await expect(page.locator("#subcategory")).toHaveValue("sofas");
 
   // A type never outlives its category.
+  await page.getByRole("button", { name: /^Scene Settings/ }).click();
   await page.locator("#category").selectOption("bathroom");
   await expect(page.locator("#subcategory")).toHaveValue("");
   await expect(page).not.toHaveURL(/sub=/);
@@ -44,6 +45,7 @@ test("New Job starts every tool fresh", async ({ page }) => {
   await page.waitForURL(/\/en\/home/);
   await page.goto("/en/generate");
 
+  await page.getByRole("button", { name: /^Product Info/ }).click();
   await page.locator("#sku").fill("OLD-JOB-1");
   await page.getByRole("link", { name: "New Job" }).click();
   await expect(page).toHaveURL(/\/en\/templates/);

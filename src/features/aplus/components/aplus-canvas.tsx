@@ -115,7 +115,7 @@ export function AplusCanvas({
       {state.kind === "result" && !showCompare && (
         <ImageFrame>
           {/* eslint-disable-next-line @next/next/no-img-element -- provider output URL */}
-          <img src={state.image.url} alt={t("generated")} className="block max-h-[560px] max-w-[640px]" />
+          <img data-result="" src={state.image.url} alt={t("generated")} className="block max-h-[560px] max-w-[640px]" />
         </ImageFrame>
       )}
 

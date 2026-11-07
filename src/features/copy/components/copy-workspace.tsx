@@ -125,7 +125,7 @@ export function CopyWorkspace() {
 
   return (
     <>
-      <ConfigPanel onSubmit={write}>
+      <ConfigPanel tool="copy" onSubmit={write}>
         <PanelHeader title={form.productName.trim() || form.sku.trim() || t("panelTitle")} />
 
         <PanelBody disabled={pending}>
@@ -154,7 +154,7 @@ export function CopyWorkspace() {
             </Field>
           </Section>
 
-          <Section title={t("detailsTitle")} aside={<OptionalTag />}>
+          <Section title={t("detailsTitle")} aside={<OptionalTag />} inline>
             <Field label={t("details")} htmlFor="copy-details">
               <Textarea
                 id="copy-details"
@@ -162,7 +162,7 @@ export function CopyWorkspace() {
                 maxLength={3000}
                 onChange={(e) => set("details", e.target.value)}
                 placeholder={t("detailsPlaceholder")}
-                className="h-28 min-h-28 resize-none rounded-lg bg-muted p-3 text-xs leading-[1.5] placeholder:text-subtle md:text-xs"
+                className="h-20 min-h-20 resize-none rounded-lg bg-muted p-3 text-[13px] leading-[1.5] placeholder:text-muted-foreground md:text-[13px]"
               />
             </Field>
             <Field label={t("keywords")} htmlFor="copy-keywords">

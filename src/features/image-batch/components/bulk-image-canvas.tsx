@@ -45,11 +45,11 @@ export function BulkImageCanvas({
   emptyBody: string;
 }) {
   return (
-    <section className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto bg-canvas p-8">
+    <section className="flex min-h-[16rem] min-w-0 shrink-0 grow flex-col gap-6 bg-canvas p-8">
       {open ? (
         <RunView key={open.batch.id} run={open} onChanged={onChanged} onDeleted={onDeleted} />
       ) : (
-        <div className="mx-auto flex w-[480px] max-w-full flex-col items-center gap-4 pt-16 text-center">
+        <div data-empty-state="" className="mx-auto flex w-[480px] max-w-full flex-col items-center gap-4 pt-16 text-center">
           <div className="flex size-16 items-center justify-center rounded-full bg-accent text-primary">
             <Images className="size-8" strokeWidth={1.5} aria-hidden />
           </div>

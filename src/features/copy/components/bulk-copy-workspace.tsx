@@ -4,18 +4,19 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Download, FileSpreadsheet } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Textarea } from "@/components/ui/textarea";
-import { ConfigPanel, Field, PanelBody, PanelFooter, PanelHeader, RequiredTag, Section } from "@/components/app/config-panel";
+import { ConfigPanel, DockToolbar, PanelBody, PanelFooter, PanelHeader, Section } from "@/components/app/config-panel";
 import { blockedReason } from "@/components/app/job-errors";
 import { HiddenFileInput } from "@/components/app/upload-inputs";
 import { categoryPresets } from "@/lib/catalog-presets";
 import { BATCH_MAX_ROWS, BATCH_TEMPLATE_CSV, parseBatchInput } from "@/lib/copy/batch-csv";
 import { getBrandKitSummary } from "@/features/brand/actions";
 import { getCopyReviewRights, type ReviewRights } from "../actions";
-import { getCopyBatch, listCopyBatches, startCopyBatch, type BatchFailure, type BatchItemView, type BatchView } from "../batch-actions";
+import { getCopyBatch, startCopyBatch, type BatchFailure, type BatchItemView, type BatchView } from "../batch-actions";
 import { BulkCanvas } from "./bulk-canvas";
 import { CategorySelect, CopyModeTabs, CopyStyleFields, type BrandSummary, type CopyStyle } from "./copy-fields";
 import { download } from "./copy-export";
 import { useJobCost } from "@/features/credits/use-job-cost";
+import { SourceSwitch } from "@/features/image-batch/components/product-list-field";
 
 const CATEGORY_KEYS = categoryPresets.map((c) => c.key);
 const POLL_MS = 2500;
@@ -30,6 +31,7 @@ export function BulkCopyWorkspace() {
   const tw = useTranslations("Workspace");
   const [text, setText] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
+  const [source, setSource] = useState<"paste" | "csv">("paste");
   const [category, setCategory] = useState(categoryPresets[0].key);
   const [style, setStyle] = useState<CopyStyle>(initialStyle);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,6 @@ export function BulkCopyWorkspace() {
   const unitCost = useJobCost("copy");
 
   useEffect(() => {
-    listCopyBatches().then(setRuns);
     getBrandKitSummary().then(setBrand);
     getCopyReviewRights().then(setRights);
   }, []);
@@ -99,38 +100,47 @@ export function BulkCopyWorkspace() {
 
   return (
     <>
-      <ConfigPanel onSubmit={start}>
+      <ConfigPanel tool="copy" onSubmit={start}>
         <PanelHeader title={t("panelTitle")} />
 
         <PanelBody disabled={pending}>
           <CopyModeTabs mode="bulk" />
 
-          <Section title={t("products")} aside={<RequiredTag />}>
-            <div className="flex items-center gap-2 rounded-lg border px-3 py-2">
-              <FileSpreadsheet className="size-4 shrink-0 text-subtle" aria-hidden />
-              <button type="button" onClick={() => fileRef.current?.click()} className="min-w-0 flex-1 truncate text-start text-xs text-subtle">
-                {fileName ? <bdi className="text-foreground">{fileName}</bdi> : t("upload")}
-              </button>
-              <button type="button" onClick={() => download("imagine-bulk-copy-template.csv", BATCH_TEMPLATE_CSV, "text/csv;charset=utf-8")} className="flex shrink-0 items-center gap-1 text-[11px] font-semibold text-primary">
-                <Download className="size-3" aria-hidden />
-                {t("template")}
-              </button>
-              <HiddenFileInput inputRef={fileRef} accept=".csv,.txt,text/csv,text/plain" onChange={loadFile} />
-            </div>
-            <Field label={t("paste")} htmlFor="bulk-rows">
-              <Textarea
-                id="bulk-rows"
-                dir="ltr"
-                value={text}
-                onChange={(e) => {
-                  setText(e.target.value);
-                  setError(null);
-                }}
-                placeholder={t("pastePlaceholder")}
-                spellCheck={false}
-                className="h-36 min-h-36 resize-none rounded-lg bg-muted p-3 font-mono text-[11px] leading-[1.5] placeholder:text-subtle md:text-[11px]"
-              />
-            </Field>
+          <Section title={t("products")} inline bare>
+            <DockToolbar end>
+              <SourceSwitch value={source} onChange={setSource} pasteLabel={t("sourcePaste")} />
+            </DockToolbar>
+            {source === "paste" ? (
+              <>
+                <label htmlFor="bulk-rows" className="sr-only">
+                  {t("paste")}
+                </label>
+                <Textarea
+                  id="bulk-rows"
+                  dir="ltr"
+                  value={text}
+                  onChange={(e) => {
+                    setText(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder={t("pastePlaceholder")}
+                  spellCheck={false}
+                  className="h-24 min-h-24 resize-none rounded-lg bg-muted p-3 font-mono text-xs leading-[1.5] placeholder:text-muted-foreground md:text-xs"
+                />
+              </>
+            ) : (
+              <div className="flex items-center gap-3 rounded-lg border border-dashed bg-muted/40 px-3 py-3">
+                <FileSpreadsheet className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+                <button type="button" onClick={() => fileRef.current?.click()} className="min-w-0 flex-1 truncate text-start text-sm text-muted-foreground hover:text-foreground">
+                  {fileName ? <bdi className="font-semibold text-foreground">{fileName}</bdi> : t("upload")}
+                </button>
+                <button type="button" onClick={() => download("imagine-bulk-copy-template.csv", BATCH_TEMPLATE_CSV, "text/csv;charset=utf-8")} className="flex shrink-0 items-center gap-1 text-xs font-semibold text-primary">
+                  <Download className="size-3.5" aria-hidden />
+                  {t("template")}
+                </button>
+              </div>
+            )}
+            <HiddenFileInput inputRef={fileRef} accept=".csv,.txt,text/csv,text/plain" onChange={loadFile} />
             <p className="text-[11px] leading-normal text-muted-foreground">{t("formatHint")}</p>
             {text.trim() !== "" && (
               <div className="flex flex-col gap-1 rounded-lg border bg-background p-3 text-[11px]" aria-live="polite">

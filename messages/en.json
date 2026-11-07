@@ -23,7 +23,8 @@
       "more": "More",
       "copy": "Copy",
       "video": "Video",
-      "aiImage": "AI Image"
+      "aiImage": "AI Image",
+      "upscale": "Upscale"
     },
     "tools": {
       "create": "Image & Video Studio",
@@ -36,7 +37,8 @@
       "resize": "Batch Resize",
       "qr": "QR Generator",
       "links": "Short Links",
-      "copy": "Product Copy"
+      "copy": "Product Copy",
+      "upscale": "Image Upscale"
     },
     "userMenu": "Account menu",
     "settings": "Settings",
@@ -195,7 +197,45 @@
         "title": "Request refused by the AI's safety filter",
         "body": "The AI provider's safety filter refused this prompt or image. Change the wording or the image and try again."
       }
-    }
+    },
+    "settings": "Settings",
+    "requiredSetting": "Needs your input",
+    "readySetting": "Done",
+    "productTile": "Product",
+    "swatchTile": "Swatch",
+    "heroes": {
+      "generate": "Place your product <em>anywhere</em>",
+      "recolor": "Any fabric, <em>any colour</em>",
+      "aplus": "A+ content that <em>sells</em>",
+      "copy": "Product copy in <em>two languages</em>",
+      "qr": "A QR code for <em>every product</em>",
+      "resize": "One image, <em>every size</em>",
+      "looks": "Shop-the-look scenes, <em>styled for you</em>"
+    },
+    "feed": {
+      "label": "Your results",
+      "download": "Download",
+      "openHistory": "Open in History",
+      "reuse": "Use this prompt",
+      "share": "Share"
+    },
+    "viewer": {
+      "open": "Open full size",
+      "download": "Download",
+      "share": "Share",
+      "copied": "Link copied",
+      "fit": "Fit to screen",
+      "title": "Image viewer",
+      "upscale": "Upscale",
+      "upscaling": "Upscaling…",
+      "upscaleTo": "Upscale to {size}",
+      "upscaleCost": "{count, plural, one {# credit} other {# credits}}",
+      "upscaleFailed": "Couldn’t upscale this image. Try again.",
+      "upscaled": "Upscaled to {size}"
+    },
+    "chooseCategory": "Choose a category",
+    "chooseFirst": "Choose a category for recommended scenes, or browse all",
+    "tryIt": "Try it"
   },
   "Presets": {
     "categories": {
@@ -458,9 +498,27 @@
         "w": "Width in cm",
         "h": "Height in cm",
         "d": "Depth in cm"
-      }
+      },
+      "chipSummary": "{count, plural, one {1 shot} other {# shots}}"
     },
-    "generateShots": "Generate {count} images"
+    "generateShots": "Generate {count} images",
+    "examples": {
+      "livingSofa": {
+        "title": "Scandinavian living room",
+        "body": "Soft daylight, linen and oak make a sofa feel at home.",
+        "prompt": "soft morning window light, linen throw on the arm, oak floor"
+      },
+      "patioSet": {
+        "title": "Mediterranean patio",
+        "body": "Late sun, terracotta and olive trees for outdoor furniture.",
+        "prompt": "late afternoon sun, terracotta pots, olive trees in the background"
+      },
+      "diningLight": {
+        "title": "Evening dining glow",
+        "body": "A warm pendant over a set table shows lighting at its best.",
+        "prompt": "warm evening glow over a set dinner table, soft shadows"
+      }
+    }
   },
   "Recolor": {
     "productInfo": "1. Product Info",
@@ -1180,7 +1238,13 @@
     "resolution": "Resolution",
     "createdDate": "Created Date",
     "productsUsed": "Products Used",
-    "regenerating": "Regenerating…"
+    "regenerating": "Regenerating…",
+    "chips": {
+      "title": "Title",
+      "scene": "Category & style",
+      "format": "Format",
+      "background": "Room background"
+    }
   },
   "Resize": {
     "title": "Batch Image Resize",
@@ -1251,7 +1315,9 @@
     "allDone": "All images are resized.",
     "downloadZip": "Download as ZIP",
     "resizeAll": "Resize All Images",
-    "resizing": "Resizing…"
+    "resizing": "Resizing…",
+    "platformChip": "Platform",
+    "outputChip": "Output"
   },
   "Team": {
     "title": "Team Members",
@@ -1397,7 +1463,8 @@
       "aplus": "A+ Images",
       "looks": "Shop the Look",
       "copy": "Product copy",
-      "video": "Studio (video)"
+      "video": "Studio (video)",
+      "upscale": "Upscale"
     },
     "activityTitle": "Recent key activity",
     "noActivity": "No key changes yet.",
@@ -1451,7 +1518,8 @@
       "aplus": "A+ Images",
       "looks": "Shop the Look",
       "copy": "Product Copy",
-      "video": "Video"
+      "video": "Video",
+      "upscale": "Upscale"
     },
     "byToolTitle": "Jobs by Tool",
     "recentTitle": "Recent Activity",
@@ -2193,7 +2261,8 @@
       "cancel": "Cancel",
       "saveFirst": "Save your edits first",
       "error": "That didn't work. Reload the page and try again."
-    }
+    },
+    "sourcePaste": "Paste rows"
   },
   "CopyBulk": {
     "panelTitle": "Bulk copy",
@@ -2425,7 +2494,7 @@
   },
   "GenerateBulk": {
     "panelTitle": "Bulk images",
-    "pastePlaceholder": "SOFA-2041, 220 × 90 × 85 cm\nCHAIR-118\nLAMP-07",
+    "pastePlaceholder": "Paste SKUs here, one per line — e.g. SOFA-2041, 220 × 90 × 85 cm",
     "formatHint": "One SKU per line, optionally followed by a comma and the product size. Each product photo comes from your catalog. Up to {max} products per run.",
     "start": "{count, plural, =0 {Generate images} one {Generate # image} other {Generate # images}}",
     "emptyTitle": "Lifestyle images for a whole catalog",
@@ -2503,11 +2572,14 @@
       "not_in_plan": "This tool isn't included in your plan",
       "content_rejected": "The AI's safety filter refused this image"
     },
-    "problemRow": "Row {row}: {reason}"
+    "problemRow": "Row {row}: {reason}",
+    "sourceLabel": "How to add products",
+    "sourcePaste": "Paste SKUs",
+    "sourceCsv": "Upload CSV"
   },
   "RecolorBulk": {
     "panelTitle": "Bulk recolor",
-    "pastePlaceholder": "SOFA-2041\nSOFA-2042\nCHAIR-118",
+    "pastePlaceholder": "Paste SKUs here, one per line — e.g. SOFA-2041",
     "formatHint": "One SKU per line. Each product photo comes from your catalog, and every product gets the swatch colour. Up to {max} products per run.",
     "start": "{count, plural, =0 {Recolor products} one {Recolor # product} other {Recolor # products}}",
     "emptyTitle": "One colour across many products",

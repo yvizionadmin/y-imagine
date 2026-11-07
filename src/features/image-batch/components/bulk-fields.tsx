@@ -23,6 +23,7 @@ export function CategoryFields({
   onCategory: (key: string) => void;
   onSubcategory: (key: string | null) => void;
 }) {
+  const tw = useTranslations("Workspace");
   const tp = useTranslations("Presets");
   return (
     <>
@@ -34,6 +35,11 @@ export function CategoryFields({
             onChange={(e) => onCategory(e.target.value)}
             className="w-full appearance-none rounded-lg border bg-transparent py-2 ps-3 pe-8 text-[13px] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
+            {category === "" && (
+              <option value="" disabled>
+                {tw("chooseCategory")}
+              </option>
+            )}
             {categoryPresets.map((c) => (
               <option key={c.key} value={c.key}>
                 {tp(`categories.${c.key}`)}

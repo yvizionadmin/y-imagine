@@ -1,9 +1,9 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Layers, Package } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
-import { Field } from "@/components/app/config-panel";
+import { DockToolbar, Field, MODE_SWITCH, modeSwitchItem } from "@/components/app/config-panel";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link } from "@/i18n/navigation";
 import { COPY_CHANNELS, COPY_LANGUAGES, COPY_LENGTHS, COPY_TONES, type CopyChannel, type CopyLanguage, type CopyLength, type CopyTone } from "@/lib/ai/types";
@@ -23,18 +23,21 @@ export const select =
 export function CopyModeTabs({ mode }: { mode: "single" | "bulk" }) {
   const t = useTranslations("Copy");
   return (
-    <nav aria-label={t("modeLabel")} className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
-      {(["single", "bulk"] as const).map((m) => (
-        <Link
-          key={m}
-          href={m === "single" ? "/copy" : "/copy/bulk"}
-          aria-current={m === mode ? "page" : undefined}
-          className={cn("rounded-md py-1.5 text-center text-xs font-semibold text-muted-foreground", m === mode && "bg-background text-foreground shadow-sm")}
-        >
-          {t(`modes.${m}`)}
-        </Link>
-      ))}
-    </nav>
+    <DockToolbar>
+      <nav aria-label={t("modeLabel")} className={MODE_SWITCH}>
+        {(["single", "bulk"] as const).map((m) => (
+          <Link
+            key={m}
+            href={m === "single" ? "/copy" : "/copy/bulk"}
+            aria-current={m === mode ? "page" : undefined}
+            className={modeSwitchItem(m === mode)}
+          >
+            {m === "single" ? <Package className="size-4" aria-hidden /> : <Layers className="size-4" aria-hidden />}
+            {t(`modes.${m}`)}
+          </Link>
+        ))}
+      </nav>
+    </DockToolbar>
   );
 }
 

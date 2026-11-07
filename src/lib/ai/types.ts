@@ -4,7 +4,7 @@ import type { VideoResolution } from "@/lib/credits";
 
 export type ProviderId = "demo" | "openai" | "anthropic" | "gemini" | "openrouter" | "byteplus" | "openai-compatible";
 
-export type Feature = "create" | "video" | "generate" | "recolor" | "aplus" | "looks" | "copy" | "chat";
+export type Feature = "create" | "video" | "generate" | "recolor" | "aplus" | "looks" | "upscale" | "copy" | "chat";
 
 export type LifestyleRequest = {
   sku: string;
@@ -150,6 +150,12 @@ export interface VideoProvider {
   generateVideo(request: VideoRequest): Promise<GeneratedVideo>;
 }
 
+/** Upscale targets: the long edge of the result (2K = 2048 px, 4K = 4096 px). */
+export const UPSCALE_SIZES = ["2K", "4K"] as const;
+export type UpscaleSize = (typeof UPSCALE_SIZES)[number];
+export const UPSCALE_EDGE: Record<UpscaleSize, number> = { "2K": 2048, "4K": 4096 };
+export type UpscaleRequest = { image: ImageInput; size: UpscaleSize };
+
 export interface ImageProvider {
   id: ProviderId;
   createImage(request: CreateImageRequest): Promise<GeneratedImage>;
@@ -158,6 +164,8 @@ export interface ImageProvider {
   recolor(request: RecolorRequest): Promise<RecolorResult>;
   generateAplus(request: AplusRequest): Promise<GeneratedImage>;
   generateLook(request: LookRequest): Promise<GeneratedImage>;
+  /** Re-renders an image at a higher resolution with realistic fine detail, nothing else changed. */
+  upscale(request: UpscaleRequest): Promise<GeneratedImage>;
 }
 
 // ── Product copy ─────────────────────────────────────────────────────────────────────────────

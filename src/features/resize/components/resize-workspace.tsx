@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { cn } from "cn";
+import { ConfigPanel, PanelBody, PanelFooter, PanelHeader, RequiredTag, Section } from "@/components/app/config-panel";
 import { Button } from "@/components/ui/button";
 import { LATN } from "@/lib/format";
 import {
@@ -59,7 +60,7 @@ type QueueItem = {
 };
 type Status = "queued" | "processing" | "done" | "failed";
 
-/** Batch Image Resize (Figma resize-tool 35:895, restyled to the light icon-rail design). Not an AI job. */
+/** Batch Image Resize, in the shared prompt dock (Platform / Output chips, queue + preview as results). Not an AI job. */
 export function ResizeWorkspace() {
   const t = useTranslations("Resize");
   const format = useFormatter();
@@ -250,117 +251,236 @@ export function ResizeWorkspace() {
   const kb = (bytes: number) =>
     bytes < 1024 * 1024 ? t("kb", { size: format.number(bytes / 1024, { ...LATN, maximumFractionDigits: 0 }) }) : t("mb", { size: mb(bytes) });
 
+  const PlatformIcon = PLATFORM_ICONS[platform];
+  const platformSummary =
+    platform === "custom" ? t("dimensions", { width: custom.width || "?", height: custom.height || "?" }) : t(`platforms.${platform}`);
+  const outputSummary = [t(`formats.${outputFormat}`), qualityDisabled ? null : format.number(quality / 100, { ...LATN, style: "percent" })]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <div className="flex min-h-0 w-full flex-col">
-      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-8 py-6">
-        <div className="flex max-w-[560px] flex-col gap-1">
-          <h1 className="text-2xl font-extrabold">{t("title")}</h1>
-          <p className="text-[13px] text-muted-foreground">{t("subtitle")}</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <span id="resize-platform" className="text-sm font-bold">
-            {t("platformPreset")}
-          </span>
-          <div role="radiogroup" aria-labelledby="resize-platform" className="flex flex-wrap gap-3">
-            {(Object.keys(RESIZE_PLATFORMS) as ResizePlatform[]).map((key) => {
-              const Icon = PLATFORM_ICONS[key];
-              const active = platform === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  onClick={() => choosePlatform(key)}
-                  className={cn(
-                    "flex h-9 items-center gap-2 rounded-full border bg-background px-4 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted",
-                    active && "border-primary bg-accent font-bold text-primary hover:bg-accent",
-                  )}
-                >
-                  <Icon className="size-3.5" aria-hidden />
-                  {t(`platforms.${key}`)}
-                </button>
-              );
-            })}
+    <>
+      {/* The prompt dock: images in, then the platform and output chips; ↑ resizes the queue. */}
+      <ConfigPanel tool="resize" onSubmit={() => void resizeAll()}>
+        <PanelHeader title={t("title")} />
+        <PanelBody disabled={running}>
+          <input
+            ref={inputRef}
+            type="file"
+            accept={RESIZE_INPUT_TYPES.join(",")}
+            multiple
+            hidden
+            onChange={(e) => {
+              if (e.target.files) addFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={items.length >= RESIZE_MAX_FILES}
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-dashed border-input bg-muted/40 px-4 py-3 text-start hover:border-primary/60 disabled:opacity-50"
+            >
+              <UploadCloud className="size-5 shrink-0 text-primary" aria-hidden />
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-sm font-semibold">{items.length ? t("addImages") : t("dropTitle")}</span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {t("dropHint", { size: mb(RESIZE_MAX_BYTES), max: num(RESIZE_MAX_FILES) })}
+                </span>
+              </span>
+            </button>
           </div>
-          {platform === "custom" && (
-            <div className="flex items-center gap-2" dir="ltr">
-              <SideInput label={t("width")} value={custom.width} onChange={(width) => setCustom((c) => ({ ...c, width }))} />
-              <span className="text-xs text-muted-foreground">×</span>
-              <SideInput label={t("height")} value={custom.height} onChange={(height) => setCustom((c) => ({ ...c, height }))} />
-              <span className="text-xs text-muted-foreground">px</span>
-            </div>
+          {notice && (
+            <p role="status" className="rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+              {notice}
+            </p>
           )}
-        </div>
-        {platform === "custom" && !customValid && (
-          <p role="alert" className="-mt-2 text-[11px] text-danger">
-            {t("customRange", { min: num(RESIZE_MIN_SIDE), max: num(RESIZE_MAX_SIDE) })}
-          </p>
-        )}
 
-        <div className="flex min-h-[480px] flex-1 items-start gap-6">
-          <section
-            aria-labelledby="resize-queue"
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragging(true);
-            }}
-            onDragLeave={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragging(false);
-              addFiles(e.dataTransfer.files);
-            }}
-            className={cn(
-              "flex min-w-0 flex-1 flex-col gap-4 self-stretch rounded-2xl border bg-background p-6",
-              dragging && "border-primary bg-accent/40",
-            )}
+          <Section
+            title={t("platformChip")}
+            summary={platformSummary}
+            icon={<PlatformIcon className="size-3.5 shrink-0" aria-hidden />}
+            aside={platform === "custom" && !customValid ? <RequiredTag /> : undefined}
           >
+            <span id="resize-platform" className="sr-only">
+              {t("platformPreset")}
+            </span>
+            <div role="radiogroup" aria-labelledby="resize-platform" className="flex flex-wrap gap-3">
+              {(Object.keys(RESIZE_PLATFORMS) as ResizePlatform[]).map((key) => {
+                const Icon = PLATFORM_ICONS[key];
+                const active = platform === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => choosePlatform(key)}
+                    className={cn(
+                      "flex h-9 items-center gap-2 rounded-full border bg-background px-4 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted",
+                      active && "border-primary bg-accent font-bold text-primary hover:bg-accent",
+                    )}
+                  >
+                    <Icon className="size-3.5" aria-hidden />
+                    {t(`platforms.${key}`)}
+                  </button>
+                );
+              })}
+            </div>
+            {platform === "custom" && (
+              <div className="flex items-center gap-2" dir="ltr">
+                <SideInput label={t("width")} value={custom.width} onChange={(width) => setCustom((c) => ({ ...c, width }))} />
+                <span className="text-xs text-muted-foreground">×</span>
+                <SideInput label={t("height")} value={custom.height} onChange={(height) => setCustom((c) => ({ ...c, height }))} />
+                <span className="text-xs text-muted-foreground">px</span>
+              </div>
+            )}
+            {platform === "custom" && !customValid && (
+              <p role="alert" className="text-[11px] text-danger">
+                {t("customRange", { min: num(RESIZE_MIN_SIDE), max: num(RESIZE_MAX_SIDE) })}
+              </p>
+            )}
+          </Section>
+
+          <Section title={t("outputChip")} summary={outputSummary} icon={<Settings className="size-3.5 shrink-0" aria-hidden />}>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="resize-quality" className="flex justify-between text-xs">
+                <span className="text-muted-foreground">{t("quality")}</span>
+                <span className="font-bold text-primary">{qualityDisabled ? "—" : format.number(quality / 100, { ...LATN, style: "percent" })}</span>
+              </label>
+              <input
+                id="resize-quality"
+                type="range"
+                min={RESIZE_QUALITY.min}
+                max={RESIZE_QUALITY.max}
+                value={quality}
+                disabled={qualityDisabled}
+                onChange={(e) => setQuality(Number(e.target.value))}
+                className="h-4 w-full accent-primary disabled:opacity-40"
+              />
+              {qualityDisabled && <p className="text-[11px] text-subtle">{t("qualityPng")}</p>}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="resize-format" className="text-xs text-muted-foreground">
+                {t("format")}
+              </label>
+              <div className="relative flex items-center">
+                <select
+                  id="resize-format"
+                  value={outputFormat}
+                  onChange={(e) => setOutputFormat(e.target.value as ResizeFormat)}
+                  className="h-11 w-full appearance-none rounded-lg border bg-background ps-3 pe-9 text-[13px] outline-none focus-visible:border-ring"
+                >
+                  {RESIZE_FORMATS.map((f) => (
+                    <option key={f} value={f}>
+                      {t(`formats.${f}`)}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute end-3 size-3.5 text-muted-foreground" aria-hidden />
+              </div>
+            </div>
+
             <div className="flex items-center justify-between gap-3">
+              <span id="resize-preserve" className="text-[13px] font-semibold">
+                {t("preserveAspect")}
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={preserve}
+                aria-labelledby="resize-preserve"
+                onClick={() => setPreserve((p) => !p)}
+                className={cn("relative h-5 w-10 shrink-0 rounded-full transition-colors", preserve ? "bg-primary" : "bg-muted-foreground/30")}
+              >
+                <span
+                  className={cn(
+                    "absolute top-0.5 size-4 rounded-full bg-white shadow transition-[inset-inline-start]",
+                    preserve ? "start-[22px]" : "start-0.5",
+                  )}
+                />
+              </button>
+            </div>
+            {preserve ? (
+              <div role="radiogroup" aria-label={t("fitMode")} className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
+                {(["crop", "pad"] as const).map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    role="radio"
+                    aria-checked={cropFit === f}
+                    onClick={() => setCropFit(f)}
+                    className={cn(
+                      "h-8 rounded-md text-xs font-semibold text-muted-foreground",
+                      cropFit === f && "bg-background text-foreground shadow-sm",
+                    )}
+                  >
+                    {t(`fits.${f}`)}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-subtle">{t("stretchNote")}</p>
+            )}
+          </Section>
+        </PanelBody>
+        <PanelFooter
+          note={items.length === 0 ? t("emptyQueue") : pending.length === 0 && !running ? t("allDone") : t("estimate", { seconds, display: num(seconds) })}
+          actions={
+            <Button type="button" variant="outline" onClick={downloadZip} disabled={done.length === 0} className="h-9 rounded-full px-3 text-xs font-semibold">
+              <Download aria-hidden />
+              {t("downloadZip")}
+            </Button>
+          }
+          submitLabel={running ? t("resizing") : t("resizeAll")}
+          canSubmit={pending.length > 0 && !(platform === "custom" && !customValid)}
+          busy={running}
+          onReset={() => {
+            for (const item of items) {
+              URL.revokeObjectURL(item.url);
+              if (item.result) URL.revokeObjectURL(item.result.url);
+            }
+            setItems([]);
+            setNotice(null);
+          }}
+        />
+      </ConfigPanel>
+
+      {/* Results: the queue and a live preview of the selected image; drop files anywhere here. */}
+      <section
+        aria-labelledby="resize-queue"
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          addFiles(e.dataTransfer.files);
+        }}
+        className={cn("flex min-h-[16rem] min-w-0 shrink-0 grow flex-col gap-6 bg-canvas p-6 sm:p-8", dragging && "bg-accent/40")}
+      >
+        {items.length === 0 ? (
+          <div data-empty-state="" className="mx-auto flex w-[480px] max-w-full flex-col items-center gap-3 pt-10 text-center">
+            <div className="flex size-16 items-center justify-center rounded-full bg-accent text-primary">
+              <ImagePlus className="size-8" strokeWidth={1.5} aria-hidden />
+            </div>
+            <h2 id="resize-queue" className="text-lg font-bold">
+              {t("title")}
+            </h2>
+            <p className="text-[13px] leading-normal text-muted-foreground">{t("subtitle")}</p>
+          </div>
+        ) : (
+          <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 lg:flex-row lg:items-start">
+            <div className="flex min-w-0 flex-1 flex-col gap-4 rounded-2xl border bg-background p-5">
               <h2 id="resize-queue" className="text-base font-bold">
                 {t("queueTitle", { count: items.length, display: num(items.length) })}
               </h2>
-              {items.length > 0 && (
-                <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={items.length >= RESIZE_MAX_FILES}>
-                  <ImagePlus aria-hidden />
-                  {t("addImages")}
-                </Button>
-              )}
-            </div>
-            <input
-              ref={inputRef}
-              type="file"
-              accept={RESIZE_INPUT_TYPES.join(",")}
-              multiple
-              hidden
-              onChange={(e) => {
-                if (e.target.files) addFiles(e.target.files);
-                e.target.value = "";
-              }}
-            />
-
-            {notice && (
-              <p role="status" className="rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-                {notice}
-              </p>
-            )}
-
-            {items.length === 0 ? (
-              <button
-                type="button"
-                onClick={() => inputRef.current?.click()}
-                className="flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border-[1.5px] border-dashed border-primary bg-accent px-6 py-16 text-center"
-              >
-                <UploadCloud className="size-7 text-primary" aria-hidden />
-                <span className="text-sm font-semibold text-accent-foreground">{t("dropTitle")}</span>
-                <span className="text-[11px] text-subtle">
-                  {t("dropHint", { size: mb(RESIZE_MAX_BYTES), max: num(RESIZE_MAX_FILES) })}
-                </span>
-              </button>
-            ) : (
               <ul className="flex flex-col gap-2.5">
                 {items.map((item) => {
                   const status = statusOf(item);
@@ -439,144 +559,34 @@ export function ResizeWorkspace() {
                   );
                 })}
               </ul>
-            )}
-          </section>
-
-          <aside className="flex w-[396px] shrink-0 flex-col gap-5 self-stretch rounded-2xl border bg-background p-6">
-            <h2 className="text-[15px] font-bold">{t("previewTitle")}</h2>
-            <div className="flex h-[240px] items-center justify-center overflow-hidden rounded-xl border bg-muted/60">
-              {selected ? (
-                <ResizePreview
-                  src={selected.url}
-                  source={selected.source}
-                  target={sizeFor(selected)}
-                  fit={fit}
-                />
-              ) : (
-                <p className="px-6 text-center text-xs text-muted-foreground">{t("previewEmpty")}</p>
-              )}
             </div>
-            {selected && statusOf(selected) === "done" && (
-              <p className="-mt-2 text-xs text-muted-foreground">
-                {t("outputReady", {
-                  size: t("dimensions", { width: String(selected.result!.width), height: String(selected.result!.height) }),
-                  bytes: kb(selected.result!.blob.size),
-                })}
-              </p>
+            <aside className="flex w-full shrink-0 flex-col gap-4 rounded-2xl border bg-background p-5 lg:w-[360px]">
+              <h2 className="text-[15px] font-bold">{t("previewTitle")}</h2>
+          <div className="flex h-[240px] items-center justify-center overflow-hidden rounded-xl border bg-muted/60">
+            {selected ? (
+              <ResizePreview
+                src={selected.url}
+                source={selected.source}
+                target={sizeFor(selected)}
+                fit={fit}
+              />
+            ) : (
+              <p className="px-6 text-center text-xs text-muted-foreground">{t("previewEmpty")}</p>
             )}
-
-            <div className="flex flex-col gap-4">
-              <h3 className="text-[13px] font-bold uppercase">{t("outputSettings")}</h3>
-
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="resize-quality" className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">{t("quality")}</span>
-                  <span className="font-bold text-primary">{qualityDisabled ? "—" : format.number(quality / 100, { ...LATN, style: "percent" })}</span>
-                </label>
-                <input
-                  id="resize-quality"
-                  type="range"
-                  min={RESIZE_QUALITY.min}
-                  max={RESIZE_QUALITY.max}
-                  value={quality}
-                  disabled={qualityDisabled}
-                  onChange={(e) => setQuality(Number(e.target.value))}
-                  className="h-4 w-full accent-primary disabled:opacity-40"
-                />
-                {qualityDisabled && <p className="text-[11px] text-subtle">{t("qualityPng")}</p>}
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="resize-format" className="text-xs text-muted-foreground">
-                  {t("format")}
-                </label>
-                <div className="relative flex items-center">
-                  <select
-                    id="resize-format"
-                    value={outputFormat}
-                    onChange={(e) => setOutputFormat(e.target.value as ResizeFormat)}
-                    className="h-11 w-full appearance-none rounded-lg border bg-background ps-3 pe-9 text-[13px] outline-none focus-visible:border-ring"
-                  >
-                    {RESIZE_FORMATS.map((f) => (
-                      <option key={f} value={f}>
-                        {t(`formats.${f}`)}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute end-3 size-3.5 text-muted-foreground" aria-hidden />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-3">
-                <span id="resize-preserve" className="text-[13px] font-semibold">
-                  {t("preserveAspect")}
-                </span>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={preserve}
-                  aria-labelledby="resize-preserve"
-                  onClick={() => setPreserve((p) => !p)}
-                  className={cn("relative h-5 w-10 shrink-0 rounded-full transition-colors", preserve ? "bg-primary" : "bg-muted-foreground/30")}
-                >
-                  <span
-                    className={cn(
-                      "absolute top-0.5 size-4 rounded-full bg-white shadow transition-[inset-inline-start]",
-                      preserve ? "start-[22px]" : "start-0.5",
-                    )}
-                  />
-                </button>
-              </div>
-              {preserve ? (
-                <div role="radiogroup" aria-label={t("fitMode")} className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
-                  {(["crop", "pad"] as const).map((f) => (
-                    <button
-                      key={f}
-                      type="button"
-                      role="radio"
-                      aria-checked={cropFit === f}
-                      onClick={() => setCropFit(f)}
-                      className={cn(
-                        "h-8 rounded-md text-xs font-semibold text-muted-foreground",
-                        cropFit === f && "bg-background text-foreground shadow-sm",
-                      )}
-                    >
-                      {t(`fits.${f}`)}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[11px] text-subtle">{t("stretchNote")}</p>
-              )}
-            </div>
-          </aside>
-        </div>
-      </div>
-
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-t bg-background px-8 py-5">
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-bold">{t("total", { count: items.length, display: num(items.length) })}</span>
-          <span aria-hidden className="h-4 w-px bg-border" />
-          <span className="text-[13px] text-muted-foreground">
-            {items.length === 0 ? t("emptyQueue") : pending.length === 0 && !running ? t("allDone") : t("estimate", { seconds, display: num(seconds) })}
-          </span>
-        </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={downloadZip} disabled={done.length === 0} className="h-11 px-5 text-sm font-semibold">
-            <Download aria-hidden />
-            {t("downloadZip")}
-          </Button>
-          <Button
-            onClick={resizeAll}
-            disabled={running || pending.length === 0 || (platform === "custom" && !customValid)}
-            className="h-11 px-6 text-sm font-bold"
-          >
-            {running && <Loader2 className="animate-spin" aria-hidden />}
-            {running ? t("resizing") : t("resizeAll")}
-          </Button>
-        </div>
-      </div>
-    </div>
+          </div>
+          {selected && statusOf(selected) === "done" && (
+            <p className="-mt-2 text-xs text-muted-foreground">
+              {t("outputReady", {
+                size: t("dimensions", { width: String(selected.result!.width), height: String(selected.result!.height) }),
+                bytes: kb(selected.result!.blob.size),
+              })}
+            </p>
+          )}
+            </aside>
+          </div>
+        )}
+      </section>
+    </>
   );
 }
 

@@ -28,14 +28,41 @@ test("sign up → add a key → generate → credits used on the dashboard", asy
 
   // Generate a lifestyle image.
   await page.goto("/en/generate");
+  await page.getByRole("button", { name: /^Product Info/ }).click();
   await page.locator("#sku").fill("E2E-SOFA-1");
   await page.locator('input[type="file"]').first().setInputFiles("public/demo/sofa-source.png");
+  // Nothing is pre-picked: Generate waits for a category and a scene.
+  await expect(page.getByRole("button", { name: "Generate Image" })).toBeDisabled();
+  await page.getByRole("button", { name: /^Scene Settings/ }).click();
+  await page.locator("#category").selectOption("furniture");
+  await page.getByRole("radio", { name: "Living Room" }).click();
   await page.getByRole("button", { name: "Generate Image" }).click();
   await expect(page.getByRole("img", { name: /AI generated/i })).toBeVisible({ timeout: 60_000 });
 
-  // One credit used.
+  // The result opens full size; Upscale (one more credit) shows the 2K copy in place.
+  await page.getByRole("img", { name: /AI generated/i }).click();
+  const viewer = page.getByRole("dialog");
+  await viewer.getByRole("button", { name: "Upscale" }).click();
+  await page.getByRole("menuitem", { name: /Upscale to 2K/ }).click();
+  await expect(viewer.getByText(/· 2K$/)).toBeVisible({ timeout: 30_000 });
+  await viewer.getByRole("button", { name: "Close" }).click();
+
+  // Every result is saved to History. Opening the tool fresh shows no earlier results...
+  await page.reload();
+  await expect(page.getByRole("region", { name: "Your results" })).toHaveCount(0);
+  // ...opening it from History brings that product's results back.
+  await page.goto("/en/history");
+  await page.getByRole("button", { name: "Actions for E2E-SOFA-1" }).first().click();
+  await page.getByRole("menuitem", { name: "View details" }).click();
+  await page.getByRole("link", { name: "Open in Generate" }).click();
+  await expect(page).toHaveURL(/\/en\/generate\?sku=E2E-SOFA-1&from=/);
+  const feed = page.getByRole("region", { name: "Your results" });
+  await expect(feed.getByRole("img")).toHaveCount(1);
+  await expect(feed.getByText(/E2E-SOFA-1/)).toBeVisible();
+
+  // Two credits used: the image and its upscale.
   await page.goto("/en/dashboard");
-  await expect(page.getByText("49 credits")).toBeVisible();
+  await expect(page.getByText("48 credits")).toBeVisible();
 });
 
 test("wrong password is refused without saying which part was wrong", async ({ page }) => {

@@ -35,6 +35,12 @@ export async function listGenerations(orgId: string): Promise<Generation[]> {
   return db.forOrg(orgId).select(generations, undefined, { orderBy: [asc(generations.createdAt)] });
 }
 
+/** One person's newest generations of one mode, optionally for one SKU (a tool's results feed). */
+export async function listUserGenerations(orgId: string, mode: GenerationMode, createdBy: string, limit: number, sku?: string): Promise<Generation[]> {
+  const where = and(eq(generations.mode, mode), eq(generations.createdBy, createdBy), sku === undefined ? undefined : eq(generations.sku, sku));
+  return db.forOrg(orgId).select(generations, where, { orderBy: [desc(generations.createdAt)], limit });
+}
+
 /** Newest generations of one mode (the Studio's recent results). */
 export async function listRecentGenerations(orgId: string, mode: GenerationMode, limit: number): Promise<Generation[]> {
   return db.forOrg(orgId).select(generations, and(eq(generations.mode, mode)), { orderBy: [desc(generations.createdAt)], limit });

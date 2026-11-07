@@ -14,6 +14,7 @@ test("set up a brand kit and write copy in the brand voice", async ({ page }) =>
 
   // No kit yet: the Copy panel points to the settings page.
   await page.goto("/en/copy");
+  await page.getByRole("button", { name: /^Style/ }).click();
   await page.getByRole("link", { name: "Add a brand kit" }).click();
   await expect(page).toHaveURL(/\/en\/settings\/brand/);
   await expect(page.getByText("No brand kit yet.")).toBeVisible();
@@ -30,10 +31,12 @@ test("set up a brand kit and write copy in the brand voice", async ({ page }) =>
   await expect(page.locator("#brand-avoid")).toHaveValue("cheap, best ever");
 
   await page.goto("/en/copy");
+  await page.getByRole("button", { name: /^Style/ }).click();
   const toggle = page.getByRole("checkbox", { name: /Use brand kit/ });
   await expect(toggle).toBeChecked();
   await expect(page.getByText("Write in the Northwind Home brand voice")).toBeVisible();
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/copy-en.png` });
+  await page.getByRole("button", { name: /^Product, / }).click();
   await page.locator("#copy-sku").fill("SOFA-2041");
   await page.locator("#copy-name").fill("Oslo Linen Sofa");
   await page.locator("#copy-details").fill("Solid oak legs\nNot cheap looking");
@@ -50,6 +53,7 @@ test("set up a brand kit and write copy in the brand voice", async ({ page }) =>
   await expect(page.locator("#brand-name")).toHaveValue("Northwind Home");
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/brand-ar.png`, fullPage: true });
   await page.goto("/ar/copy");
+  await page.getByRole("group", { name: "الإعدادات" }).getByRole("button").last().click(); // Style
   await expect(page.getByRole("checkbox", { name: /استخدام هوية العلامة/ })).toBeChecked();
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/copy-ar.png` });
 });

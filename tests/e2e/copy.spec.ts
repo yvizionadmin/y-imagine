@@ -13,9 +13,11 @@ test("write English + Arabic copy, edit it, and find it in recent copy", async (
 
   await page.getByRole("link", { name: "Copy" }).click();
   await expect(page).toHaveURL(/\/en\/copy/);
+  await page.getByRole("button", { name: /^Product, / }).click();
   await page.locator("#copy-sku").fill("SOFA-2041");
   await page.locator("#copy-name").fill("Oslo Linen Sofa");
   await page.locator("#copy-details").fill("Solid oak legs\nRemovable linen covers");
+  await page.getByRole("button", { name: /^Style/ }).click();
   await page.getByRole("radio", { name: "Luxury" }).click();
   await page.getByRole("button", { name: "Write Copy" }).click();
 

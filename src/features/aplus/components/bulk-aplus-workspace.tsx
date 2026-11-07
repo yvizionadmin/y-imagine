@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
-import { ConfigPanel, Field, FormatFields, PanelBody, PanelFooter, PanelHeader, Section } from "@/components/app/config-panel";
+import { ConfigPanel, Field, FormatFields, PanelBody, PanelFooter, PanelHeader, RequiredTag, Section } from "@/components/app/config-panel";
 import { blockedReason } from "@/components/app/job-errors";
 import { CategoryFields, StyleChips } from "@/features/image-batch/components/bulk-fields";
 import { BulkImageCanvas } from "@/features/image-batch/components/bulk-image-canvas";
@@ -35,10 +35,11 @@ export function BulkAplusWorkspace() {
   const tp = useTranslations("Presets");
   const tw = useTranslations("Workspace");
   const startError = useStartError();
-  const runs = useImageRuns("aplus");
+  const runs = useImageRuns();
   const [text, setText] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
-  const [category, setCategory] = useState(categoryPresets[0].key);
+  // Nothing is pre-picked: the merchant chooses the category (scene and style stay optional).
+  const [category, setCategory] = useState("");
   const [subcategory, setSubcategory] = useState<string | null>(null);
   const [layout, setLayout] = useState<AplusLayout | null>("bento");
   const [scene, setScene] = useState<string | null>(null);
@@ -73,7 +74,7 @@ export function BulkAplusWorkspace() {
 
   return (
     <>
-      <ConfigPanel onSubmit={start}>
+      <ConfigPanel tool="aplus" onSubmit={start}>
         <PanelHeader title={t("panelTitle")} />
 
         <PanelBody disabled={pending}>
@@ -117,7 +118,7 @@ export function BulkAplusWorkspace() {
             </div>
           </Section>
 
-          <Section title={ta("sceneStyle")}>
+          <Section title={ta("sceneStyle")} aside={category === "" ? <RequiredTag /> : undefined} summary={category ? tp(`categories.${category}`) : null}>
             <CategoryFields
               label={ta("category")}
               category={category}
@@ -130,25 +131,31 @@ export function BulkAplusWorkspace() {
               }}
               onSubcategory={setSubcategory}
             />
-            <Field label={ta("scenes")} gap="gap-1.5">
-              <div role="radiogroup" aria-label={ta("scenes")} className="flex flex-wrap gap-2">
-                {preset.scenes.map((s) => (
-                  <button
-                    key={s.key}
-                    type="button"
-                    role="radio"
-                    aria-checked={scene === s.key}
-                    onClick={() => setScene(scene === s.key ? null : s.key)}
-                    className={cn("flex h-[110px] w-[118px] flex-col overflow-hidden rounded-xl border bg-muted text-start", scene === s.key && "border-2 border-primary")}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element -- tenant-configurable preset images */}
-                    <img src={s.image} alt="" className="h-[70px] w-full shrink-0 object-cover" />
-                    <span className="w-full truncate p-1.5 text-[11px] font-semibold">{tp(`scenes.${s.key}`)}</span>
-                  </button>
-                ))}
-              </div>
-            </Field>
-            <StyleChips category={category} value={style} onChange={setStyle} />
+            {category === "" ? (
+              <p className="text-xs text-muted-foreground">{tw("chooseFirst")}</p>
+            ) : (
+              <>
+                <Field label={ta("scenes")} gap="gap-1.5">
+                  <div role="radiogroup" aria-label={ta("scenes")} className="flex flex-wrap gap-2">
+                    {preset.scenes.map((s) => (
+                      <button
+                        key={s.key}
+                        type="button"
+                        role="radio"
+                        aria-checked={scene === s.key}
+                        onClick={() => setScene(scene === s.key ? null : s.key)}
+                        className={cn("flex h-[110px] w-[118px] flex-col overflow-hidden rounded-xl border bg-muted text-start", scene === s.key && "border-2 border-primary")}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element -- tenant-configurable preset images */}
+                        <img src={s.image} alt="" className="h-[70px] w-full shrink-0 object-cover" />
+                        <span className="w-full truncate p-1.5 text-[11px] font-semibold">{tp(`scenes.${s.key}`)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+                <StyleChips category={category} value={style} onChange={setStyle} />
+              </>
+            )}
           </Section>
 
           <Section title={ta("output")}>
@@ -161,7 +168,7 @@ export function BulkAplusWorkspace() {
         <PanelFooter
           cost={count * unitCost}
           submitLabel={t("start", { count })}
-          canSubmit={count > 0}
+          canSubmit={count > 0 && category !== ""}
           busy={pending}
           onReset={() => {
             setText("");

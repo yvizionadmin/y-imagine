@@ -5,9 +5,12 @@ import { useTranslations } from "next-intl";
 import { appendPhrase, promptTips, unusedChips } from "@/lib/prompt-hints";
 
 /** Tested phrases under a prompt box; clicking one adds it to the text. Used chips disappear. */
-export function PromptChips({ chips, value, max, onChange }: { chips: readonly string[]; value: string; max: number; onChange: (value: string) => void }) {
+/** Suggested phrases to append; `limit` keeps the row short in the prompt dock. */
+export function PromptChips({ chips, value, max, limit, onChange }: { chips: readonly string[]; value: string; max: number; limit?: number; onChange: (value: string) => void }) {
   const t = useTranslations("PromptHints");
-  const shown = unusedChips(chips, value).filter((chip) => appendPhrase(value, chip, max) !== null);
+  const shown = unusedChips(chips, value)
+    .filter((chip) => appendPhrase(value, chip, max) !== null)
+    .slice(0, limit);
   if (shown.length === 0) return null;
   return (
     <div role="group" aria-label={t("suggestions")} className="flex flex-wrap gap-1.5">

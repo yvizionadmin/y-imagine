@@ -115,6 +115,23 @@ describe("provider routing", () => {
     expect(calls.at(-1)!.fields.prompt).toContain("fashion (handbags) product cut-outs");
   });
 
+  it("Upscale: one image edit, resized to the exact 2K or 4K long edge, counted as an upscale job", async () => {
+    vi.stubGlobal("fetch", fakeProviders);
+    const { org, actor } = await makeOrg();
+    await saveProviderKey({ orgId: org.id, provider: "openai", key: "sk-test-0000000000000000", models: ["gpt-image-1"], createdBy: "t" });
+    const provider = await getImageProvider(actor, "upscale");
+    const meta = await sharp(product.bytes).metadata();
+    const image = await provider.upscale({ image: product, size: "2K" });
+    expect(Math.max(image.width, image.height)).toBe(2048);
+    expect(image.width / image.height).toBeCloseTo((meta.width ?? 1) / (meta.height ?? 1), 1);
+    expect(calls.at(-1)!.images).toBe(1);
+    expect(calls.at(-1)!.fields.prompt).toMatch(/Upscale this image/);
+    expect(calls.at(-1)!.fields.quality).toBe("high");
+    const big = await provider.upscale({ image: product, size: "4K" });
+    expect(Math.max(big.width, big.height)).toBe(4096);
+    expect((await listUsage(org.id)).map((u) => u.feature)).toEqual(["upscale", "upscale"]);
+  });
+
   it("Gemini preference: recolor with swatch, aspect ratio and a vision preservation check", async () => {
     vi.stubGlobal("fetch", fakeProviders);
     const { org, actor } = await makeOrg();

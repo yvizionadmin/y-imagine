@@ -1,22 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ImageBatchTool } from "@/lib/image-batch/rows";
 import type { ImageBatchItemView, ImageBatchView } from "@/lib/image-batch/start";
-import { getImageBatchRun, listImageBatchRuns } from "../actions";
+import { getImageBatchRun } from "../actions";
 
 export type OpenImageRun = { batch: ImageBatchView; items: ImageBatchItemView[] };
 
 const POLL_MS = 3000;
 
-/** A tool's recent runs and the open one, refreshed every few seconds while it is running. */
-export function useImageRuns(tool: ImageBatchTool) {
+/**
+ * The runs started during this visit and the open one, refreshed every few seconds while it is running. Earlier
+ * runs aren't listed here: their images are in History (the page opens fresh, like the single tools).
+ */
+export function useImageRuns() {
   const [runs, setRuns] = useState<ImageBatchView[]>([]);
   const [open, setOpen] = useState<OpenImageRun | null>(null);
-
-  useEffect(() => {
-    listImageBatchRuns(tool).then(setRuns);
-  }, [tool]);
 
   const openId = open?.batch.id;
   const running = open?.batch.status === "running";

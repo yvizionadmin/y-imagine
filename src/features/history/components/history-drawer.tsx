@@ -124,7 +124,7 @@ export function HistoryDrawer({
               )}
               <div className="grid grid-cols-2 gap-2">
                 <Link
-                  href={{ pathname: TOOL_ROUTE[item.mode], query: { sku: item.sku } }}
+                  href={{ pathname: TOOL_ROUTE[item.mode], query: { sku: item.sku, from: item.id } }}
                   className="flex h-9 items-center justify-center rounded-lg border text-xs font-semibold hover:bg-muted"
                 >
                   {t("openInTool", { tool: t(`tools.${item.mode}`) })}

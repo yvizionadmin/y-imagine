@@ -1,64 +1,76 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight, Maximize, Minus, Plus } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronLeft, ChevronRight, Maximize } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
+import { ImageActions, ImageViewer, type ViewerImage } from "@/components/app/image-viewer";
 
-const MIN_ZOOM = 25;
-const MAX_ZOOM = 200;
-
-/** Right-hand canvas: top/bottom overlay slots, zoomable content, and the zoom/fullscreen control. */
+/**
+ * The results area: top/bottom overlay slots and the content. A generated image (`img[data-result]`) opens in a
+ * full-window viewer (zoom, download, share) when clicked, and gets Open / Download / Share in the corner.
+ */
 export function CanvasShell({ top, bottom, children }: { top?: ReactNode; bottom?: ReactNode; children: ReactNode }) {
-  const t = useTranslations("Workspace");
-  const canvasRef = useRef<HTMLElement>(null);
-  const [zoom, setZoom] = useState(100);
+  const t = useTranslations("Workspace.viewer");
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [result, setResult] = useState<ViewerImage | null>(null);
+  const [viewing, setViewing] = useState<ViewerImage | null>(null);
+
+  // Which generated image is showing (it changes as jobs finish and shots are picked).
+  useEffect(() => {
+    const content = contentRef.current;
+    if (!content) return;
+    const read = () => {
+      const img = content.querySelector<HTMLImageElement>("img[data-result]");
+      const next = img ? { src: img.src, alt: img.alt, name: img.alt || "image" } : null;
+      setResult((current) => (current?.src === next?.src ? current : next));
+    };
+    read();
+    const observer = new MutationObserver(read);
+    observer.observe(content, { subtree: true, childList: true, attributes: true, attributeFilter: ["src"] });
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <section ref={canvasRef} className="relative flex min-w-0 flex-1 items-center justify-center overflow-hidden bg-canvas p-10">
+    <section className="relative flex min-h-[20rem] min-w-0 shrink-0 grow items-center justify-center overflow-hidden bg-canvas p-10">
       {top && <div className="absolute top-10 left-1/2 z-10 -translate-x-1/2">{top}</div>}
 
-      <div className="flex flex-col items-center gap-5 transition-transform" style={{ transform: `scale(${zoom / 100})` }}>
+      <div
+        ref={contentRef}
+        className="flex flex-col items-center gap-5 [&_img[data-result]]:cursor-zoom-in"
+        onClick={(e) => {
+          const img = e.target instanceof HTMLImageElement && e.target.matches("[data-result]") ? e.target : null;
+          if (img) setViewing({ src: img.src, alt: img.alt, name: img.alt || "image" });
+        }}
+      >
         {children}
       </div>
 
       {bottom && <div className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2">{bottom}</div>}
 
-      <div className="absolute end-6 bottom-6 flex items-center gap-1 rounded-lg border bg-background p-1 shadow-[0_4px_6px_rgba(0,0,0,0.05)]">
-        <ZoomButton label={t("zoomOut")} onClick={() => setZoom((z) => Math.max(MIN_ZOOM, z - 10))}>
-          <Minus className="size-4" aria-hidden />
-        </ZoomButton>
-        <span className="w-11 text-center font-mono text-xs font-semibold" dir="ltr">
-          {zoom}%
-        </span>
-        <ZoomButton label={t("zoomIn")} onClick={() => setZoom((z) => Math.min(MAX_ZOOM, z + 10))}>
-          <Plus className="size-4" aria-hidden />
-        </ZoomButton>
-        <span className="h-4 w-px bg-border" />
-        <ZoomButton
-          label={t("fullscreen")}
-          onClick={() =>
-            document.fullscreenElement ? document.exitFullscreen() : canvasRef.current?.requestFullscreen()
-          }
-        >
-          <Maximize className="size-4" aria-hidden />
-        </ZoomButton>
-      </div>
+      {result && (
+        <div className="absolute end-6 bottom-6 z-10 flex items-center gap-1.5">
+          <button
+            type="button"
+            aria-label={t("open")}
+            title={t("open")}
+            onClick={() => setViewing(result)}
+            className="flex size-9 items-center justify-center rounded-full border bg-background/90 text-foreground shadow-sm backdrop-blur hover:text-primary"
+          >
+            <Maximize className="size-4" aria-hidden />
+          </button>
+          <ImageActions image={result} onUpscaled={setViewing} />
+        </div>
+      )}
+
+      <ImageViewer image={viewing} onClose={() => setViewing(null)} />
     </section>
   );
 }
 
-function ZoomButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
+export function CanvasEmptyState({ icon, title, body, placeholder = true }: { icon: ReactNode; title: string; body: string; placeholder?: boolean }) {
   return (
-    <button type="button" aria-label={label} onClick={onClick} className="flex items-center rounded-lg border px-2.5 py-1.5 hover:bg-muted">
-      {children}
-    </button>
-  );
-}
-
-export function CanvasEmptyState({ icon, title, body }: { icon: ReactNode; title: string; body: string }) {
-  return (
-    <div className="flex w-[480px] max-w-full flex-col items-center gap-4 text-center">
+    <div data-empty-state={placeholder ? "" : undefined} className="flex w-[480px] max-w-full flex-col items-center gap-3 text-center">
       <div className="flex size-16 items-center justify-center rounded-full bg-accent text-primary">{icon}</div>
       <div className="flex flex-col gap-1.5">
         <h2 className="text-lg font-bold">{title}</h2>

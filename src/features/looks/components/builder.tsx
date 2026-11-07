@@ -3,9 +3,10 @@
 import { blockedReason } from "@/components/app/job-errors";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Box, Eye, EyeOff, Link2, Loader2, Lock, Plus, Search, Sparkles, Unlock, X } from "lucide-react";
+import { Box, Eye, EyeOff, Image as ImageIcon, Link2, Loader2, Lock, Plus, Search, Shapes, Square, Type, Unlock, X } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { cn } from "cn";
+import { ConfigPanel, PanelBody, PanelFooter, PanelHeader, Section } from "@/components/app/config-panel";
 import { ExportDialog } from "@/components/app/export-dialog";
 import { HiddenFileInput } from "@/components/app/upload-inputs";
 import { Button } from "@/components/ui/button";
@@ -263,10 +264,108 @@ function Builder({ lookId }: { lookId: string | null }) {
     );
   }
 
+  const styleLabel = settings.style ? t(`styles.${settings.style}` as "styles.luxury") : null;
+
   return (
-    <div className="flex h-full flex-col gap-4 pb-6">
-      {header}
-      <div className="grid min-h-[620px] flex-1 grid-cols-[280px_1fr_300px] gap-4 px-6">
+    // A column so the prompt dock stays pinned under the builder (the Looks layout scrolls this area).
+    <div className="flex min-h-full flex-col">
+      <ConfigPanel tool="looks" onSubmit={() => void generate()}>
+        <PanelHeader title={settings.title || t("title")} />
+        <PanelBody disabled={generating}>
+          <label htmlFor="look-prompt" className="sr-only">
+            {t("prompt")}
+          </label>
+          <textarea
+            id="look-prompt"
+            value={settings.prompt}
+            maxLength={1000}
+            onChange={(e) => set("prompt", e.target.value)}
+            placeholder={t("promptPlaceholder")}
+            className="field-sizing-content max-h-32 min-h-14 w-full resize-none rounded-xl border border-input bg-muted/40 px-3 py-2.5 text-sm leading-relaxed outline-none placeholder:text-muted-foreground hover:border-ring/50 focus-visible:border-ring focus-visible:bg-background focus-visible:ring-3 focus-visible:ring-ring/30 dark:bg-input/30"
+          />
+          {error && (
+            <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-[11px] text-danger">
+              {error}
+            </p>
+          )}
+
+          <Section title={t("chips.scene")} summary={[subcategory ? tp(`subcategories.${subcategory}`) : categoryLabel, styleLabel].filter(Boolean).join(" · ")} icon={<Shapes className="size-3.5 shrink-0" aria-hidden />}>
+            <CategoryFields
+              label={t("category")}
+              category={settings.category}
+              subcategory={subcategory}
+              onCategory={chooseCategory}
+              onSubcategory={chooseSubcategory}
+            />
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold">{t("style")}</span>
+              <div role="radiogroup" aria-label={t("style")} className="flex flex-wrap gap-1.5">
+                {lookStyles(settings.category).map((style) => (
+                  <button key={style} type="button" role="radio" aria-checked={settings.style === style} onClick={() => set("style", settings.style === style ? null : style)}
+                    className={cn("rounded-full border bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground", settings.style === style && "border-primary bg-primary text-primary-foreground")}>
+                    {t(`styles.${style}` as "styles.luxury")}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </Section>
+
+          <Section title={t("chips.background")} summary={background?.name ?? null} icon={<ImageIcon className="size-3.5 shrink-0" aria-hidden />}>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold">{t("roomBackground")}</span>
+              <div role="radiogroup" aria-label={t("roomBackground")} className="flex flex-wrap gap-1.5">
+                {choices.map((b) => (
+                  <button key={b.id} type="button" role="radio" aria-checked={background?.id === b.id} aria-label={b.name} title={b.name} onClick={() => set("backgroundId", b.id)}
+                    className={cn("h-9 w-12 overflow-hidden rounded-md border-2 border-transparent", background?.id === b.id && "border-primary")}>
+                    {/* eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route */}
+                    <img src={b.imageUrl} alt="" className="size-full object-cover" />
+                  </button>
+                ))}
+                <button type="button" aria-label={t("uploadBackground")} title={t("uploadBackground")} disabled={uploading} onClick={() => uploadRef.current?.click()}
+                  className="flex h-9 w-12 items-center justify-center rounded-md border-2 border-dashed text-muted-foreground hover:border-primary hover:text-primary disabled:opacity-50">
+                  {uploading ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Plus className="size-4" aria-hidden />}
+                </button>
+                <HiddenFileInput inputRef={uploadRef} accept="image/png,image/jpeg,image/webp" onChange={uploadBackground} />
+              </div>
+            </div>
+          </Section>
+
+          <Section title={t("chips.format")} summary={settings.ratio} icon={<Square className="size-3.5 shrink-0" aria-hidden />}>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold">{t("aspectRatio")}</span>
+              <div role="radiogroup" aria-label={t("aspectRatio")} className="grid grid-cols-4 gap-1.5">
+                {LOOK_RATIOS.map((r) => (
+                  <button key={r.key} type="button" role="radio" aria-checked={settings.ratio === r.key} onClick={() => set("ratio", r.key)}
+                    className={cn("flex flex-col items-center rounded-lg border py-1.5", settings.ratio === r.key && "border-primary bg-accent text-primary")}>
+                    <span className="text-xs font-bold" dir="ltr">{r.key}</span>
+                    <span className="text-[9px] text-muted-foreground">{t(`ratios.${r.label}`)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </Section>
+
+          <Section title={t("chips.title")} summary={settings.title || null} icon={<Type className="size-3.5 shrink-0" aria-hidden />}>
+            <label className="flex flex-col gap-1.5 text-xs font-semibold">
+              {t("lookTitle")}
+              <input value={settings.title} maxLength={80} onChange={(e) => set("title", e.target.value)} placeholder={t("lookTitlePlaceholder")} className="h-9 rounded-lg border px-3 text-[13px] font-normal outline-none placeholder:text-subtle focus-visible:border-ring" />
+            </label>
+          </Section>
+        </PanelBody>
+        <PanelFooter
+          cost={lookCost}
+          submitLabel={generating ? t("generating") : t("generate")}
+          canSubmit={items.length > 0}
+          busy={generating}
+          onReset={() => {
+            commit([]);
+            setSelectedId(null);
+          }}
+        />
+      </ConfigPanel>
+
+      {/* The work area: products to add, the arranging canvas, and the layers of what is placed. */}
+      <div className="grid min-h-[34rem] shrink-0 grow grid-cols-1 gap-4 p-4 sm:p-6 lg:grid-cols-[280px_1fr] xl:grid-cols-[280px_1fr_240px]">
         <ProductPanel searchRef={searchRef} disabled={items.length >= MAX_LOOK_PRODUCTS} onAdd={addItem} />
 
         <section className="relative flex flex-col overflow-hidden rounded-2xl border bg-gradient-to-br from-background to-canvas">
@@ -316,103 +415,31 @@ function Builder({ lookId }: { lookId: string | null }) {
           )}
         </section>
 
-        <aside className="flex flex-col overflow-hidden rounded-2xl border bg-background">
-          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4">
-            {items.length > 0 && (
-              <section className="flex flex-col gap-2">
-                <h2 className="text-sm font-bold">{t("layers")}</h2>
-                <ol className="flex flex-col gap-1.5">
-                  {[...items].reverse().map((item, index) => (
-                    <li key={item.id}>
-                      <div className={cn("flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs", item.id === selectedId && "border-primary bg-accent text-primary")}>
-                        <button type="button" onClick={() => setSelectedId(item.id)} className={cn("min-w-0 flex-1 truncate text-start font-medium", item.hidden && "opacity-50")}>
-                          {index + 1}. {item.name}
-                        </button>
-                        <button type="button" aria-label={item.hidden ? t("show", { name: item.name }) : t("hide", { name: item.name })} onClick={() => update(item.id, { hidden: !item.hidden })}>
-                          {item.hidden ? <EyeOff className="size-3.5" aria-hidden /> : <Eye className="size-3.5" aria-hidden />}
-                        </button>
-                        <button type="button" aria-label={item.locked ? t("unlock", { name: item.name }) : t("lock", { name: item.name })} onClick={() => update(item.id, { locked: !item.locked })}>
-                          {item.locked ? <Lock className="size-3.5" aria-hidden /> : <Unlock className="size-3.5" aria-hidden />}
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-                <Button onClick={rearrange} className="mt-1 bg-[#1e293b] hover:bg-[#1e293b]/90">{t("rearrange")}</Button>
-              </section>
-            )}
-
-            <section className="flex flex-col gap-4">
-              <h2 className="text-sm font-bold">{t("settings")}</h2>
-              <label className="flex flex-col gap-1.5 text-xs font-semibold">
-                {t("lookTitle")}
-                <input value={settings.title} maxLength={80} onChange={(e) => set("title", e.target.value)} placeholder={t("lookTitlePlaceholder")} className="h-9 rounded-lg border px-3 text-[13px] font-normal outline-none placeholder:text-subtle focus-visible:border-ring" />
-              </label>
-              <label className="flex flex-col gap-1.5 text-xs font-semibold">
-                {t("prompt")}
-                <textarea value={settings.prompt} maxLength={1000} onChange={(e) => set("prompt", e.target.value)} placeholder={t("promptPlaceholder")} className="h-16 resize-none rounded-lg border px-3 py-2 text-xs font-normal outline-none placeholder:text-subtle focus-visible:border-ring" />
-              </label>
-              <CategoryFields
-                label={t("category")}
-                category={settings.category}
-                subcategory={subcategory}
-                onCategory={chooseCategory}
-                onSubcategory={chooseSubcategory}
-              />
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold">{t("style")}</span>
-                <div role="radiogroup" aria-label={t("style")} className="flex flex-wrap gap-1.5">
-                  {lookStyles(settings.category).map((style) => (
-                    <button key={style} type="button" role="radio" aria-checked={settings.style === style} onClick={() => set("style", settings.style === style ? null : style)}
-                      className={cn("rounded-full border bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground", settings.style === style && "border-primary bg-primary text-primary-foreground")}>
-                      {t(`styles.${style}` as "styles.luxury")}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold">{t("aspectRatio")}</span>
-                <div role="radiogroup" aria-label={t("aspectRatio")} className="grid grid-cols-4 gap-1.5">
-                  {LOOK_RATIOS.map((r) => (
-                    <button key={r.key} type="button" role="radio" aria-checked={settings.ratio === r.key} onClick={() => set("ratio", r.key)}
-                      className={cn("flex flex-col items-center rounded-lg border py-1.5", settings.ratio === r.key && "border-primary bg-accent text-primary")}>
-                      <span className="text-xs font-bold" dir="ltr">{r.key}</span>
-                      <span className="text-[9px] text-muted-foreground">{t(`ratios.${r.label}`)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold">{t("roomBackground")}</span>
-                <div role="radiogroup" aria-label={t("roomBackground")} className="flex flex-wrap gap-1.5">
-                  {choices.map((b) => (
-                    <button key={b.id} type="button" role="radio" aria-checked={background?.id === b.id} aria-label={b.name} title={b.name} onClick={() => set("backgroundId", b.id)}
-                      className={cn("h-9 w-12 overflow-hidden rounded-md border-2 border-transparent", background?.id === b.id && "border-primary")}>
-                      {/* eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route */}
-                      <img src={b.imageUrl} alt="" className="size-full object-cover" />
-                    </button>
-                  ))}
-                  <button type="button" aria-label={t("uploadBackground")} title={t("uploadBackground")} disabled={uploading} onClick={() => uploadRef.current?.click()}
-                    className="flex h-9 w-12 items-center justify-center rounded-md border-2 border-dashed text-muted-foreground hover:border-primary hover:text-primary disabled:opacity-50">
-                    {uploading ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Plus className="size-4" aria-hidden />}
-                  </button>
-                  <HiddenFileInput inputRef={uploadRef} accept="image/png,image/jpeg,image/webp" onChange={uploadBackground} />
-                </div>
-              </div>
+        {items.length > 0 && (
+          <aside className="flex flex-col gap-2 rounded-2xl border bg-background p-4 lg:col-span-2 xl:col-span-1">
+            <section className="flex flex-col gap-2">
+              <h2 className="text-sm font-bold">{t("layers")}</h2>
+              <ol className="flex flex-col gap-1.5">
+                {[...items].reverse().map((item, index) => (
+                  <li key={item.id}>
+                    <div className={cn("flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs", item.id === selectedId && "border-primary bg-accent text-primary")}>
+                      <button type="button" onClick={() => setSelectedId(item.id)} className={cn("min-w-0 flex-1 truncate text-start font-medium", item.hidden && "opacity-50")}>
+                        {index + 1}. {item.name}
+                      </button>
+                      <button type="button" aria-label={item.hidden ? t("show", { name: item.name }) : t("hide", { name: item.name })} onClick={() => update(item.id, { hidden: !item.hidden })}>
+                        {item.hidden ? <EyeOff className="size-3.5" aria-hidden /> : <Eye className="size-3.5" aria-hidden />}
+                      </button>
+                      <button type="button" aria-label={item.locked ? t("unlock", { name: item.name }) : t("lock", { name: item.name })} onClick={() => update(item.id, { locked: !item.locked })}>
+                        {item.locked ? <Lock className="size-3.5" aria-hidden /> : <Unlock className="size-3.5" aria-hidden />}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <Button onClick={rearrange} className="mt-1 bg-[#1e293b] hover:bg-[#1e293b]/90">{t("rearrange")}</Button>
             </section>
-          </div>
-          <div className="flex flex-col gap-2 border-t p-4">
-            {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-[11px] text-danger">{error}</p>}
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-muted-foreground">{t("cost")}</span>
-              <span className="font-mono font-bold">{tw("cost", { count: lookCost, display: format.number(lookCost, LATN) })}</span>
-            </div>
-            <Button onClick={generate} disabled={generating || items.length === 0} className="h-10 font-bold">
-              {generating ? <Loader2 className="animate-spin" aria-hidden /> : <Sparkles aria-hidden />}
-              {generating ? t("generating") : t("generate")}
-            </Button>
-          </div>
-        </aside>
+          </aside>
+        )}
       </div>
     </div>
   );

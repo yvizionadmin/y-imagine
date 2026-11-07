@@ -952,3 +952,52 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   `member.profile_updated`. Users who never signed in here are ignored (linked on first sign-in). Verified: tsc + eslint
   clean; 4 Vitest tests (`clerk-profile-sync.test.ts`: name + email sync, unverified / taken email, svix-signed webhook,
   bad signature, not configured). **Setup (A8):** add the endpoint in the Clerk dashboard and copy its signing secret.
+- **2026-11-07, UI: prompt dock for the tool pages (local).** The 404px left config panel is replaced by a prompt
+  dock under the canvas, styled like the Studio prompt card: Generate, Recolor, A+, Copy and QR (single and bulk). The
+  same `ConfigPanel` / `PanelBody` / `Section` / `PanelFooter` API (`src/components/app/config-panel.tsx`), so the
+  workspaces kept their state and logic: what isn't a `Section` renders inline in the bar (the prompt / notes, a bulk
+  tool's product list via `Section inline`), each `Section` becomes a chip (optional `icon` + `summary` of the current
+  choice) whose fields render in a panel above the bar (always mounted; one open at a time; closes on Escape, outside
+  click, or submit; `revealField(el)` opens the panel holding a field, used by "Edit details"). Single/Bulk sits in the
+  bar (`DockToolbar`); cost + round submit like Studio; product / swatch tiles (`DockTile`) at the start of the prompt.
+  Bulk product lists show one input at a time: paste or CSV (`SourceSwitch`), with the hint while empty and a one-line
+  status ("3 products ready · 1 line skipped") once filled; bulk instructions / notes are an optional chip. Prompt boxes
+  have a visible field style (border, hover, focus ring). Then the dock moved into the **Studio hero** so every tool
+  page looks like the Studio home: gradient card, heading per tool (`Workspace.heroes`, en/ar), Single/Bulk as the
+  Image|Video-style pill, the prompt card, the shared tool row (`src/components/app/tool-shortcuts.tsx`, current tool
+  marked). Results sit above the hero, panels open upward (downward when there is no room), and submit scrolls back to the
+  results. The "will appear here" placeholder shows on a fresh page / New Job and collapses once editing starts.
+  **Results feed (Gemini / Higgsfield style):** Generate, Recolor and A+ save every result to History as it arrives
+  (`saveShot` / `saveResult`; Export now only downloads, Recolor's "Use Image" shows as saved), and each tool lists the
+  signed-in user's own results for that tool above the current job (`listToolFeed` → `listUserGenerations`, 40 newest,
+  oldest first; `src/components/app/result-feed.tsx`): one turn per job (`src/lib/feed-turns.ts`), the prompt as a
+  bubble with "Use this prompt", then its images with download / History. With a feed the hero shrinks to the pinned
+  prompt card (heading kept for screen readers, tool row hidden) and the page follows new results like a chat until
+  the reader scrolls up. Pages follow the user's Light / Dark / System theme. The Single/Bulk switch is the prompt
+  card's top row on every tool; bulk tools put Paste / CSV on the same row instead of a "Products" title.
+  **Then, from review:** the tall hero (heading, gradient card, tool row) took too much of a laptop screen, so tool
+  pages now pin only the compact prompt card at the bottom (heading kept for screen readers; tools stay in the rail),
+  like the mockup. The feed starts empty when a tool is opened from the Tools menu and collects this visit's results;
+  History's "Open in tool" (`?sku=&from=<id>`) brings that product's results and puts its prompt back to regenerate.
+  The canvas zoom bar is gone: a generated image (`img[data-result]`) opens in a full-window `ImageViewer` (zoom,
+  fit, download, share via the system share sheet, else copy link) and has Open / Download / Share in the corner;
+  feed images do the same. Bulk pages open fresh too (only runs started this visit; earlier runs' images are in History).
+  Generate and Bulk Generate start with no category or scene: the merchant picks both (the Scene chip shows the
+  required dot and Generate stays disabled until then); a category from Templates (`?category=`) still carries over.
+  Recolor and A+ (single and bulk) also start with no category. Generate's start screen shows "Try it" example cards
+  (`ExampleCards`: a scene, style and prompt each, then the product panel opens). **Image upscale:** a new priced job
+  (`upscale` in `Feature` / `IMAGE_FEATURES` / `JOB_FEATURES`; on by default for every plan, cost in Admin → Credits):
+  `ImageProvider.upscale` (AI SDK: one image edit re-rendered at 2K / 4K, then resized to the exact long edge; demo:
+  a resize), `upscaleImage` (`src/features/upscale/actions.ts`: reads a data URL or this org's stored asset, never a
+  remote URL; saves the result to History under the source tool), and an Upscale menu (2K / 4K with cost) next to
+  Download / Share on results, feed images and in the viewer. **Resize** and **Looks** moved onto the prompt dock too:
+  Resize = add images inline + Platform / Output chips, ↑ resizes, Download ZIP beside it, queue + preview as results;
+  Looks = scene prompt inline + Category & style / Room background / Format / Title chips, product search, arranging
+  canvas and layers as the work area (the result view is unchanged). Verified: tsc + eslint clean; Vitest (+ upscale,
+  ai-jobs upscale, feed cases); `next build`; Playwright (+ Resize dock, Try it, upscale in the main flow). The app layout stacks canvas over dock
+  when a page has one (`has-[[data-dock]]`). Removed the decorative undo/redo/Fit header and the "Isolated Source Layer
+  Connected" pill. Mockup: Artifact "Imagine AI – Studio Redesign". Verified: tsc + eslint clean; Vitest 203 passed
+  (+3 `dock-label.test.ts`; the 4 `email.test.ts` failures are `._*` files the exFAT drive writes into the test
+  outbox, not this change); `next build` clean; 20 Playwright specs pass (+1 `prompt-dock.spec.ts`: chips, panel
+  swap, Escape / outside click, product tile, paste/CSV switch, Arabic RTL; others updated to open the chip first).
+  **Not yet:** Looks and Resize keep their own layouts; the Figma file still shows the old side panel.

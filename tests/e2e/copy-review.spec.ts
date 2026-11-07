@@ -14,6 +14,7 @@ test("submit copy for review, request changes, resubmit and approve", async ({ p
   await page.waitForURL(/\/en\/home/);
 
   await page.goto("/en/copy");
+  await page.getByRole("button", { name: /^Product, / }).click();
   await page.locator("#copy-sku").fill("SOFA-2041");
   await page.locator("#copy-name").fill("Oslo Linen Sofa");
   await page.getByRole("button", { name: "Write Copy" }).click();

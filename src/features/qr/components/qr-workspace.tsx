@@ -2,11 +2,11 @@
 
 import { useMemo, useRef, useState } from "react";
 import { zipSync } from "fflate";
-import { CircleAlert, Download, ImagePlus, Loader2, QrCode, TriangleAlert } from "lucide-react";
+import { CircleAlert, Download, ImagePlus, Layers, QrCode, TriangleAlert } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { cn } from "cn";
-import { ConfigPanel, Field, OptionalTag, PanelBody, PanelHeader, Section } from "@/components/app/config-panel";
+import { ConfigPanel, DockToolbar, Field, MODE_SWITCH, modeSwitchItem, OptionalTag, PanelBody, PanelFooter, PanelHeader, Section } from "@/components/app/config-panel";
 import { CanvasEmptyState, CanvasShell } from "@/components/app/workspace-canvas";
 import { Button } from "@/components/ui/button";
 import { LATN } from "@/lib/format";
@@ -132,25 +132,28 @@ export function QrWorkspace() {
 
   return (
     <>
-      <ConfigPanel onSubmit={() => (mode === "single" ? downloadPng() : downloadZip())}>
+      <ConfigPanel tool="qr" onSubmit={() => (mode === "single" ? downloadPng() : downloadZip())}>
         <PanelHeader title={t("title")} />
         <PanelBody>
-          <div role="radiogroup" aria-label={t("mode")} className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
-            {(["single", "batch"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                role="radio"
-                aria-checked={mode === m}
-                onClick={() => setMode(m)}
-                className={cn("h-8 rounded-md text-xs font-semibold text-muted-foreground", mode === m && "bg-background text-foreground shadow-sm")}
-              >
-                {t(`modes.${m}`)}
-              </button>
-            ))}
-          </div>
+          <DockToolbar>
+            <div role="radiogroup" aria-label={t("mode")} className={MODE_SWITCH}>
+              {(["single", "batch"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === m}
+                  onClick={() => setMode(m)}
+                  className={modeSwitchItem(mode === m)}
+                >
+                  {m === "single" ? <QrCode className="size-4" aria-hidden /> : <Layers className="size-4" aria-hidden />}
+                  {t(`modes.${m}`)}
+                </button>
+              ))}
+            </div>
+          </DockToolbar>
 
-          <Section title={t("content")}>
+          <Section title={t("content")} inline>
             {mode === "single" ? (
               <Field label={t("contentLabel")} htmlFor="qr-text">
                 <textarea
@@ -281,23 +284,21 @@ export function QrWorkspace() {
           )}
         </PanelBody>
 
-        <div className="flex shrink-0 flex-col gap-3 border-t p-4">
-          <span className="text-[11px] text-muted-foreground">{t("free")}</span>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={reset} className="h-auto px-4 py-3 text-[13px] font-semibold text-muted-foreground">
-              {t("reset")}
-            </Button>
-            {mode === "single" && (
-              <Button type="button" variant="outline" disabled={!canDownload} onClick={downloadSvg} className="h-auto px-4 py-3 text-[13px] font-semibold">
+        <PanelFooter
+          note={t("free")}
+          actions={
+            mode === "single" && (
+              <Button type="button" variant="outline" disabled={!canDownload} onClick={downloadSvg} className="h-9 rounded-full px-3 text-xs font-semibold">
                 SVG
               </Button>
-            )}
-            <Button type="submit" disabled={!canDownload || busy} className="h-auto flex-1 px-4 py-3 text-[13px] font-bold">
-              {busy ? <Loader2 className="animate-spin" aria-hidden /> : <Download aria-hidden />}
-              {mode === "single" ? t("downloadPng") : t("downloadZip", { count: batchItems.length, display: format.number(batchItems.length, LATN) })}
-            </Button>
-          </div>
-        </div>
+            )
+          }
+          submitIcon={<Download className="size-4" aria-hidden />}
+          submitLabel={mode === "single" ? t("downloadPng") : t("downloadZip", { count: batchItems.length, display: format.number(batchItems.length, LATN) })}
+          canSubmit={canDownload}
+          busy={busy}
+          onReset={reset}
+        />
       </ConfigPanel>
 
       <CanvasShell>
@@ -305,7 +306,7 @@ export function QrWorkspace() {
           single.ok ? (
             <Preview svg={toSvg(single.matrix, style)} caption={t("version", { version: String(single.matrix.version), modules: String(single.matrix.size) })} check={check} />
           ) : single.error === "too_long" ? (
-            <CanvasEmptyState icon={<CircleAlert className="size-6 text-danger" aria-hidden />} title={t("tooLongTitle")} body={t("tooLongBody")} />
+            <CanvasEmptyState icon={<CircleAlert className="size-6 text-danger" aria-hidden />} title={t("tooLongTitle")} body={t("tooLongBody")} placeholder={false} />
           ) : (
             <CanvasEmptyState icon={<QrCode className="size-6 text-primary" aria-hidden />} title={t("emptyTitle")} body={t("emptyBody")} />
           )

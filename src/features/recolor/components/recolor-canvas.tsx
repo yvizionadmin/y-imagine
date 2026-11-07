@@ -131,7 +131,7 @@ export function RecolorCanvas({
       {state.kind === "result" && activeView === "recolored" && (
         <ImageFrame className="border-0">
           {/* eslint-disable-next-line @next/next/no-img-element -- provider output URL */}
-          <img src={state.image.url} alt={t("aiRecolored")} className={IMAGE_BOX} />
+          <img data-result="" src={state.image.url} alt={t("aiRecolored")} className={IMAGE_BOX} />
           <span className="absolute start-4 top-4 flex items-center gap-1.5 rounded-md border border-[#2563eb]/25 bg-[#0b1020]/90 px-3 py-1.5 text-[11px] font-bold text-white uppercase">
             <Sparkles className="size-3 text-[#a5b4fc]" aria-hidden />
             {t("aiRecolored")}

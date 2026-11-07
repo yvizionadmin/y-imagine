@@ -16,7 +16,16 @@ export default function AppLayout({ children }: LayoutProps<"/[locale]">) {
         <Suspense fallback={<IconRail isSuperAdmin={false} />}>
           <SignedInRail />
         </Suspense>
-        <main className="flex min-w-0 flex-1 bg-canvas">
+        {/* A tool page with the prompt dock scrolls as a column: results, then the Studio-style hero. Other pages keep the row. */}
+        {/* Once editing starts (data-touched) or there is a results feed (data-feed), the "will appear here" placeholder
+            collapses. */}
+        <main
+          className={[
+            "flex min-w-0 flex-1 bg-canvas has-[[data-dock]]:flex-col has-[[data-dock]]:overflow-y-auto",
+            "[&:has([data-touched])_[data-empty-state]]:hidden [&:has([data-touched])>section:has(>div>[data-empty-state])]:hidden",
+            "[&:has([data-feed])_[data-empty-state]]:hidden [&:has([data-feed])>section:has(>div>[data-empty-state])]:hidden",
+          ].join(" ")}
+        >
           <NewJobScope>{children}</NewJobScope>
         </main>
       </div>

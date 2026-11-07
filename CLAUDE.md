@@ -32,6 +32,11 @@ OpenRouter keys and use AI product-content features (recolor, lookbooks, A+ cont
   role live in Postgres; account operations go through `src/lib/auth/users.ts` / `session.ts`, never Clerk directly.
 - RTL: one component per screen, using logical Tailwind classes (`ms-`, `pe-`, `start-`, `end-`), never left/right.
 - UI follows the **light + icon-rail** design (Figma Sections 1/3/4/5, master `98:32`). Brand is "Imagine AI", never "Magnific".
+  Tool pages use the **prompt dock** (`src/components/app/config-panel.tsx`): results on top, a compact prompt card pinned
+  at the bottom (Single/Bulk row, the main input inline, one chip per `Section` with a `summary`/`icon` opening its
+  panel). No side config panels. Image tools save every result to History and show a results feed (`ResultFeed` +
+  `useToolFeed`: this visit's results, or a product's results when opened from History); generated images open in
+  `ImageViewer` (zoom, download, share).
 - "Credits" = plan job quota (jobs/month), not money. Provider cost is shown as an estimate only.
 - Billing: Stripe is the source of truth for paying orgs. Only `syncSubscription` (`src/lib/billing/billing.ts`, fed by
   `/api/stripe/webhook`) writes plan/billing fields; prices (AED, monthly + yearly) live in Stripe, mapped by env price ids.

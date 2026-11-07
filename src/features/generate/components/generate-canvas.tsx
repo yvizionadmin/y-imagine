@@ -42,7 +42,10 @@ export function GenerateCanvas({
   onRegenerate,
   onEditDetails,
   onExport,
+  empty,
 }: {
+  /** Replaces the default "will appear here" state (the start screen's example cards). */
+  empty?: ReactNode;
   state: CanvasState;
   shots: ShotThumb[];
   activeShot: number;
@@ -57,9 +60,7 @@ export function GenerateCanvas({
   const showCompare = comparing && state.kind === "result" && state.source !== null;
 
   const top =
-    state.kind === "preview" ? (
-      <StatusPill dot="bg-emerald-500">{t("sourceConnected")}</StatusPill>
-    ) : state.kind === "generating" ? (
+    state.kind === "generating" ? (
       <StatusPill dot="bg-amber-500">{t("processing")}</StatusPill>
     ) : state.kind === "result" ? (
       <div className="flex items-center gap-1 rounded-xl border bg-background p-1 shadow-[0_4px_12px_rgba(0,0,0,0.06)]">
@@ -92,7 +93,8 @@ export function GenerateCanvas({
 
   return (
     <CanvasShell top={top} bottom={shots.length > 1 && <ShotStrip shots={shots} active={activeShot} onSelect={onSelectShot} />}>
-      {state.kind === "empty" && (
+      {state.kind === "empty" && empty}
+      {state.kind === "empty" && !empty && (
         <CanvasEmptyState
           icon={<Wand className="size-8" strokeWidth={1.5} aria-hidden />}
           title={t("emptyTitle")}
@@ -132,7 +134,7 @@ export function GenerateCanvas({
       {state.kind === "result" && !showCompare && (
         <ImageFrame>
           {/* eslint-disable-next-line @next/next/no-img-element -- provider output URL */}
-          <img src={state.image.url} alt={t("aiGenerated")} className="block max-h-[480px] max-w-[640px]" />
+          <img data-result="" src={state.image.url} alt={t("aiGenerated")} className="block max-h-[480px] max-w-[640px]" />
           <ImageBadge className="absolute start-3 top-3">
             <span className="size-1.5 rounded-full bg-emerald-500" />
             {t("aiGenerated")}

@@ -7,6 +7,7 @@ import { CatalogError, type CatalogErrorCode } from "@/lib/catalog/types";
 import {
   insertGeneration,
   listGenerations,
+  listUserGenerations,
   removeGenerations,
   updateGenerations,
   type Generation,
@@ -96,6 +97,19 @@ export async function saveGeneration(input: {
     createdBy: workspace.user.name,
   });
   return { ok: true, id: generation.id };
+}
+
+/** Tools with a results feed (Gemini-style): every result is saved, and the tool shows the user's recent ones. */
+const FEED_MODES: GenerationMode[] = ["lifestyle", "recolor", "aplus"];
+const FEED_SIZE = 40;
+
+/** The signed-in user's latest results for one tool (and one SKU, when opened from History), oldest first. */
+export async function listToolFeed(mode: GenerationMode, sku?: string): Promise<HistoryItem[]> {
+  const workspace = await getWorkspace();
+  if (!FEED_MODES.includes(mode)) return [];
+  const forSku = typeof sku === "string" && sku.trim() ? sku.trim().slice(0, 64) : undefined;
+  const newest = await listUserGenerations(workspace.orgId, mode, workspace.user.name, FEED_SIZE, forSku);
+  return newest.reverse().map(toItem);
 }
 
 export async function queryHistory(filters: HistoryFilters): Promise<{

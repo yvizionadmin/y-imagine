@@ -14,7 +14,7 @@ import { measureSwatch } from "@/lib/image/swatch";
 import { ProviderError } from "../errors";
 import type { ImageProviderId } from "../models";
 import type { AiProviderId } from "../providers-info";
-import type { GeneratedImage, ImageInput, ImageProvider, PreservationCheck } from "../types";
+import { UPSCALE_EDGE, type GeneratedImage, type ImageInput, type ImageProvider, type PreservationCheck } from "../types";
 
 // Real image provider over the AI SDK, built per job from the org's decrypted key (BYOK). Every tool
 // is an image *edit*: the merchant's product photo goes in as an input image, so the product itself
@@ -31,7 +31,7 @@ export type AiProviderConfig = {
   onKeyRejected?: () => Promise<void>;
 };
 
-const MAX_EDGE = { HD: 1200, "2K": 2048 } as const;
+const MAX_EDGE = { HD: 1200, "2K": 2048, "4K": 4096 } as const;
 const TIMEOUT_MS = 180_000;
 
 /** gpt-image only renders three sizes; pick the one closest to the requested shape, crop after. */
@@ -119,9 +119,9 @@ export function createAiImageProvider(config: AiProviderConfig): ImageProvider {
         ...(config.provider === "openai" ? { size: openAiSize(input.ratio) as `${number}x${number}` } : { aspectRatio: geminiRatio(input.ratio) as `${number}:${number}` }),
         providerOptions:
           config.provider === "openai"
-            ? { openai: { quality: input.resolution === "2K" ? "high" : "medium" } }
+            ? { openai: { quality: input.resolution === "HD" ? "medium" : "high" } }
             : config.imageModel.startsWith("gemini-3")
-              ? { google: { imageConfig: { imageSize: input.resolution === "2K" ? "2K" : "1K" } } }
+              ? { google: { imageConfig: { imageSize: input.resolution === "HD" ? "1K" : input.resolution } } }
               : undefined,
         abortSignal: AbortSignal.timeout(TIMEOUT_MS),
         maxRetries: 1,
@@ -288,6 +288,25 @@ export function createAiImageProvider(config: AiProviderConfig): ImageProvider {
       });
       const heroBytes = Buffer.from(image.url.split(",")[1], "base64");
       return { ...(await composeAplus(request, heroBytes)), provider: config.provider, model: config.imageModel };
+    },
+
+    async upscale(request) {
+      // The model re-renders the image with sharper, realistic detail; the exact target size (a resize, so
+      // above what the model outputs) comes from `finish`.
+      const meta = await sharp(request.image.bytes).metadata();
+      const width = meta.width ?? 1024;
+      const height = meta.height ?? 1024;
+      const k = UPSCALE_EDGE[request.size] / Math.max(width, height);
+      return render({
+        images: [request.image],
+        prompt: [
+          "Upscale this image to a higher resolution. Reproduce it exactly: same composition, framing, product, colours, lighting, text and every object in the same place.",
+          "Only add realistic fine detail and sharpness, and remove blur, noise and compression artefacts. Do not add, remove, move or restyle anything.",
+        ].join(" "),
+        ratio: width / height,
+        resolution: request.size,
+        size: { width: Math.round(width * k), height: Math.round(height * k) },
+      });
     },
 
     async generateLook(request) {

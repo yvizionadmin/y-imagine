@@ -5,7 +5,7 @@ import type { Feature } from "./types";
 // Model ids are matched against the list the provider returned when the key was validated, so an
 // org only sees (and is only routed to) models its key can actually call.
 
-export const IMAGE_FEATURES = ["create", "generate", "recolor", "aplus", "looks"] as const satisfies readonly Feature[];
+export const IMAGE_FEATURES = ["create", "generate", "recolor", "aplus", "looks", "upscale"] as const satisfies readonly Feature[];
 export type ImageFeature = (typeof IMAGE_FEATURES)[number];
 export const isImageFeature = (value: unknown): value is ImageFeature => (IMAGE_FEATURES as readonly unknown[]).includes(value);
 
