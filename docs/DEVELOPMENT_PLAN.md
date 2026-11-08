@@ -1076,5 +1076,11 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   **Not yet:** frame limits (at least 300 px, ratio 1:2.5 to 2.5:1) aren't checked up front, so a bad frame fails as
   `generation_failed`; tasks can't be cancelled at the time limit (no documented endpoint); Kling's older AccessKey +
   SecretKey standard isn't supported, only API keys.
-  **Found, not fixed:** at phone width the Settings sidebar stays open beside the page, so API Keys cards are squeezed and
-  cut off (also for the existing providers; the settings layout is untouched here).
+- **2026-11-08, Settings on phones (local).** Below `md` the Settings sidebar was a fixed 240 px beside the page, leaving
+  about 70 px for content at 390 px. It is now a wrapping row of links above the page (the "Soon" items are hidden there,
+  the title stays for screen readers). Page padding drops to 16 px on phones. The coverage table on API Keys scrolls
+  inside its card; Team's title row and search fit; an Integrations connection's buttons wrap under its details. **Bug
+  fixed:** Team's page could scroll sideways: the table's screen-reader-only header sat outside its scroll container's
+  clipping (container now `relative`). Desktop layout unchanged. Verified: tsc + eslint clean; 264 Vitest tests; `next build` clean; full Playwright suite (30, with 3 new in
+  `tests/e2e/settings-phone.spec.ts`); all five pages measured en and ar at 390 px, en at 320 px and 1280 px, with screenshots
+  of most at 390 px and API Keys at 1280 px.

@@ -29,14 +29,14 @@ export function IntegrationsSettings() {
   }, []);
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6 p-10">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6 p-4 md:p-10">
       <div className="flex flex-col gap-1">
         <h2 className="text-xl font-bold">{t("title")}</h2>
         <p className="text-[13px] text-muted-foreground">{t("description")}</p>
       </div>
 
-      <section className="flex flex-col gap-4 rounded-2xl border bg-background p-6">
-        <div className="flex items-start justify-between gap-4">
+      <section className="flex flex-col gap-4 rounded-2xl border bg-background p-4 md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
             <h3 className="text-[15px] font-bold">{t("catalogs")}</h3>
             <p className="text-xs text-muted-foreground">{t("catalogsHint")}</p>
@@ -107,13 +107,14 @@ function ConnectionCard({
 
   return (
     <li className="flex flex-col gap-3 rounded-xl border p-4">
-      <div className="flex items-start gap-3">
+      <div className="flex flex-wrap items-start gap-3">
         <ConnectorIcon type={connection.type} />
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
+        {/* Narrow screens: the buttons wrap under the details instead of squeezing them. */}
+        <div className="flex min-w-0 flex-1 basis-40 flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="truncate text-sm font-semibold">{connection.name}</span>
             {connection.isDefault && (
-              <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-primary">{t("default")}</span>
+              <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-primary">{t("default")}</span>
             )}
           </div>
           <span className="truncate font-mono text-[11px] text-muted-foreground" dir="ltr">
@@ -140,7 +141,7 @@ function ConnectionCard({
           </span>
         </div>
         {canManage && (
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
             <Button variant="ghost" size="sm" onClick={() => setTesting((v) => !v)} aria-expanded={testing}>
               {t("test")}
             </Button>

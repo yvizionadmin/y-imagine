@@ -31,7 +31,7 @@ export function ProviderKeysSettings() {
   const usable = (provider: AiProviderId) => keys.get(provider)?.status === "valid";
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6 p-10">
+    <div className="mx-auto flex max-w-4xl flex-col gap-6 p-4 md:p-10">
       <div className="flex flex-col gap-1">
         <h2 className="text-xl font-bold">{t("title")}</h2>
         <p className="max-w-2xl text-[13px] text-muted-foreground">{t("description")}</p>
@@ -50,12 +50,13 @@ export function ProviderKeysSettings() {
             ))}
           </ul>
 
-          <section className="flex flex-col gap-3 rounded-2xl border bg-background p-6">
+          <section className="flex flex-col gap-3 rounded-2xl border bg-background p-4 md:p-6">
             <div className="flex flex-col gap-1">
               <h3 className="text-[15px] font-bold">{t("coverageTitle")}</h3>
               <p className="text-xs text-muted-foreground">{t("coverageHint")}</p>
             </div>
-            <table className="w-full text-[13px]">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-[13px]">
               <thead className="text-[11px] font-semibold text-muted-foreground uppercase">
                 <tr className="border-b">
                   <th scope="col" className="py-2 text-start">{t("feature")}</th>
@@ -97,6 +98,7 @@ export function ProviderKeysSettings() {
                 })}
               </tbody>
             </table>
+            </div>
           </section>
 
           <ActivityList entries={state.activity} />

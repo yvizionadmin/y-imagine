@@ -70,7 +70,7 @@ export function BillingSettings() {
 
   if (!billing) {
     return (
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 p-10">
+      <div className="mx-auto flex max-w-5xl flex-col gap-6 p-4 md:p-10">
         <Header />
         <Loader2 className="mx-auto mt-10 size-6 animate-spin text-muted-foreground" aria-hidden />
       </div>
@@ -91,7 +91,7 @@ export function BillingSettings() {
           : null;
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 p-10">
+    <div className="mx-auto flex max-w-5xl flex-col gap-6 p-4 md:p-10">
       <Header />
 
       {checkout === "success" && <Notice tone="ok">{billing.hasSubscription ? t("checkoutSuccess") : t("checkoutProcessing")}</Notice>}

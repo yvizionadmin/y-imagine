@@ -63,8 +63,8 @@ export function TeamSettings() {
     .sort((a, b) => Number(b.isYou) - Number(a.isYou) || (a.status === b.status ? 0 : a.status === "active" ? -1 : 1) || a.email.localeCompare(b.email));
 
   return (
-    <div className="flex flex-col gap-6 p-8">
-      <div className="flex items-center justify-between gap-4">
+    <div className="flex flex-col gap-6 p-4 md:p-8">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <h2 className="text-[22px] font-bold">{t("title")}</h2>
           {team && (
@@ -82,7 +82,7 @@ export function TeamSettings() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-[320px]">
+        <div className="relative w-full max-w-[320px]">
           <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-subtle" aria-hidden />
           <input
             value={query}
@@ -181,7 +181,7 @@ function MembersTable({
   const columns = ["member", "role", "department", "credits", "lastActive", "actions"] as const;
 
   return (
-    <div className="overflow-x-auto rounded-xl border bg-background">
+    <div className="relative overflow-x-auto rounded-xl border bg-background">
       <table className="w-full min-w-[820px] text-[13px]">
         <thead className="border-b bg-muted/60 text-[11px] font-semibold text-muted-foreground uppercase">
           <tr>

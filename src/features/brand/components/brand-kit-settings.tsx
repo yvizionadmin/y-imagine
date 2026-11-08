@@ -64,7 +64,7 @@ export function BrandKitSettings() {
   const readOnly = !state?.canManage;
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6 p-10">
+    <div className="mx-auto flex max-w-4xl flex-col gap-6 p-4 md:p-10">
       <div className="flex flex-col gap-1">
         <h2 className="text-xl font-bold">{t("title")}</h2>
         <p className="max-w-2xl text-[13px] text-muted-foreground">
