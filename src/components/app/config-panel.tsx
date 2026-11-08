@@ -77,9 +77,12 @@ export function ConfigPanel({ tool, onSubmit, children }: { tool: DockTool; onSu
     const form = formRef.current?.getBoundingClientRect();
     const page = heroRef.current?.parentElement?.getBoundingClientRect();
     if (!form || !page) return;
-    const up = form.top - page.top > 440;
+    const above = form.top - page.top;
+    const below = page.bottom - form.bottom;
+    // Short windows have under 440px either way: take the roomier side, or the panel opens off-screen.
+    const up = above > 440 || above >= below;
     setDropUp(up);
-    setRoom(Math.max(240, (up ? form.top - page.top : page.bottom - form.bottom) - 16));
+    setRoom(Math.max(240, (up ? above : below) - 16));
   }, [open, touched]);
   const [chips, setChips] = useState<HTMLElement | null>(null);
   const [panel, setPanel] = useState<HTMLElement | null>(null);
@@ -354,9 +357,12 @@ export function Section({
                 </button>
               </div>
             </div>
-            <fieldset disabled={disabled} className="flex min-h-0 min-w-0 flex-col gap-4 overflow-y-auto p-4">
-              {children}
-            </fieldset>
+            {/* The div scrolls, not the fieldset: Chromium won't scroll a fieldset whose height comes from flex shrinking. */}
+            <div className="min-h-0 overflow-y-auto">
+              <fieldset disabled={disabled} className="flex min-w-0 flex-col gap-4 p-4">
+                {children}
+              </fieldset>
+            </div>
           </section>,
           dock.panel,
         )}

@@ -230,15 +230,15 @@ describe("image prompts", () => {
 
   it("A+ keeps the corner clear where the title box goes (right for Arabic)", async () => {
     const provider = await openAiProvider("aplus");
-    const request = { sku: "S", product, reference: null, category: "furniture", scene: null, style: null, subtitle: "", features: [], aspectRatio: "1:1", resolution: "HD" as const };
+    const request = { sku: "S", product, reference: null, category: "furniture", scene: null, style: null, subtitle: "", features: [{ title: "Linen", description: "Woven linen" }, { title: "Oak", description: "Solid oak legs" }], aspectRatio: "1:1", resolution: "HD" as const };
     await provider.generateAplus({ ...request, title: "Cloud Sofa" });
     expect(lastPrompt()).toContain("Keep the top-left area calm");
     expect(lastPrompt()).toContain("Do not add, remove or redesign any part of it");
     // 1:1 bento hero keeps ~88% of a 1536x1024 render: too little is cut to mention.
     expect(lastPrompt()).not.toContain("middle");
     await provider.generateAplus({ ...request, aspectRatio: "16:9", title: "Cloud Sofa" });
-    // 16:9 bento hero is ~3:1, so only about half of the 1.5:1 render's height survives.
-    expect(lastPrompt()).toMatch(/keeps only the middle (4\d|5\d)% of its height/);
+    // 16:9 bento hero is about 2.4:1 with this short text, so about 60% of the 1.5:1 render's height survives.
+    expect(lastPrompt()).toMatch(/keeps only the middle (5\d|6\d)% of its height/);
     await provider.generateAplus({ ...request, title: "كنبة مريحة" });
     expect(lastPrompt()).toContain("Keep the top-right area calm");
   });

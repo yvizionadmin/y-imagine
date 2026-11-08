@@ -75,6 +75,34 @@ test("tool settings open from chips in the prompt dock, in English and Arabic", 
   await expect(page.locator("#sku")).toBeVisible();
 });
 
+// Chromium won't scroll a flex-shrunk fieldset, and a short window used to open the panel off-screen.
+test("a settings panel too tall for the window stays on screen and scrolls with the wheel", async ({ page }) => {
+  await page.goto("/en/sign-up");
+  await page.locator("#auth-name").fill("Scroll E2E");
+  await page.locator("#auth-company").fill(`Scroll Co ${unique()}`);
+  await page.locator("#auth-email").fill(`scroll-${unique()}@e2e.test`);
+  await page.locator("#auth-password").fill("e2e-password-123");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await page.waitForURL(/\/en\/home/);
+
+  for (const height of [720, 768]) {
+    await page.setViewportSize({ width: 1280, height });
+    await page.goto("/en/generate");
+    await page.getByRole("group", { name: "Settings" }).getByRole("button", { name: /^Product Info/ }).click();
+    await expect(page.locator("#sku")).toBeInViewport({ ratio: 1 });
+
+    const panel = page.getByRole("region", { name: "Product Info" });
+    const scroller = panel.locator("div.overflow-y-auto");
+    // The panel's body really overflows here, or the wheel below would prove nothing.
+    await expect.poll(() => scroller.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeGreaterThan(0);
+
+    const box = await scroller.boundingBox();
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await page.mouse.wheel(0, 200);
+    await expect.poll(() => scroller.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+  }
+});
+
 test("Resize runs from the prompt dock: add images, pick a platform, resize, download", async ({ page }) => {
   await page.goto("/en/sign-up");
   await page.locator("#auth-name").fill("Resize E2E");

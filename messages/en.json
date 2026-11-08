@@ -1300,7 +1300,8 @@
       "add": "Add products from your catalog or a product page",
       "arrange": "Drag them into place on the room",
       "generate": "Pick a style, then press ↑ to make the photo"
-    }
+    },
+    "unusablePhoto": "We can't separate this product from its background, so it wouldn't show properly in a look. Try a photo on a plain background that contrasts with the product, or a transparent PNG."
   },
   "Resize": {
     "title": "Batch Image Resize",

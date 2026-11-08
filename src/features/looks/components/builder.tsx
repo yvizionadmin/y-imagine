@@ -480,7 +480,7 @@ function ProductPanel({
   const [query, setQuery] = useState("");
   const [searched, setSearched] = useState("");
   const [results, setResults] = useState<CatalogProduct[] | null>(null);
-  const [state, setState] = useState<"idle" | "searching" | "no_connection" | "error">("searching");
+  const [state, setState] = useState<"idle" | "searching" | "no_connection" | "error" | "unusable_photo">("searching");
   const [adding, setAdding] = useState<string | null>(null);
   const [urlOpen, setUrlOpen] = useState(false);
   const [url, setUrl] = useState("");
@@ -522,7 +522,7 @@ function ProductPanel({
     if (response.ok) {
       onAdd(response.product);
       if (input.source === "url") setUrl("");
-    } else setState("error");
+    } else setState(response.error === "unusable_photo" ? "unusable_photo" : "error");
   }
 
   return (
@@ -557,6 +557,7 @@ function ProductPanel({
         </div>
       )}
       {state === "error" && <p role="alert" className="rounded-lg bg-red-50 p-3 text-[11px] text-danger">{t("failed")}</p>}
+      {state === "unusable_photo" && <p role="alert" className="rounded-lg bg-red-50 p-3 text-[11px] text-danger">{t("unusablePhoto")}</p>}
       {disabled && <p className="text-[11px] text-muted-foreground">{t("limitReached", { max: MAX_LOOK_PRODUCTS })}</p>}
 
       <div className="min-h-0 flex-1 overflow-y-auto">

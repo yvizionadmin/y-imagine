@@ -45,7 +45,7 @@ export type AddedProduct = Pick<LookItem, "sku" | "name" | "category" | "assetId
 /** Import a product image (catalog or URL), cut out its studio background and store it for the canvas. */
 export async function addLookProduct(
   input: { source: "catalog"; sku: string; imageUrl: string } | { source: "url"; url: string },
-): Promise<{ ok: true; product: AddedProduct } | { ok: false; error: SearchError | "invalid_url" | "not_found" }> {
+): Promise<{ ok: true; product: AddedProduct } | { ok: false; error: SearchError | "invalid_url" | "not_found" | "unusable_photo" }> {
   const workspace = await getWorkspace();
   let png: Buffer;
   let meta: { sku: string; name: string; category: string | null };
@@ -64,6 +64,8 @@ export async function addLookProduct(
   }
 
   const cut = await cutOutProduct(png, 1024, 1024);
+  // Said here, while choosing products: otherwise the product goes missing from a paid result.
+  if (!cut.reliable) return { ok: false, error: "unusable_photo" };
   const assetId = await saveAsset(workspace.orgId, cut.buffer, "image/png", "look-product");
   return { ok: true, product: { ...meta, assetId, imageUrl: assetUrl(assetId), aspect: cut.width / cut.height } };
 }

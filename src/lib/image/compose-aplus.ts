@@ -52,13 +52,34 @@ function textBlock(lines: string[], x: number, y: number, width: number, size: n
     .join("");
 }
 
-function frame(request: Pick<AplusRequest, "resolution" | "aspectRatio" | "reference">) {
+type FrameInput = Pick<AplusRequest, "resolution" | "aspectRatio" | "reference" | "features">;
+
+/** Lines of one feature in its column, at the card's type sizes. */
+function featureText(feature: AplusRequest["features"][number], colW: number, u: number) {
+  const inner = colW - 32 * u;
+  return {
+    inner,
+    eyebrow: wrap(feature.title.toUpperCase(), Math.floor(inner / (11 * u * 0.62)), 2),
+    body: wrap(feature.description, Math.floor(inner / (13 * u * 0.52)), 4),
+  };
+}
+
+/** The feature row fits its text, up to the design's share of the card; the photo gets the rest. */
+function featureRowHeight(request: FrameInput, W: number, H: number, u: number) {
+  const tallest = Math.max(0, ...request.features.map((f) => {
+    const { eyebrow, body } = featureText(f, W / request.features.length, u);
+    return eyebrow.length * 14 * u + 8 * u + body.length * 17 * u;
+  }));
+  return Math.min(Math.round(tallest + 32 * u), Math.round(H * (200 / 480)));
+}
+
+function frame(request: FrameInput) {
   const W = WIDTH[request.resolution];
   const [rw, rh] = request.aspectRatio.split(":").map(Number);
   const H = Math.round((W * rh) / rw);
   const u = W / BASE; // Figma unit → pixels
   const layout = request.reference?.kind === "library" ? request.reference.layout : request.reference ? "gallery" : "bento";
-  const heroH = Math.round(H * (280 / 480));
+  const heroH = H - featureRowHeight(request, W, H, u);
   const margin = layout === "gallery" ? Math.round(12 * u) : 0;
   const thumbW = layout === "gallery" ? Math.round(84 * u) : 0;
   const heroW = W - margin * 2 - (thumbW ? thumbW + margin : 0);
@@ -69,7 +90,7 @@ function frame(request: Pick<AplusRequest, "resolution" | "aspectRatio" | "refer
 /** Which top corner of the hero the title box covers: right for an Arabic title, else left. */
 export const aplusTitleSide = (request: Pick<AplusRequest, "title">) => (ARABIC.test(request.title) ? "right" : "left");
 
-export function aplusHeroSize(request: Pick<AplusRequest, "resolution" | "aspectRatio" | "reference">) {
+export function aplusHeroSize(request: FrameInput) {
   const { heroW, heroInnerH } = frame(request);
   return { width: heroW, height: heroInnerH };
 }
@@ -131,9 +152,7 @@ export async function composeAplus(request: AplusRequest, aiHero?: Uint8Array) {
     if (i > 0) svg += `<line x1="${i * colW}" y1="${rowY}" x2="${i * colW}" y2="${H}" stroke="#e5e7eb" stroke-width="${u}"/>`;
     // Arabic copy reads right-to-left, so the first feature goes in the rightmost column.
     const x = rtlRow ? W - (i + 1) * colW : i * colW;
-    const inner = colW - 32 * u;
-    const eyebrow = wrap(feature.title.toUpperCase(), Math.floor(inner / (11 * u * 0.62)), 2);
-    const body = wrap(feature.description, Math.floor(inner / (13 * u * 0.52)), 4);
+    const { inner, eyebrow, body } = featureText(feature, colW, u);
     svg += textBlock(eyebrow, x + 16 * u, rowY + 16 * u + 11 * u, inner, 11 * u, 14 * u, 'font-weight="700" fill="#4f46e5" letter-spacing="0.4"');
     svg += textBlock(body, x + 16 * u, rowY + 16 * u + eyebrow.length * 14 * u + 8 * u + 13 * u, inner, 13 * u, 17 * u, 'font-weight="600" fill="#0f172a"');
   }
