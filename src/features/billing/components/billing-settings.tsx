@@ -207,6 +207,7 @@ export function BillingSettings() {
               <ul className="flex flex-col gap-2 text-[13px]">
                 <Feature>{t("creditsPerMonth", { count: billing.planCredits[plan], display: format.number(billing.planCredits[plan], LATN) })}</Feature>
                 <Feature>{PLANS[plan].seats === null ? t("unlimitedSeats") : t("seatsCount", { count: PLANS[plan].seats! })}</Feature>
+                {PLANS[plan].videoStorageBytes > 0 && <Feature>{t("videoStorage", { size: format.number(PLANS[plan].videoStorageBytes / 1024 ** 3, { ...LATN, style: "unit", unit: "gigabyte", maximumFractionDigits: 0 }), days: PLANS[plan].videoRetentionDays })}</Feature>}
                 <Feature>{t("byok")}</Feature>
               </ul>
               <div className="mt-auto">

@@ -273,7 +273,7 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
 | A4 ✅ | Clerk profile sync | `user.updated` webhook → name/email synced to the users table | Changing a name in Clerk shows in Team | 0.5 |
 | A5 ✅ | Chat / assistant | Streaming chat through `getTextProvider`, saved threads per user, org-scoped, credits per message | Users chat, reload, and see their history; viewers read only | 2–3 |
 | A6 ✅ | Video safety + storage | Content-rejected code, likeness consent checkbox, storage quota per plan, cleanup job in `SCHEDULES` | Over quota is refused with a message; old clips removed on schedule | 2 |
-| A7 | Marketing pages | Home, features, pricing (Stripe prices), legal pages, en/ar | Signed-out visitors see the site and can sign up | 2–3 |
+| A7 ✅ | Marketing pages | Home, features, pricing (Stripe prices), legal pages, en/ar | Signed-out visitors see the site and can sign up | 2–3 |
 | A8 | Live-key testing | Real OpenAI, Gemini (image + Omni video), BytePlus Seedance, Anthropic, OpenRouter, Clerk, Stripe test mode, Sentry; fix what turns up | Every tool runs once with a real key; the open checks in the Progress entries are closed | 3–5 |
 | A9 | Production deploy | Railway: web, worker, Postgres, Redis, Bucket, custom domain, health check, env secrets, backups | The production URL works end to end with a paying test org | 1–2 |
 
@@ -1043,3 +1043,21 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   proposed defaults awaiting a product decision, and they are not on the Billing page; nobody is warned before clips are
   removed (a downgrade shortens retention, so older clips go on the next run); no per-org override; start frames already
   orphaned by earlier History deletes are not swept; the schedule has not run in a real worker (A9).
+- **2026-11-08, Roadmap A7: marketing pages (local).** New `(marketing)` route group with Home, `/features`, `/pricing`,
+  `/terms` and `/privacy`, en + ar (`src/features/marketing/`, `Marketing` messages; no Figma access this session, so the
+  look follows the Studio hero and the auth brand panel). The proxy treats them as public; `/en` or `/ar` with a session
+  goes straight to `/home`, without one it shows the site. Pages are prerendered and need no database. **Pricing:** amounts
+  come from Stripe and credits from Admin → Credits, read per request inside Suspense (`publicPricing`); if billing is off
+  or Stripe fails, plans still list and paid prices say "Shown at checkout". The trial line appears only when billing is
+  on. Plan video limits now also show on Settings → Billing. **Legal:** text is in `legal-content.ts` (not messages, so
+  it isn't sent to the browser with app pages), written from what the product does today. `legal-details.ts` holds the
+  bracketed placeholders, `contactEmail` and `reviewed`. Until `reviewed` is true the pages show a draft notice, are
+  noindex and stay out of the sitemap. Sign-up links to both pages. Also `sitemap.xml`, `robots.txt`, per-page metadata
+  with language alternates. Claims kept to what ships: catalog import yes, store publishing no (B8); no customer logos,
+  testimonials or numbers. Verified: tsc + eslint clean; 247 Vitest tests (+9 `tests/unit/marketing.test.ts`); `next build` clean;
+  Playwright full suite (+3 `marketing.spec.ts`: visitor to sign-up, Arabic RTL, phone width with no sideways scroll,
+  sitemap); `copy-review.spec.ts` failed once in a full run (its Write Copy button stayed disabled, 3 of 3 passes alone, possibly typing before hydration: not investigated further); screenshots en, ar, ar 390 px. **Before launch (A9):** fill in the legal details and have a lawyer review the
+  terms and privacy text (en + ar), then set `reviewed: true`; set `contactEmail` (until then Enterprise's button leads
+  to sign-up and the footer has no Contact link); set `APP_URL` at build time for the sitemap and canonical links. **Not
+  yet:** real Stripe amounts on the page (A8); with Clerk, the paid plan buttons land on onboarding rather than Billing;
+  terms acceptance isn't recorded per user; an Arabic legal review.

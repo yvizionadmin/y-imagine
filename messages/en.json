@@ -1742,7 +1742,8 @@
     "resetBody": "Your new password replaces the old one and signs you out everywhere else.",
     "newPassword": "New password",
     "savePassword": "Save password",
-    "resetDone": "Password changed. Sign in with your new password."
+    "resetDone": "Password changed. Sign in with your new password.",
+    "agreeLegal": "By creating an account you agree to the <terms>Terms</terms> and <privacy>Privacy Policy</privacy>."
   },
   "Admin": {
     "brand": "Imagine AI",
@@ -2172,7 +2173,8 @@
       "invalid_input": "That plan isn't available.",
       "not_configured": "Online billing isn't available yet.",
       "billing_failed": "Stripe couldn't complete this. Try again in a moment."
-    }
+    },
+    "videoStorage": "{size} video storage · clips kept {days, plural, one {# day} other {# days}}"
   },
   "Copy": {
     "panelTitle": "Product copy",
@@ -2780,6 +2782,221 @@
         "title": "Chat not found",
         "body": "That chat was deleted. Send your message again to start a new one."
       }
+    }
+  },
+  "Marketing": {
+    "brand": "Imagine AI",
+    "meta": {
+      "home": {
+        "title": "Imagine AI: product images, video and copy for e-commerce",
+        "description": "Create lifestyle images, recolors, A+ content, video and copy in English and Arabic, on your own AI provider keys."
+      },
+      "features": {
+        "title": "Features",
+        "description": "Every Imagine AI tool: product images, video, copy, an AI assistant, bulk work and team controls."
+      },
+      "pricing": {
+        "title": "Pricing",
+        "description": "Plans for e-commerce teams. Start free and use your own AI keys, so you pay your provider directly."
+      },
+      "terms": {
+        "title": "Terms of Service",
+        "description": "The terms for using Imagine AI."
+      },
+      "privacy": {
+        "title": "Privacy Policy",
+        "description": "What Imagine AI collects and how it is used."
+      }
+    },
+    "nav": {
+      "label": "Main",
+      "features": "Features",
+      "pricing": "Pricing",
+      "signIn": "Sign in",
+      "start": "Start free"
+    },
+    "footer": {
+      "label": "Site",
+      "tagline": "AI product images, video and copy for e-commerce teams, in English and Arabic.",
+      "terms": "Terms",
+      "privacy": "Privacy",
+      "contact": "Contact"
+    },
+    "cta": {
+      "title": "Make your next product page today",
+      "body": "Create a free workspace, connect your AI key, and try every step with your own products.",
+      "action": "Start free"
+    },
+    "home": {
+      "title": "Product content you can <em>imagine</em>, ready in minutes",
+      "subtitle": "Turn product photos into lifestyle images, recolors, A+ content, video and copy, in English and Arabic. Your team works in one place, on your own AI keys.",
+      "primary": "Start free",
+      "secondary": "See all features",
+      "note": "The Free plan needs no card. You'll need your own AI provider key to generate.",
+      "heroAlt": "A light grey sofa in a sunlit living room with a wooden bookcase",
+      "heroPrompt": "Place this sofa in a sunlit living room with warm oak shelves",
+      "heroCaption": "Sample image made with AI.",
+      "tools": {
+        "title": "One workspace for your whole catalog",
+        "body": "From a single product photo to everything a product page needs.",
+        "items": {
+          "lifestyle": {
+            "title": "Lifestyle images",
+            "body": "Put a product into a ready-made scene or one you describe."
+          },
+          "video": {
+            "title": "Video studio",
+            "body": "Make short clips from a prompt or a start frame. Paid plans."
+          },
+          "recolor": {
+            "title": "Recolor",
+            "body": "Show a product in new colors and materials without a new shoot."
+          },
+          "aplus": {
+            "title": "A+ content",
+            "body": "Build the image blocks for rich product pages."
+          },
+          "looks": {
+            "title": "Inspirational looks",
+            "body": "Combine several products into one styled scene."
+          },
+          "copy": {
+            "title": "Product copy",
+            "body": "Write titles and descriptions in your brand's voice, with a review step."
+          },
+          "chat": {
+            "title": "AI assistant",
+            "body": "Ask for ideas, campaigns and drafts in a private saved chat."
+          },
+          "bulk": {
+            "title": "Bulk jobs",
+            "body": "Run images and copy across many products in one go."
+          }
+        }
+      },
+      "steps": {
+        "title": "How it works",
+        "connect": {
+          "title": "Connect your AI key",
+          "body": "Add a key from OpenAI, Gemini, Anthropic, OpenRouter or BytePlus. Admins choose which model each tool uses."
+        },
+        "create": {
+          "title": "Create",
+          "body": "Upload a product or import it from your store, then generate one item or a whole batch."
+        },
+        "review": {
+          "title": "Review and use",
+          "body": "Everything is saved to History. Approve copy as a team, then download what you need."
+        }
+      },
+      "keys": {
+        "title": "Your keys, your costs",
+        "body": "Imagine AI doesn't resell AI. You connect your own provider account, so nothing is marked up.",
+        "choice": {
+          "title": "Choose your provider",
+          "body": "Use the providers you already trust, and change the model per tool whenever you like."
+        },
+        "cost": {
+          "title": "Pay your provider directly",
+          "body": "Your plan covers the workspace and a monthly job quota. AI usage is billed by your provider."
+        },
+        "safe": {
+          "title": "Keys stay protected",
+          "body": "Keys are encrypted at rest, never sent back to the browser, and only org admins can manage them."
+        }
+      },
+      "arabic": {
+        "title": "Built for English and Arabic",
+        "body": "The whole workspace works right-to-left in Arabic, and copy and chat can answer in Arabic too."
+      }
+    },
+    "features": {
+      "title": "Everything your catalog team needs",
+      "subtitle": "Every tool runs on your own AI keys, and every result is saved for your team.",
+      "groups": {
+        "images": {
+          "title": "Product images",
+          "lifestyle": "Place products in ready-made scenes or scenes you describe",
+          "recolor": "Change colors and materials from swatches",
+          "aplus": "Create A+ content image blocks",
+          "looks": "Build styled scenes with several products",
+          "resize": "Resize images for each channel, without using AI"
+        },
+        "video": {
+          "title": "Video studio",
+          "prompt": "Generate clips from a text prompt, with camera and motion direction",
+          "frame": "Start from a product image",
+          "models": "Options follow your model: Gemini Omni or Seedance",
+          "consent": "A likeness consent check for start frames, and a storage limit for each plan"
+        },
+        "copy": {
+          "title": "Product copy",
+          "languages": "Titles and descriptions in English and Arabic",
+          "brand": "A brand kit keeps the voice consistent",
+          "review": "Submit, approve or request changes as a team"
+        },
+        "chat": {
+          "title": "AI assistant",
+          "stream": "Replies appear as they are written, and you can stop them at any time",
+          "history": "Each person's chats are saved and private",
+          "brand": "Follows your brand kit"
+        },
+        "bulk": {
+          "title": "Catalog and bulk work",
+          "catalog": "Import products from Shopify, WooCommerce, Magento or a custom REST API",
+          "bulk": "Run images and copy across many products as background jobs",
+          "history": "Find, filter and download every result in History"
+        },
+        "team": {
+          "title": "Team and control",
+          "roles": "Admin, editor and viewer roles",
+          "keys": "Encrypted provider keys that only admins can manage",
+          "seats": "Choose a model for each tool from the keys you've connected"
+        },
+        "insight": {
+          "title": "Insight and extras",
+          "analytics": "See usage and estimated provider cost by tool and person",
+          "credits": "A clear monthly job quota for each plan",
+          "links": "QR codes and Bitly short links"
+        }
+      }
+    },
+    "pricing": {
+      "title": "Simple plans, your own AI keys",
+      "subtitle": "Your plan covers the workspace, seats and a monthly job quota. AI usage is billed by your provider, on your key.",
+      "priceOnRequest": "Shown at checkout",
+      "noVideo": "Video not included",
+      "startFree": "Start free",
+      "choose": "Get started",
+      "contact": "Contact us",
+      "trial": "Paid plans start with a {days}-day free trial on your first subscription.",
+      "faqTitle": "Questions",
+      "faq": {
+        "keys": {
+          "q": "Do I need my own AI key?",
+          "a": "Yes. To generate anything, an org admin connects a key from OpenAI, Anthropic, Gemini, OpenRouter or BytePlus in Settings → API Keys. Video needs a Gemini key with video access or a BytePlus key."
+        },
+        "credits": {
+          "q": "What are credits?",
+          "a": "Credits are your plan's monthly quota of jobs, not money. Each tool uses a set number of credits per job, and video depends on length and resolution. Failed jobs cost nothing."
+        },
+        "cost": {
+          "q": "What will AI usage cost me?",
+          "a": "Your provider bills you directly at its own prices. Imagine AI shows an estimate only and adds no markup."
+        },
+        "video": {
+          "q": "How long are videos kept?",
+          "a": "Video is on paid plans. Each plan has a storage limit and keeps clips for a set time, shown on its card. Older clips are removed automatically, so download anything you need to keep."
+        },
+        "cancel": {
+          "q": "Can I cancel?",
+          "a": "Yes. Your plan stays active until the end of the paid period, then the workspace moves to Free."
+        }
+      }
+    },
+    "legal": {
+      "updated": "Last updated: {date}",
+      "draft": "Draft: this text is not yet legally reviewed, and details in [brackets] are still to be completed."
     }
   }
 }

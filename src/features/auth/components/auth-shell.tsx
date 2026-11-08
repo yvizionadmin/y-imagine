@@ -24,10 +24,10 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         <span aria-hidden className="pointer-events-none absolute -end-40 -top-48 size-[600px] rounded-full bg-[radial-gradient(closest-side,rgba(124,92,255,0.45),transparent)]" />
         <span aria-hidden className="pointer-events-none absolute -start-28 bottom-10 size-80 rounded-full bg-[radial-gradient(closest-side,rgba(124,92,255,0.25),transparent)]" />
 
-        <div className="relative flex items-center gap-2 text-sm font-bold tracking-wide">
+        <Link href="/" className="relative flex w-fit items-center gap-2 text-sm font-bold tracking-wide">
           <Sparkles className="size-6 text-[#a78bfa]" aria-hidden />
           {t("brandMark")}
-        </div>
+        </Link>
 
         <div className="relative flex flex-col gap-8">
           <div className="flex flex-col gap-4">
@@ -53,10 +53,10 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
 
       <main className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between gap-3 px-6 py-5">
-          <span className="flex items-center gap-2 text-sm font-bold lg:invisible">
+          <Link href="/" className="flex items-center gap-2 text-sm font-bold lg:invisible">
             <Sparkles className="size-5 text-primary" aria-hidden />
             {t("brandMark")}
-          </span>
+          </Link>
           <div className="flex items-center gap-2">
             <ThemeSwitch />
             <Suspense>
@@ -72,7 +72,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ThemeSwitch() {
+export function ThemeSwitch() {
   const t = useTranslations("Shell");
   const theme = useTheme();
   return (
@@ -98,7 +98,7 @@ function ThemeSwitch() {
   );
 }
 
-function LanguageLink() {
+export function LanguageLink() {
   const t = useTranslations("Shell");
   const pathname = usePathname();
   const locale = useLocale();
