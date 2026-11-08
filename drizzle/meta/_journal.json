@@ -99,6 +99,13 @@
       "when": 1793970151331,
       "tag": "0013_email_and_password_reset",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794103906667,
+      "tag": "0014_chat",
+      "breakpoints": true
     }
   ]
 }

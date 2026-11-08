@@ -1,6 +1,6 @@
 import "server-only";
 import { ProviderError } from "../errors";
-import type { CopyRequest, ImprovePromptRequest, ProductCopy, TextProvider } from "../types";
+import type { ChatRequest, CopyRequest, ImprovePromptRequest, ProductCopy, TextProvider } from "../types";
 
 // Offline stand-in for a writing model: assembles plausible copy from the merchant's own details so
 // the Copy tool works without keys. Include "FAIL" in the SKU to exercise the failure state.
@@ -96,8 +96,18 @@ function improveOffline(request: ImprovePromptRequest) {
   return base ? `${base}${language === "ar" ? "، " : ", "}${addition}.` : `${addition[0].toUpperCase()}${addition.slice(1)}.`;
 }
 
+/** Offline assistant: a short canned reply in the user's language that echoes what they asked. */
+function demoReply(request: ChatRequest) {
+  const asked = request.messages.at(-1)?.content.trim() ?? "";
+  const topic = asked.length > 80 ? `${asked.slice(0, 80)}…` : asked;
+  return ARABIC.test(asked)
+    ? `هذا رد تجريبي من المساعد (وضع العرض).\n\nسألت: «${topic}»\n\n- اربط مفتاح OpenAI أو Anthropic أو Gemini أو OpenRouter في الإعدادات ← مفاتيح API للحصول على إجابات حقيقية.\n- يمكنني مساعدتك في أوصاف المنتجات والعناوين والأفكار التسويقية.`
+    : `This is a demo reply from the assistant (offline mode).\n\nYou asked: "${topic}"\n\n- Connect an OpenAI, Anthropic, Gemini or OpenRouter key in Settings → API Keys for real answers.\n- I can help with product descriptions, titles and campaign ideas.`;
+}
+
 export const demoTextProvider: TextProvider = {
   id: "demo",
+  model: "demo-chat-v1",
   async generateCopy(request) {
     await wait(LATENCY_MS);
     if (request.sku.toUpperCase().includes("FAIL")) throw new ProviderError("generation_failed");
@@ -107,6 +117,17 @@ export const demoTextProvider: TextProvider = {
       provider: "demo",
       model: "demo-copy-v1",
     };
+  },
+  async *streamChat(request) {
+    const asked = request.messages.at(-1)?.content ?? "";
+    await wait(LATENCY_MS / 4);
+    if (asked.toUpperCase().includes("FAIL")) throw new ProviderError("generation_failed");
+    // Word by word, like a real stream, so the UI's typing state and Stop button can be exercised.
+    for (const piece of demoReply(request).split(/(?<=\s)/)) {
+      if (request.signal?.aborted) return;
+      await wait(15);
+      yield piece;
+    }
   },
   async improvePrompt(request) {
     await wait(LATENCY_MS / 2);

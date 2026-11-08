@@ -28,7 +28,8 @@ const OUTBOX = path.resolve(".data/test-outbox");
 type Sent = { to: string; subject: string; html: string; text: string };
 
 async function outbox(): Promise<Sent[]> {
-  const files = (await readdir(OUTBOX).catch(() => [])).sort();
+  // Skips macOS "._" metadata files (the repo can live on an exFAT drive).
+  const files = (await readdir(OUTBOX).catch(() => [])).filter((f) => !f.startsWith(".")).sort();
   return Promise.all(files.map(async (f) => JSON.parse(await readFile(path.join(OUTBOX, f), "utf8")) as Sent));
 }
 

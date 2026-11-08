@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { JOB_FEATURES } from "@/features/analytics/config";
-import { DEFAULT_CREDIT_RULES, jobCost, parseCreditRules, planAllows, planCreditsFor, planHasVideo, toStored, videoCost, withDefaults, type CreditRules } from "@/lib/credits";
+import { DEFAULT_CREDIT_RULES, jobCost, parseCreditRules, PRICED_FEATURES, planAllows, planCreditsFor, planHasVideo, toStored, videoCost, withDefaults, type CreditRules } from "@/lib/credits";
 import { PLANS } from "@/lib/plans";
 
 const rules = (patch: (r: CreditRules) => void = () => {}) => {
@@ -57,7 +57,20 @@ describe("credit rules", () => {
     expect(planCreditsFor(r, { plan: "starter", creditsOverride: 42 })).toBe(42);
     expect(planAllows(r, "free", "copy")).toBe(true);
     expect(planAllows(r, "free", "generate")).toBe(false);
-    expect(planAllows(r, "free", "chat")).toBe(true);
+    // Chat is a priced tool with plan access like the others; only unknown tools pass unchecked.
+    expect(planAllows(r, "free", "chat")).toBe(false);
+    expect(planAllows(r, "free", "not-a-tool")).toBe(true);
+  });
+
+  it("rules saved before Chat existed give it the default cost and every plan access", () => {
+    const { chat: _chat, ...oldCosts } = DEFAULT_CREDIT_RULES.featureCosts;
+    void _chat;
+    const known = PRICED_FEATURES.filter((f) => f !== "chat");
+    const saved = { ...DEFAULT_CREDIT_RULES, featureCosts: oldCosts, planFeatures: { ...DEFAULT_CREDIT_RULES.planFeatures, free: ["copy"] }, knownFeatures: known };
+    const merged = withDefaults(saved);
+    expect(merged.featureCosts.chat).toBe(1);
+    expect(planAllows(merged, "free", "chat")).toBe(true);
+    expect(planAllows(merged, "free", "generate")).toBe(false);
   });
 
   it("keeps video off the Free plan", () => {

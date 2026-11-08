@@ -129,7 +129,7 @@ export function videoCost(rules: Pick<CreditRules, "video">, input: { seconds: n
   return Math.ceil((rules.video.base + rules.video.perSecond * seconds) * rules.video.resolution[input.resolution]);
 }
 
-/** Video follows the paid-plan rule; tools without a plan setting (chat) are always allowed. */
+/** Video follows the paid-plan rule; tools without a plan setting are always allowed. */
 export function planAllows(rules: CreditRules, plan: PlanId, feature: string) {
   if (feature === "video") return planHasVideo(plan);
   return !isPriced(feature) || rules.planFeatures[plan].includes(feature);

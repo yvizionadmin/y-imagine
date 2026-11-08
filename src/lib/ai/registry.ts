@@ -63,12 +63,21 @@ export async function getTextProvider(actor: JobActor, feature: TextFeature): Pr
     const refuse = async (): Promise<never> => {
       throw new ProviderError(resolved.code);
     };
-    return { id: "demo", generateCopy: refuse, improvePrompt: refuse };
+    return {
+      id: "demo",
+      generateCopy: refuse,
+      improvePrompt: refuse,
+      streamChat: async function* () {
+        throw new ProviderError(resolved.code);
+      },
+    };
   }
   const provider = resolved.provider;
   return {
     id: provider.id,
+    model: provider.model,
     generateCopy: (request) => runJob(actor, feature, provider.id, () => provider.generateCopy(request), (r) => r.model),
+    streamChat: (request) => runStreamJob(actor, feature, provider.id, () => provider.streamChat(request), provider.model ?? null),
     // A helper step (no credit, no usage event), so it gets its own per-user limit instead of the job limits.
     improvePrompt: async (request) => {
       if (!(await hit("prompt-rewrites", actor.user.id, LIMITS.promptRewritesPerUser)).ok) throw new ProviderError("rate_limited");
@@ -250,6 +259,35 @@ async function runJob<T>(actor: JobActor, feature: Feature, provider: ProviderId
   } catch (error) {
     await finish(false, error instanceof ProviderError ? error.code : "generation_failed", null);
     throw error;
+  }
+}
+
+/**
+ * runJob for a streamed result: the credit is reserved before the provider is called (so a refused
+ * reply writes nothing), the job is finished once the stream ends. A reply the user stopped keeps
+ * its credit when something was written (the provider was paid for it), and is free otherwise.
+ */
+async function* runStreamJob(actor: JobActor, feature: Feature, provider: ProviderId, call: () => AsyncIterable<string>, model: string | null) {
+  const jobId = await reserveJob(actor, feature, provider);
+  const started = performance.now();
+  let wrote = false;
+  let outcome: { ok: boolean; error: string | null } = { ok: false, error: "aborted" };
+  try {
+    for await (const piece of call()) {
+      wrote = true;
+      yield piece;
+    }
+    // Ended without a word: stopped before the provider wrote anything (or an empty reply). Free.
+    outcome = wrote ? { ok: true, error: null } : { ok: false, error: "aborted" };
+  } catch (error) {
+    outcome = { ok: false, error: error instanceof ProviderError ? error.code : "generation_failed" };
+    throw error;
+  } finally {
+    // Also runs when the consumer stops early (return()), e.g. the user pressed Stop.
+    if (outcome.error === "aborted" && wrote) outcome = { ok: true, error: null };
+    await finishJob(actor.orgId, jobId, { ...outcome, model, durationMs: Math.round(performance.now() - started) }).catch((e) =>
+      reportError("finishJob failed", e, { orgId: actor.orgId, feature }),
+    );
   }
 }
 

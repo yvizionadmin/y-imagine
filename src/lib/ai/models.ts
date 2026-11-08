@@ -46,9 +46,9 @@ export function pickModel(preferred: readonly string[], available: readonly stri
   return preferred.find((id) => !available || available.includes(id)) ?? preferred[0];
 }
 
-// ── Text (copy) ──────────────────────────────────────────────────────────────────────────────
+// ── Text (copy, chat) ──────────────────────────────────────────────────────────────────────────────
 
-export const TEXT_FEATURES = ["copy"] as const satisfies readonly Feature[];
+export const TEXT_FEATURES = ["copy", "chat"] as const satisfies readonly Feature[];
 export type TextFeature = (typeof TEXT_FEATURES)[number];
 export const isTextFeature = (value: unknown): value is TextFeature => (TEXT_FEATURES as readonly unknown[]).includes(value);
 

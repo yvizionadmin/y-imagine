@@ -231,9 +231,29 @@ export type ImprovePromptRequest = {
   language: CopyLanguage;
 };
 
+// ── Chat (assistant) ─────────────────────────────────────────────────────────────────────────
+
+export type ChatTurn = { role: "user" | "assistant"; content: string };
+
+export type ChatRequest = {
+  /** Instructions for the assistant (who it is, how to answer). */
+  system: string;
+  /** The conversation so far, oldest first, ending with the user's new message. */
+  messages: ChatTurn[];
+  /** Fires when the user stops the reply or leaves; the provider stops writing. */
+  signal?: AbortSignal;
+};
+
+/** A reply as it is written: text pieces in order. Errors surface as ProviderError while iterating. */
+export type ChatStream = AsyncIterable<string>;
+
 /** A text-writing provider for one org and tool, resolved by the registry. */
 export interface TextProvider {
   id: ProviderId;
+  /** The model it writes with, when known (saved with chat replies). */
+  model?: string;
+  /** Streams one assistant reply. One job (the tool's credit cost) per reply, charged by the registry. */
+  streamChat(request: ChatRequest): ChatStream;
   generateCopy(request: CopyRequest): Promise<CopyResult>;
   /** Rewrites an image tool's instructions. A helper step, like swatch analysis: not a job, no credit. */
   improvePrompt(request: ImprovePromptRequest): Promise<{ text: string; model: string }>;

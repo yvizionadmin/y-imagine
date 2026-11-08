@@ -271,7 +271,7 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
 | A2 ✅ | Tool error messages | Proper messages for `quota_exceeded`, `feature_disabled`, `not_in_plan` and content rejected on every tool screen | Each code shows its own message instead of the generic failed state | 0.5 |
 | A3 ✅ | Emails | Transactional email service (provider through an env setting): invites, password reset (local login), reviewer notices for copy approvals | Invite and approval emails arrive, with en/ar templates | 1–2 |
 | A4 ✅ | Clerk profile sync | `user.updated` webhook → name/email synced to the users table | Changing a name in Clerk shows in Team | 0.5 |
-| A5 | Chat / assistant | Streaming chat through `getTextProvider`, saved threads per user, org-scoped, credits per message | Users chat, reload, and see their history; viewers read only | 2–3 |
+| A5 ✅ | Chat / assistant | Streaming chat through `getTextProvider`, saved threads per user, org-scoped, credits per message | Users chat, reload, and see their history; viewers read only | 2–3 |
 | A6 | Video safety + storage | Content-rejected code, likeness consent checkbox, storage quota per plan, cleanup job in `SCHEDULES` | Over quota is refused with a message; old clips removed on schedule | 2 |
 | A7 | Marketing pages | Home, features, pricing (Stripe prices), legal pages, en/ar | Signed-out visitors see the site and can sign up | 2–3 |
 | A8 | Live-key testing | Real OpenAI, Gemini (image + Omni video), BytePlus Seedance, Anthropic, OpenRouter, Clerk, Stripe test mode, Sentry; fix what turns up | Every tool runs once with a real key; the open checks in the Progress entries are closed | 3–5 |
@@ -1005,3 +1005,26 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   outbox, not this change); `next build` clean; 20 Playwright specs pass (+1 `prompt-dock.spec.ts`: chips, panel
   swap, Escape / outside click, product tile, paste/CSV switch, Arabic RTL; others updated to open the chip first).
   **Not yet:** Looks and Resize keep their own layouts; the Figma file still shows the old side panel.
+- **2026-11-08, Roadmap A5: chat / assistant (local).** Rail **Chat** (`/chat`, after Copy; top bar "AI Assistant").
+  `chat` joined `TEXT_FEATURES` (model picker row "Chat assistant" in Settings → API Keys) and `JOB_FEATURES` (Admin →
+  Credits cost and plan access, Analytics, Monitoring, kill switch). `TextProvider.streamChat` streams a reply: AI SDK
+  `streamText` (`fullStream`, timeouts total 180 s / first chunk 60 s / gaps 30 s, low reasoning effort on gpt-5) and an
+  offline demo reply in the user's language ("FAIL" fails it). The registry's `runStreamJob` reserves the reply's
+  credit before the provider is called and finishes the job when the stream ends: failed or stopped before any text =
+  free, stopped after text = charged. Tables `chat_threads` (per user, inside the org) and `chat_messages` (migration
+  `0014`), `src/lib/chat/`: `threads.ts` (every read takes the user id), `limits.ts` (4000-char messages, history =
+  last 40 messages / 32k chars starting with a user turn, title from the first line), `prompt.ts` (org name, date,
+  answer in the user's language, the org's brand kit when set), `turn.ts` (`runChatTurn`: save message → stream →
+  save reply; a failed reply removes the message, and the thread it started, so the text goes back in the box; a
+  stopped reply is saved as `stopped`). `POST /api/chat` streams NDJSON events (`thread`, `delta`, `done`, `error`);
+  viewers get 403 and see their chats read-only. Actions `getChatState`, `openChatThread`, `renameChatThread`,
+  `deleteChatThread`. Screen: thread list (rename, delete; a drawer on phones), bubbles with `dir="auto"`, Enter to
+  send / Shift+Enter for a new line, Stop, suggestions, cost line, blocked and error messages; `?thread=` keeps the
+  open chat across reloads. en + ar. Verified: tsc + eslint clean; 231 Vitest tests (+9 `chat.test.ts`: Gemini stream
+  with system prompt, brand kit and history, rejected key, failed first reply, stop with and without text, quota and
+  kill switch, privacy between users and orgs, the route's NDJSON, viewers and bad input; +4 `chat-limits.test.ts`;
+  `credits.test.ts` updated: chat is plan-gated now, and rules saved before chat give it to every plan); `next build`
+  clean; 24 Playwright specs (+2 `chat.spec.ts`: chat, reload, failed reply, credits; Arabic RTL); screenshots en + ar,
+  desktop + phone. The email test now skips macOS `._` files in the outbox (exFAT). **Not yet:** a live provider run
+  (A8); Markdown rendering of replies (plain text with line breaks for now); attaching images or catalog products.
+  **Found, not fixed:** `CopyBulk.sourcePaste` is missing in en + ar (the label is under `Copy`), logged during `next build`.

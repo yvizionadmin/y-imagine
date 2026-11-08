@@ -11,6 +11,7 @@ import {
   KeyRound,
   LayoutDashboard,
   Link,
+  MessageSquare,
   Palette,
   PenLine,
   Plug,
@@ -31,6 +32,7 @@ export type ToolKey =
   | "aplus"
   | "looks"
   | "copy"
+  | "chat"
   | "history"
   | "analytics"
   | "resize"
@@ -42,7 +44,7 @@ export type NavItem = { key: ToolKey; href: `/${string}`; icon: LucideIcon; soon
 
 // Order matches the Figma icon rail (Section 1, node 98:216). Analytics is not in that rail; it is the
 // "Dashboard" item of the dark design (30:6), placed with History since both look back at jobs.
-// Copy (product descriptions) has no Figma rail item; it sits after the image tools.
+// Copy (product descriptions) and Chat (the assistant) have no Figma rail item; they sit after the image tools.
 export const navItems: NavItem[] = [
   { key: "create", href: "/home", icon: Sparkles },
   { key: "generate", href: "/generate", icon: WandSparkles },
@@ -50,6 +52,7 @@ export const navItems: NavItem[] = [
   { key: "aplus", href: "/aplus", icon: Image },
   { key: "looks", href: "/looks", icon: Star },
   { key: "copy", href: "/copy", icon: PenLine },
+  { key: "chat", href: "/chat", icon: MessageSquare },
   { key: "history", href: "/history", icon: Clock },
   { key: "analytics", href: "/dashboard", icon: ChartColumn },
   { key: "resize", href: "/resize", icon: Crop },

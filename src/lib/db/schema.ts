@@ -507,3 +507,42 @@ export const imageBatchItems = pgTable(
   },
   (t) => [index().on(t.batchId, t.position), index().on(t.status, t.updatedAt)],
 );
+
+// ── Chat (assistant) ─────────────────────────────────────────────────────────────────────────
+
+/** A conversation with the assistant. Private to the user who started it, inside one org. */
+export const chatThreads = pgTable(
+  "chat_threads",
+  {
+    id: text().primaryKey(),
+    orgId: orgId(),
+    userId: text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text().notNull(),
+    createdAt: now(),
+    /** Last message time: the thread list is sorted by it. */
+    updatedAt: now(),
+  },
+  (t) => [index().on(t.orgId, t.userId, t.updatedAt)],
+);
+
+export const chatMessages = pgTable(
+  "chat_messages",
+  {
+    id: text().primaryKey(),
+    orgId: orgId(),
+    threadId: text()
+      .notNull()
+      .references(() => chatThreads.id, { onDelete: "cascade" }),
+    role: text().$type<"user" | "assistant">().notNull(),
+    content: text().notNull(),
+    /** Assistant replies: who wrote it. Null on the user's messages. */
+    provider: text().$type<ProviderId>(),
+    model: text(),
+    /** `stopped`: the user stopped the reply part-way; the text is what was written. */
+    status: text().$type<"ok" | "stopped">().notNull().default("ok"),
+    createdAt: now(),
+  },
+  (t) => [index().on(t.threadId, t.createdAt)],
+);

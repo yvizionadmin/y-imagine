@@ -1,5 +1,5 @@
 import "server-only";
-import { generateText, Output, type LanguageModel } from "ai";
+import { generateText, Output, streamText, type LanguageModel } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -24,6 +24,9 @@ export type AiTextConfig = {
 
 const TIMEOUT_MS = 90_000;
 const PROMPT_TIMEOUT_MS = 30_000;
+/** A chat reply may take longer than copy, but must start soon and never stall. */
+const CHAT_TIMEOUT = { totalMs: 180_000, firstChunkMs: 60_000, chunkMs: 30_000 };
+const CHAT_MAX_TOKENS = 8_000;
 
 const words = (key: string) => key.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
 
@@ -52,6 +55,7 @@ export function createAiTextProvider(config: AiTextConfig): TextProvider {
   const model = languageModel(config);
   return {
     id: config.provider,
+    model: config.model,
 
     async generateCopy(request) {
       try {
@@ -80,6 +84,35 @@ export function createAiTextProvider(config: AiTextConfig): TextProvider {
         }
         return { copy, provider: config.provider, model: config.model };
       } catch (error) {
+        throw await mapError(error, config);
+      }
+    },
+
+    async *streamChat(request) {
+      try {
+        const result = streamText({
+          model,
+          system: request.system,
+          messages: request.messages,
+          maxOutputTokens: CHAT_MAX_TOKENS,
+          ...reasoning(config, "low"),
+          timeout: CHAT_TIMEOUT,
+          abortSignal: request.signal,
+          maxRetries: 1,
+        });
+        let wrote = false;
+        for await (const part of result.fullStream) {
+          if (part.type === "text-delta" && part.text) {
+            wrote = true;
+            yield part.text;
+          } else if (part.type === "error") {
+            throw part.error;
+          }
+        }
+        // Stopped by the user: what was written is the reply. Nothing at all is a failed job.
+        if (!wrote && !request.signal?.aborted) throw new ProviderError("generation_failed");
+      } catch (error) {
+        if (request.signal?.aborted) return;
         throw await mapError(error, config);
       }
     },

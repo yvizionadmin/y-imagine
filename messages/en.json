@@ -24,7 +24,8 @@
       "copy": "Copy",
       "video": "Video",
       "aiImage": "AI Image",
-      "upscale": "Upscale"
+      "upscale": "Upscale",
+      "chat": "Chat"
     },
     "tools": {
       "create": "Image & Video Studio",
@@ -38,7 +39,8 @@
       "qr": "QR Generator",
       "links": "Short Links",
       "copy": "Product Copy",
-      "upscale": "Image Upscale"
+      "upscale": "Image Upscale",
+      "chat": "AI Assistant"
     },
     "userMenu": "Account menu",
     "settings": "Settings",
@@ -1477,7 +1479,8 @@
       "looks": "Shop the Look",
       "copy": "Product copy",
       "video": "Studio (video)",
-      "upscale": "Upscale"
+      "upscale": "Upscale",
+      "chat": "Chat assistant"
     },
     "activityTitle": "Recent key activity",
     "noActivity": "No key changes yet.",
@@ -1532,7 +1535,8 @@
       "looks": "Shop the Look",
       "copy": "Product Copy",
       "video": "Video",
-      "upscale": "Upscale"
+      "upscale": "Upscale",
+      "chat": "Chat"
     },
     "byToolTitle": "Jobs by Tool",
     "recentTitle": "Recent Activity",
@@ -2718,5 +2722,55 @@
       "body": "{actor} asked for changes to {label} in {org}:"
     },
     "copyOpen": "Open copy"
+  },
+  "Chat": {
+    "title": "New chat",
+    "threads": "Chats",
+    "newChat": "New chat",
+    "noThreads": "Your chats will appear here.",
+    "closeList": "Close chat list",
+    "placeholder": "Ask about product copy, listings, campaigns…",
+    "send": "Send",
+    "stop": "Stop",
+    "thinking": "Thinking…",
+    "stopped": "Stopped",
+    "dismiss": "Dismiss",
+    "save": "Save",
+    "renameLabel": "Chat title",
+    "rename": "Rename “{title}”",
+    "delete": "Delete “{title}”",
+    "deleteConfirm": "Delete this chat? This can't be undone.",
+    "costHint": "{count, plural, =0 {Replies are free} one {Each reply uses # credit} other {Each reply uses # credits}} · Only you can see your chats",
+    "viewerHint": "Viewers can read their chats but can't send messages. Ask your admin for editor access.",
+    "emptyTitle": "How can I help today?",
+    "emptyBody": "Your assistant for product descriptions, marketplace listings, campaign ideas and image prompts, in English or Arabic.",
+    "suggestions": {
+      "description": "Write a product description for a linen 3-seater sofa with oak legs",
+      "titles": "Give me 5 Amazon title ideas for a stainless steel water bottle",
+      "campaign": "Plan a Ramadan campaign for a home décor store",
+      "arabic": "اكتب وصفًا قصيرًا لساعة يد رجالية فاخرة"
+    },
+    "errors": {
+      "failed": {
+        "title": "The reply failed",
+        "body": "Something went wrong while writing the reply. Your message is back in the box: try again."
+      },
+      "rateLimited": {
+        "title": "Too many messages",
+        "body": "You're sending messages faster than allowed. Wait a minute and try again."
+      },
+      "input": {
+        "title": "Message not sent",
+        "body": "Messages can be up to 4,000 characters."
+      },
+      "forbidden": {
+        "title": "Read only",
+        "body": "Viewers can't send messages."
+      },
+      "notFound": {
+        "title": "Chat not found",
+        "body": "That chat was deleted. Send your message again to start a new one."
+      }
+    }
   }
 }
