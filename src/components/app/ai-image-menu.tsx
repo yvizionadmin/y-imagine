@@ -38,7 +38,7 @@ export function AiImageRailItem({ active, compact }: { active: boolean; compact:
         closeDelay={150}
         aria-label={compact ? t("nav.aiImage") : undefined}
         className={cn(
-          "flex w-16 shrink-0 flex-col items-center gap-1 rounded-xl py-2 text-rail-foreground transition-colors hover:bg-muted data-popup-open:bg-muted",
+          "flex w-16 shrink-0 flex-col items-center gap-1 rounded-xl py-1.5 text-rail-foreground transition-colors hover:bg-muted data-popup-open:bg-muted",
           compact && "w-12",
           active && "bg-accent text-primary hover:bg-accent data-popup-open:bg-accent",
         )}

@@ -8,7 +8,7 @@ import { findCategory, subcategoryImage } from "@/lib/catalog-presets";
 import { useCategoryParam } from "@/lib/use-category-param";
 import { templateCategories, type TemplateCategory } from "../categories";
 
-const card = "flex items-center gap-3 rounded-2xl border border-white/10 bg-[#1a1a1a] p-3";
+const card = "flex items-center gap-3 rounded-2xl border bg-background p-3 shadow-xs";
 const linkCard = `${card} transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`;
 
 const generateHref = (category: string, subcategory?: string) =>
@@ -60,7 +60,7 @@ export function TemplateExplorer() {
         <CategoryView category={selectedCategory} matches={matches} query={query.trim()} />
       ) : (
         <section className="flex flex-col gap-6" aria-labelledby="templates-title">
-          <h1 id="templates-title" className="text-[22px] font-bold text-foreground">
+          <h1 id="templates-title" className="text-2xl font-bold tracking-tight text-foreground">
             {t("title")}
           </h1>
           {categories.length === 0 && types.length === 0 && <NoResults query={query.trim()} />}
@@ -101,7 +101,7 @@ function CategoryCard({ category }: { category: TemplateCategory }) {
       {/* eslint-disable-next-line @next/next/no-img-element -- decorative; the card's text names the category */}
       <img src={category.image} alt="" width={96} height={96} className="size-24 shrink-0 rounded-xl object-cover" />
       <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
-        <span className="text-[15px] font-semibold text-[#f5f5f5]">{t(`categories.${category.key}`)}</span>
+        <span className="text-[15px] font-semibold text-foreground">{t(`categories.${category.key}`)}</span>
         {!ready && (
           <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/70">{t("soon")}</span>
         )}
@@ -145,7 +145,7 @@ function CategoryView({
           <ChevronLeft className="size-4 rtl:rotate-180" aria-hidden />
           {t("back")}
         </Link>
-        <h1 id="templates-title" className="text-[22px] font-bold text-foreground">
+        <h1 id="templates-title" className="text-2xl font-bold tracking-tight text-foreground">
           {name}
         </h1>
         <p className="text-sm text-muted-foreground">{t("subcategoriesTitle")}</p>
@@ -182,7 +182,7 @@ function SubcategoryCard({ image, href, label, hint }: { image: string; href: st
       {/* eslint-disable-next-line @next/next/no-img-element -- decorative; the card's text names the product type */}
       <img src={image} alt="" width={96} height={96} className="size-24 shrink-0 rounded-xl object-cover" />
       <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-        <span className="text-[15px] font-semibold text-[#f5f5f5]">{label}</span>
+        <span className="text-[15px] font-semibold text-foreground">{label}</span>
         {hint && <span className="text-xs text-white/60">{hint}</span>}
       </span>
     </Link>

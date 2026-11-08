@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/app/page-header";
 import { useEffect, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, CircleAlert, CircleCheck, Loader2, TriangleAlert } from "lucide-react";
 import { useFormatter, useNow, useTranslations } from "next-intl";
@@ -32,13 +33,9 @@ export function AnalyticsDashboard() {
   }, [range]);
 
   return (
-    <div className="flex w-full flex-col gap-6 overflow-y-auto px-8 py-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-extrabold">{t("title")}</h1>
-          <p className="text-[13px] text-muted-foreground">{t("subtitle")}</p>
-        </div>
-      </div>
+    // Same 1200px column and padding as History; the padding centres it so the scrollbar stays at the page edge.
+    <div className="flex w-full flex-col gap-6 overflow-y-auto p-4 md:px-[max(2rem,calc((100%-1200px)/2))] md:py-6">
+      <PageHeader title={t("title")} subtitle={t("subtitle")} />
 
       <div role="radiogroup" aria-label={t("range")} className="flex w-fit gap-1 rounded-lg border bg-background p-1">
         {ANALYTICS_RANGES.map((r) => (

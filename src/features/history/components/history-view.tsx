@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/app/page-header";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, CircleAlert, Info, LayoutGrid, List, Loader2, Pencil, Plus, Upload, X } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -145,17 +146,17 @@ export function HistoryView() {
   const pages = data ? Math.max(1, Math.ceil(data.total / pageSize)) : 1;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 p-10">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-[28px] leading-tight font-bold">{t("title")}</h1>
-          <p className="text-[13px] text-muted-foreground">{t("subtitle")}</p>
-        </div>
-        <Link href="/generate" className="flex h-11 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-          <Plus className="size-4" aria-hidden />
-          {t("createNew")}
-        </Link>
-      </div>
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 p-4 md:px-8 md:py-6">
+      <PageHeader
+        title={t("title")}
+        subtitle={t("subtitle")}
+        actions={
+          <Link href="/generate" className="flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+            <Plus className="size-4" aria-hidden />
+            {t("createNew")}
+          </Link>
+        }
+      />
 
       <HistoryFilterBar
         draft={draft}
@@ -182,8 +183,8 @@ export function HistoryView() {
 
       {data && data.pendingCount > 0 && data.canEdit && (
         data.publishTarget ? (
-          <div className="flex items-center justify-between gap-4 rounded-xl border border-[#fed7aa] bg-[#fff7ed] px-4 py-3">
-            <span className="flex items-center gap-2.5 text-[13px] font-semibold text-[#9a3412]">
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/30 dark:bg-amber-500/10">
+            <span className="flex items-center gap-2.5 text-[13px] font-semibold text-amber-900 dark:text-amber-200">
               <Info className="size-4 text-primary" aria-hidden />
               {t("pendingBanner", { count: data.pendingCount, target: data.publishTarget.name })}
             </span>
@@ -218,7 +219,7 @@ export function HistoryView() {
       )}
 
       {selected.size > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#94a3b8]/30 px-4 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-muted px-4 py-2.5">
           <span className="flex items-center gap-3 text-[13px] font-semibold">
             <Checkbox checked onCheckedChange={() => setSelected(new Set())} aria-label={t("clearSelection")} />
             {t("selected", { count: selected.size })}
@@ -245,7 +246,7 @@ export function HistoryView() {
             )}
             {data?.canEdit && <Button onClick={() => markUploaded(selectedIds)}>{t("markUploaded")}</Button>}
             {data?.canEdit && (
-              <Button className="bg-[#4338ca]" onClick={() => remove(selectedIds)}>
+              <Button variant="destructive" onClick={() => remove(selectedIds)}>
                 {t("deleteSelected")}
               </Button>
             )}

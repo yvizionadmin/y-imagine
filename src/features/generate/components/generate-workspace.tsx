@@ -471,6 +471,7 @@ export function GenerateWorkspace() {
       <ResultFeed items={feed.items} hideIds={Object.values(savedIds)} onReuse={(prompt) => set("instructions", prompt)} />
 
       <GenerateCanvas
+        sku={form.sku.trim()}
         empty={
           <ExampleCards
             heading={tw.rich("heroes.generate", { em: (chunks) => <em className="font-serif font-bold italic rtl:font-sans rtl:not-italic rtl:text-primary">{chunks}</em> })}

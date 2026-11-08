@@ -41,7 +41,7 @@ function Rail({ activeKey, isSuperAdmin }: { activeKey: string | null } & RailPr
   return (
     <nav
       className={cn(
-        "flex shrink-0 flex-col items-center gap-3 overflow-y-auto border-e bg-background pt-4 font-ui transition-[width] [scrollbar-width:none]",
+        "flex shrink-0 flex-col items-center gap-1 overflow-y-auto border-e bg-background pt-3 font-ui transition-[width] [scrollbar-width:none]",
         compact ? "w-14" : "w-rail",
       )}
     >
@@ -55,7 +55,7 @@ function Rail({ activeKey, isSuperAdmin }: { activeKey: string | null } & RailPr
         <PanelLeft className="size-6 rtl:-scale-x-100" strokeWidth={1.5} aria-hidden />
       </button>
 
-      <Link href="/templates" onNavigate={startNewJob} className="flex flex-col items-center gap-0.5 pb-3">
+      <Link href="/templates" onNavigate={startNewJob} className="flex flex-col items-center gap-0.5 pb-1">
         <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.25),0_4px_4px_rgba(21,30,130,0.07)]">
           <Plus className="size-5" aria-hidden />
         </span>
@@ -75,7 +75,7 @@ function Rail({ activeKey, isSuperAdmin }: { activeKey: string | null } & RailPr
               key={key}
               aria-disabled
               title={t("soonHint", { tool: t(`nav.${key}`) })}
-              className={cn("flex w-16 cursor-default flex-col items-center gap-1 rounded-xl py-2 text-subtle", compact && "w-12")}
+              className={cn("flex w-16 shrink-0 cursor-default flex-col items-center gap-1 rounded-xl py-1.5 text-subtle", compact && "w-12")}
             >
               <Icon className="size-5" strokeWidth={1.75} aria-hidden />
               {!compact && (
@@ -95,7 +95,7 @@ function Rail({ activeKey, isSuperAdmin }: { activeKey: string | null } & RailPr
             aria-current={isActive ? "page" : undefined}
             aria-label={compact ? t(`nav.${key}`) : undefined}
             className={cn(
-              "flex w-16 flex-col items-center gap-1 rounded-xl py-2 text-rail-foreground transition-colors hover:bg-muted",
+              "flex w-16 shrink-0 flex-col items-center gap-1 rounded-xl py-1.5 text-rail-foreground transition-colors hover:bg-muted",
               compact && "w-12",
               isActive && "bg-accent text-primary hover:bg-accent",
             )}
@@ -124,7 +124,7 @@ function MoreMenu({ compact, isSuperAdmin }: { compact: boolean } & RailProps) {
       <DropdownMenuTrigger
         aria-label={compact ? t("nav.more") : undefined}
         className={cn(
-          "mt-auto mb-4 flex w-16 shrink-0 flex-col items-center gap-1 rounded-xl py-2 text-rail-foreground transition-colors hover:bg-muted data-popup-open:bg-muted",
+          "mt-auto mb-2 flex w-16 shrink-0 flex-col items-center gap-1 rounded-xl py-1.5 text-rail-foreground transition-colors hover:bg-muted data-popup-open:bg-muted",
           compact && "w-12",
         )}
       >

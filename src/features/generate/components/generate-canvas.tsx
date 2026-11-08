@@ -35,6 +35,7 @@ export type CanvasState =
 export type ShotThumb = { angle: CameraAngle; status: "pending" | "done" | "failed"; src: string | null };
 
 export function GenerateCanvas({
+  sku,
   state,
   shots,
   activeShot,
@@ -44,6 +45,8 @@ export function GenerateCanvas({
   onExport,
   empty,
 }: {
+  /** The product, so an upscaled copy is filed with it in History. */
+  sku: string;
   /** Replaces the default "will appear here" state (the start screen's example cards). */
   empty?: ReactNode;
   state: CanvasState;
@@ -92,7 +95,7 @@ export function GenerateCanvas({
     ) : null;
 
   return (
-    <CanvasShell top={top} bottom={shots.length > 1 && <ShotStrip shots={shots} active={activeShot} onSelect={onSelectShot} />}>
+    <CanvasShell top={top} bottom={shots.length > 1 && <ShotStrip shots={shots} active={activeShot} onSelect={onSelectShot} />} source={{ sku, mode: "lifestyle" }}>
       {state.kind === "empty" && empty}
       {state.kind === "empty" && !empty && (
         <CanvasEmptyState

@@ -22,6 +22,7 @@ type View = "original" | "split" | "recolored";
 const IMAGE_BOX = "block max-h-[460px] max-w-[720px]";
 
 export function RecolorCanvas({
+  sku,
   kind,
   state,
   onCancel,
@@ -31,6 +32,8 @@ export function RecolorCanvas({
   onUseImage,
   used,
 }: {
+  /** The product, so an upscaled copy is filed with it in History. */
+  sku: string;
   /** The category's recolor wording (fabric, finish, product, device, garment). */
   kind: CategoryPreset["recolorKind"];
   state: RecolorCanvasState;
@@ -69,7 +72,7 @@ export function RecolorCanvas({
   );
 
   return (
-    <CanvasShell top={top}>
+    <CanvasShell top={top} source={{ sku, mode: "recolor" }}>
       {state.kind === "empty" && (
         <CanvasEmptyState
           icon={<Palette className="size-8" strokeWidth={1.5} aria-hidden />}

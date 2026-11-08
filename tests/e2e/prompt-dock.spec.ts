@@ -13,6 +13,9 @@ test("tool settings open from chips in the prompt dock, in English and Arabic", 
   await page.waitForURL(/\/en\/home/);
 
   await page.goto("/en/generate");
+  // The whole rail fits a laptop screen (Playwright's default is 1280×720), More included.
+  await expect(page.getByRole("button", { name: "More" })).toBeInViewport({ ratio: 1 });
+
   // A compact prompt bar pinned under the results; the page heading is for screen readers.
   await expect(page.getByRole("heading", { level: 1, name: "Place your product anywhere" })).toHaveCount(1);
   const settings = page.getByRole("group", { name: "Settings" });

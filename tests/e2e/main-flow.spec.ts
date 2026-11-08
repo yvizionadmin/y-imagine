@@ -57,7 +57,8 @@ test("sign up → add a key → generate → credits used on the dashboard", asy
   await page.getByRole("link", { name: "Open in Generate" }).click();
   await expect(page).toHaveURL(/\/en\/generate\?sku=E2E-SOFA-1&from=/);
   const feed = page.getByRole("region", { name: "Your results" });
-  await expect(feed.getByRole("img")).toHaveCount(1);
+  // The image and its upscale, both filed under the product.
+  await expect(feed.getByRole("img")).toHaveCount(2);
   await expect(feed.getByText(/E2E-SOFA-1/)).toBeVisible();
 
   // Two credits used: the image and its upscale.

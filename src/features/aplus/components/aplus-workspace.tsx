@@ -392,6 +392,7 @@ export function AplusWorkspace() {
       <ResultFeed items={feed.items} hideIds={savedId ? [savedId] : []} />
 
       <AplusCanvas
+        sku={form.sku.trim()}
         state={canvasState}
         comparing={comparing}
         onToggleCompare={() => setComparing((c) => !c)}

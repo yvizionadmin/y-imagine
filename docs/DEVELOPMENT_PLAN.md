@@ -1115,3 +1115,12 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   language; a product with no Arabic name uses its main name; a title in the row always wins. Settings live in the run's JSON, so no
   migration. Verified: tsc + eslint clean; 306 Vitest tests (`image-batch-choices.test.ts`); `next build` clean; full Playwright suite (31, `bulk-recolor-aplus.spec.ts` sets both); screenshot en and ar 390 px. **Not yet:** a different image per product, or
   a preview of each product's images; how well a live model renders Arabic text on an A+ image (A8).
+- **2026-11-08, UI: non-tool pages in line with the tool pages (local).** History, Analytics and Templates share one
+  heading (`src/components/app/page-header.tsx` on the first two, the same type on Templates) and History and Analytics
+  one 1200px column; Templates cards, the History pending banner, selection bar and delete button use theme colours
+  instead of fixed ones, so they follow Light / Dark. Settings: Team's title matches the other settings pages. The rail
+  is tighter so every item and More fit at laptop height. Fixed: an upscale from a tool's result lost its SKU and tool
+  and was filed under Studio; canvases now pass `source` (SKU + mode) to `CanvasShell`. Verified: tsc + eslint clean; 306
+  Vitest tests; `next build`; 31 Playwright specs (+ rail fits at 1280×720; main flow checks the upscale is filed with
+  its product). **Not yet:** the Looks sub-pages keep their own heading sizes; Templates and Settings have no top-bar
+  page pill; the Figma file still shows the old layout.

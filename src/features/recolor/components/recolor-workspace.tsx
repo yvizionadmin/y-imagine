@@ -358,6 +358,7 @@ export function RecolorWorkspace() {
       <ResultFeed items={feed.items} hideIds={savedId ? [savedId] : []} onReuse={(prompt) => set("notes", prompt)} />
 
       <RecolorCanvas
+        sku={form.sku.trim()}
         kind={kind}
         state={canvasState}
         onCancel={cancel}

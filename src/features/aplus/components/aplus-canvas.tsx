@@ -29,6 +29,7 @@ export type AplusCanvasState =
 const CARD_WIDTH = 480;
 
 export function AplusCanvas({
+  sku,
   state,
   comparing,
   onToggleCompare,
@@ -38,6 +39,8 @@ export function AplusCanvas({
   onExport,
   onDownload,
 }: {
+  /** The product, so an upscaled copy is filed with it in History. */
+  sku: string;
   state: AplusCanvasState;
   comparing: boolean;
   onToggleCompare: () => void;
@@ -85,7 +88,7 @@ export function AplusCanvas({
   );
 
   return (
-    <CanvasShell top={top} bottom={bottom}>
+    <CanvasShell top={top} bottom={bottom} source={{ sku, mode: "aplus" }}>
       {state.kind === "empty" && (
         <CanvasEmptyState icon={<Wand className="size-8" strokeWidth={1.5} aria-hidden />} title={t("emptyTitle")} body={t("emptyBody")} />
       )}

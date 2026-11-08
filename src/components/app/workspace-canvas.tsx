@@ -10,7 +10,18 @@ import { ImageActions, ImageViewer, type ViewerImage } from "@/components/app/im
  * The results area: top/bottom overlay slots and the content. A generated image (`img[data-result]`) opens in a
  * full-window viewer (zoom, download, share) when clicked, and gets Open / Download / Share in the corner.
  */
-export function CanvasShell({ top, bottom, children }: { top?: ReactNode; bottom?: ReactNode; children: ReactNode }) {
+export function CanvasShell({
+  top,
+  bottom,
+  source,
+  children,
+}: {
+  top?: ReactNode;
+  bottom?: ReactNode;
+  /** The job's SKU and History mode, so an upscaled copy is filed with its product. */
+  source?: { sku: string; mode: string };
+  children: ReactNode;
+}) {
   const t = useTranslations("Workspace.viewer");
   const contentRef = useRef<HTMLDivElement>(null);
   const [result, setResult] = useState<ViewerImage | null>(null);
@@ -40,7 +51,7 @@ export function CanvasShell({ top, bottom, children }: { top?: ReactNode; bottom
         className="flex flex-col items-center gap-5 [&_img[data-result]]:cursor-zoom-in"
         onClick={(e) => {
           const img = e.target instanceof HTMLImageElement && e.target.matches("[data-result]") ? e.target : null;
-          if (img) setViewing({ src: img.src, alt: img.alt, name: img.alt || "image" });
+          if (img) setViewing({ src: img.src, alt: img.alt, name: img.alt || "image", ...source });
         }}
       >
         {children}
@@ -54,12 +65,12 @@ export function CanvasShell({ top, bottom, children }: { top?: ReactNode; bottom
             type="button"
             aria-label={t("open")}
             title={t("open")}
-            onClick={() => setViewing(result)}
+            onClick={() => setViewing({ ...result, ...source })}
             className="flex size-9 items-center justify-center rounded-full border bg-background/90 text-foreground shadow-sm backdrop-blur hover:text-primary"
           >
             <Maximize className="size-4" aria-hidden />
           </button>
-          <ImageActions image={result} onUpscaled={setViewing} />
+          <ImageActions image={{ ...result, ...source }} onUpscaled={setViewing} />
         </div>
       )}
 

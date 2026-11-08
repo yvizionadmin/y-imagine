@@ -66,7 +66,7 @@ export function TeamSettings() {
     <div className="flex flex-col gap-6 p-4 md:p-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-[22px] font-bold">{t("title")}</h2>
+          <h2 className="text-xl font-bold">{t("title")}</h2>
           {team && (
             <span className="rounded bg-accent px-1.5 py-0.5 text-[11px] font-semibold text-primary">
               {t("total", { count: team.members.length, display: String(team.members.length) })}
