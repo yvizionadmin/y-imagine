@@ -1,7 +1,7 @@
 "use server";
 
 import { findCategory, findSubcategory } from "@/lib/catalog-presets";
-import { parseAplusRows, type AplusBatchSettings } from "@/lib/image-batch/rows";
+import { CATALOG_TITLE_LANGUAGES, parseAplusRows, parseCatalogImage, type AplusBatchSettings, type CatalogTitleLanguage } from "@/lib/image-batch/rows";
 import { beginImageBatch, imageBatchProblem, type ImageBatchFailure, type ImageBatchView } from "@/lib/image-batch/start";
 import { isAspectRatio, isResolution } from "@/lib/image-formats";
 import { getWorkspace } from "@/lib/workspace";
@@ -18,12 +18,14 @@ function cleanSettings(input: Partial<Record<keyof AplusBatchSettings, unknown>>
   const style = str(input.style, 80) || null;
   const aspectRatio = str(input.aspectRatio, 10);
   const resolution = str(input.resolution, 4);
-  if (!category || !isAspectRatio(aspectRatio) || !isResolution(resolution)) return null;
+  const catalogImage = parseCatalogImage(input.catalogImage);
+  const catalogTitle = (str(input.catalogTitle, 2) || "en") as CatalogTitleLanguage;
+  if (!category || !isAspectRatio(aspectRatio) || !isResolution(resolution) || catalogImage === null || !CATALOG_TITLE_LANGUAGES.includes(catalogTitle)) return null;
   if (subcategory && !findSubcategory(category.key, subcategory)) return null;
   if (layout && !layoutPresets.some((l) => l === layout)) return null;
   if (scene && !category.scenes.some((s) => s.key === scene)) return null;
   if (style && !category.styles.includes(style)) return null;
-  return { category: category.key, subcategory, layout: layout as AplusBatchSettings["layout"], scene, style, aspectRatio, resolution, title: str(input.title, 120) };
+  return { category: category.key, subcategory, layout: layout as AplusBatchSettings["layout"], scene, style, aspectRatio, resolution, title: str(input.title, 120), catalogImage, catalogTitle };
 }
 
 /**

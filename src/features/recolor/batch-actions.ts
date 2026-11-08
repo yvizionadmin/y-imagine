@@ -2,7 +2,7 @@
 
 import { RECOLOR_SCOPES, type RecolorScope } from "@/lib/ai/types";
 import { findCategory, findSubcategory, PRODUCT_SIZE_MAX } from "@/lib/catalog-presets";
-import { parseImageRows } from "@/lib/image-batch/rows";
+import { parseCatalogImage, parseImageRows } from "@/lib/image-batch/rows";
 import { beginImageBatch, imageBatchProblem, type ImageBatchFailure, type ImageBatchView } from "@/lib/image-batch/start";
 import { isAspectRatio, isResolution } from "@/lib/image-formats";
 import { saveAsset } from "@/lib/storage/assets";
@@ -33,7 +33,9 @@ export async function startRecolorBatch(form: FormData): Promise<{ ok: true; bat
   const aspectRatio = text(form, "aspectRatio", 10);
   const resolution = text(form, "resolution", 4);
   const swatch = form.get("swatch");
+  const catalogImage = parseCatalogImage(form.get("catalogImage"));
   if (
+    catalogImage === null ||
     typeof rowsText !== "string" ||
     rowsText.length > 100_000 ||
     !category ||
@@ -69,6 +71,7 @@ export async function startRecolorBatch(form: FormData): Promise<{ ok: true; bat
       resolution,
       notes: text(form, "notes", 2000),
       title: text(form, "title", 120),
+      catalogImage,
     },
     rows: rows.map(({ sku }) => ({ sku, productSize: "" })),
   });

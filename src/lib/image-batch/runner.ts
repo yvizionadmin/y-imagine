@@ -11,28 +11,29 @@ import { readAsset, saveAsset } from "@/lib/storage/assets";
 import { decodeImage } from "@/lib/storage/decode-image";
 import { claimImageItem, finishImageItem, getImageBatch, settleImageBatch, type ImageBatch, type ImageBatchItem } from "./batches";
 import { TEXT_LIMITS } from "@/features/aplus/config";
-import type { AplusBatchSettings, GenerateBatchSettings, RecolorBatchSettings } from "./rows";
+import { catalogTitle, usableImagePosition, type AplusBatchSettings, type GenerateBatchSettings, type RecolorBatchSettings } from "./rows";
 
 // Runs one bulk image item, from the worker (BullMQ) or in-process when there is no Redis. Safe to
-// run twice: only a `pending` item is claimed. The product photo is the SKU's first catalog image;
-// each tool turns it into one image (one credit) saved to History like a single result.
+// run twice: only a `pending` item is claimed. The product photo is the catalog image the run asked
+// for (its `catalogImage` position, or the product's last image if it has fewer); each tool turns it into one image (one credit) saved to History like a single result.
 
 export type ImageItemOutcome = "done" | "failed" | "retry" | "skipped";
 
-type Product = { png: Uint8Array; name: string };
+type Product = { png: Uint8Array; name: string; nameAr: string | null; imagePosition: number };
 type Made = { image: GeneratedImage; mode: GenerationMode; title: string; settings: Record<string, string | null> };
 
-/** The SKU's first catalog image as PNG (and its catalog name), or why there is none (an item error code). */
-async function productPhoto(orgId: string, sku: string) {
+/** The chosen catalog image as PNG (and the catalog names), or why there is none (an item error code). */
+async function productPhoto(orgId: string, sku: string, wanted: number) {
   const loaded = await loadConnection(orgId);
   if (!loaded) return { ok: false as const, error: "no_connection" };
   const lookup = await runLookup(loaded.connection.type, loaded.settings, sku);
   if (!lookup.ok) return { ok: false as const, error: lookup.error === "not_found" ? "sku_not_found" : "catalog_error" };
-  const url = lookup.product.images[0];
+  const imagePosition = usableImagePosition(lookup.product.images.length, wanted);
+  const url = lookup.product.images[imagePosition - 1];
   if (!url) return { ok: false as const, error: "no_image" };
   const imported = await importProductPng(orgId, sku, url);
   if (!imported.ok) return { ok: false as const, error: imported.error === "not_found" ? "sku_not_found" : "image_unreachable" };
-  return { ok: true as const, product: { png: new Uint8Array(imported.png), name: lookup.product.name } };
+  return { ok: true as const, product: { png: new Uint8Array(imported.png), name: lookup.product.name, nameAr: lookup.product.nameAr, imagePosition } };
 }
 
 const productInput = (item: ImageBatchItem, product: Product) => ({ bytes: product.png, mimeType: "image/png", name: `${item.sku}.png` });
@@ -107,8 +108,8 @@ async function runRecolor(actor: JobActor, s: RecolorBatchSettings, item: ImageB
 
 async function runAplus(actor: JobActor, s: AplusBatchSettings, item: ImageBatchItem, product: Product): Promise<Made> {
   if (!item.data) throw new ProviderError("generation_failed");
-  // A row without a title uses the catalog name (A+ titles are short).
-  const title = item.data.title || product.name.slice(0, TEXT_LIMITS.title).trim();
+  // A row without a title uses the catalog name, in the language the run chose (A+ titles are short).
+  const title = item.data.title || catalogTitle(product, s.catalogTitle).slice(0, TEXT_LIMITS.title).trim();
   const provider = await getImageProvider(actor, "aplus");
   const image = await provider.generateAplus({
     sku: item.sku,
@@ -165,7 +166,7 @@ async function makeImage(batch: ImageBatch, item: ImageBatchItem, product: Produ
     mimeType: decoded.mimeType,
     width: made.image.width,
     height: made.image.height,
-    settings: { ...made.settings, batchId: batch.id },
+    settings: { ...made.settings, batchId: batch.id, catalogImage: String(product.imagePosition) },
     provider: made.image.provider,
     model: made.image.model,
     createdBy: batch.createdBy,
@@ -185,7 +186,7 @@ export async function runImageItem(orgId: string, itemId: string): Promise<Image
 
   let outcome: ImageItemOutcome = "failed";
   try {
-    const photo = await productPhoto(orgId, item.sku);
+    const photo = await productPhoto(orgId, item.sku, batch.settings.catalogImage ?? 1);
     if (!photo.ok) {
       await finishImageItem(orgId, item.id, { status: "failed", error: photo.error });
       return outcome;

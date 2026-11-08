@@ -8,7 +8,7 @@ import { blockedReason } from "@/components/app/job-errors";
 import { PromptChips, PromptTips } from "@/components/app/prompt-assist";
 import { ScenePicker, type SceneChoice } from "@/components/app/scene-picker";
 import { Textarea } from "@/components/ui/textarea";
-import { CategoryFields, StyleChips } from "@/features/image-batch/components/bulk-fields";
+import { CategoryFields, StyleChips, CatalogImageSection } from "@/features/image-batch/components/bulk-fields";
 import { BulkImageCanvas } from "@/features/image-batch/components/bulk-image-canvas";
 import { BulkModeTabs } from "@/features/image-batch/components/bulk-mode-tabs";
 import { ProductListField, StartErrorBox, useStartError, type StartError } from "@/features/image-batch/components/product-list-field";
@@ -41,6 +41,7 @@ export function BulkGenerateWorkspace() {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("1:1");
   const [resolution, setResolution] = useState<Resolution>("HD");
   const [instructions, setInstructions] = useState("");
+  const [catalogImage, setCatalogImage] = useState(1);
   const [error, setError] = useState<StartError | null>(null);
   const [pending, startTransition] = useTransition();
   const parsed = useMemo(() => parseImageRows(text, PRODUCT_SIZE_MAX), [text]);
@@ -74,6 +75,7 @@ export function BulkGenerateWorkspace() {
         text,
         name: fileName ?? undefined,
         settings: {
+          catalogImage,
           category,
           subcategory,
           scene: scene?.kind === "preset" ? scene.key : null,
@@ -133,6 +135,8 @@ export function BulkGenerateWorkspace() {
             {preset && <StyleChips category={category} value={style} onChange={setStyle} />}
           </Section>
 
+          <CatalogImageSection value={catalogImage} onChange={setCatalogImage} />
+
           <Section title={tg("format")} summary={`${aspectRatio} · ${resolution}`} icon={<Square className="size-3.5 shrink-0" aria-hidden />}>
             <FormatFields aspectRatio={aspectRatio} onAspectRatioChange={setAspectRatio} resolution={resolution} onResolutionChange={setResolution} />
           </Section>
@@ -169,6 +173,7 @@ export function BulkGenerateWorkspace() {
             setScene(null);
             setStyle(null);
             setAspectRatio("1:1");
+            setCatalogImage(1);
             setResolution("HD");
             setInstructions("");
             setError(null);

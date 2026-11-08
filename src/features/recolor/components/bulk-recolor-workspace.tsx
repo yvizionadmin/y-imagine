@@ -9,7 +9,7 @@ import { blockedReason } from "@/components/app/job-errors";
 import { PromptChips, PromptTips } from "@/components/app/prompt-assist";
 import { useObjectUrl } from "@/components/app/upload-inputs";
 import { Textarea } from "@/components/ui/textarea";
-import { CategoryFields } from "@/features/image-batch/components/bulk-fields";
+import { CategoryFields, CatalogImageSection } from "@/features/image-batch/components/bulk-fields";
 import { BulkImageCanvas } from "@/features/image-batch/components/bulk-image-canvas";
 import { BulkModeTabs } from "@/features/image-batch/components/bulk-mode-tabs";
 import { ProductListField, StartErrorBox, useStartError, type StartError } from "@/features/image-batch/components/product-list-field";
@@ -45,6 +45,7 @@ export function BulkRecolorWorkspace() {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("1:1");
   const [resolution, setResolution] = useState<Resolution>("HD");
   const [notes, setNotes] = useState("");
+  const [catalogImage, setCatalogImage] = useState(1);
   const [error, setError] = useState<StartError | null>(null);
   const [pending, startTransition] = useTransition();
   // Ignores a swatch analysis that finished after the swatch was replaced.
@@ -89,6 +90,7 @@ export function BulkRecolorWorkspace() {
     // Same History title as single Recolor: the swatch's name.
     data.set("title", swatchDisplayName(swatch.name));
     startTransition(async () => {
+      data.set("catalogImage", String(catalogImage));
       const result = await startRecolorBatch(data);
       if (!result.ok) {
         const blocked = blockedReason(result.error);
@@ -160,6 +162,8 @@ export function BulkRecolorWorkspace() {
             </Field>
           </Section>
 
+          <CatalogImageSection value={catalogImage} onChange={setCatalogImage} />
+
           <Section title={tr("format")} summary={`${aspectRatio} · ${resolution}`} icon={<Square className="size-3.5 shrink-0" aria-hidden />}>
             <FormatFields aspectRatio={aspectRatio} onAspectRatioChange={setAspectRatio} resolution={resolution} onResolutionChange={setResolution} />
           </Section>
@@ -197,6 +201,7 @@ export function BulkRecolorWorkspace() {
             setSwatchState(null);
             setScope("main");
             setAspectRatio("1:1");
+            setCatalogImage(1);
             setResolution("HD");
             setNotes("");
             setError(null);

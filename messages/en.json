@@ -1015,7 +1015,8 @@
       "subtitle": "Subtitle",
       "features": "Feature Blocks",
       "customScene": "Custom Scene",
-      "sceneUpload": "Uploaded background"
+      "sceneUpload": "Uploaded background",
+      "catalogImage": "Catalog image"
     },
     "featureCount": "{count, plural, one {# block} other {# blocks}}",
     "emptyTitle": "No generated images yet",
@@ -2648,7 +2649,10 @@
     "problemRow": "Row {row}: {reason}",
     "sourceLabel": "How to add products",
     "sourcePaste": "Paste SKUs",
-    "sourceCsv": "Upload CSV"
+    "sourceCsv": "Upload CSV",
+    "catalogImage": "Catalog image",
+    "catalogImageChoice": "Image {position}",
+    "catalogImageHint": "Used for every product in this run. A product with fewer images uses its last one."
   },
   "RecolorBulk": {
     "panelTitle": "Bulk recolor",
@@ -2665,7 +2669,13 @@
     "start": "{count, plural, =0 {Create A+ images} one {Create # A+ image} other {Create # A+ images}}",
     "emptyTitle": "A+ images for a whole catalog",
     "emptyBody": "Upload a CSV with each product's title and features. Every product gets an A+ image with the layout and scene you pick, in the background, one credit each, saved to History.",
-    "layoutAuto": "Let the AI design it"
+    "layoutAuto": "Let the AI design it",
+    "catalogTitle": "Catalog titles",
+    "catalogTitleChoice": {
+      "en": "Main name",
+      "ar": "Arabic name"
+    },
+    "catalogTitleHint": "For rows with no title in your file. A product with no Arabic name uses its main name."
   },
   "Studio": {
     "title": "Create <em>anything</em> you imagine",

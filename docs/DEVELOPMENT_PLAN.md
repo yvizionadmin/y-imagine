@@ -286,7 +286,7 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
 | B4 ✅ | Image approvals + publish gate | Review status for History images; "Upload to Website" only for approved items when the org turns it on | Same review flow as copy, for images | 1–2 |
 | B5 | Prompt helpers | "Improve with AI" for merchant text; per-team suggestions from saved results | Both available in Generate and Recolor | 1–2 |
 | B6 | Team scenes and catalog per tenant | Save uploaded scenes as team scenes; product types and scenes per org in the DB; category filters in History/board; delete look backgrounds with their look | Two orgs see different product types and scenes | 3–4 |
-| B7 | Bulk improvements | Choose which catalog image to use; Arabic titles from `nameAr` for bulk A+ | Both available in the bulk tools | 1 |
+| B7 ✅ | Bulk improvements | Choose which catalog image to use; Arabic titles from `nameAr` for bulk A+ | Both available in the bulk tools | 1 |
 | B8 | Store publishing | Real Shopify and Magento image upload through the catalog connectors | An approved image appears on a test store | 3–5 |
 | B9 | Impersonation | Super-admin "view as org admin", read-only, audited, time-limited | Console can open an org view and every visit is in the audit log | 1–2 |
 | B10 | Video editor (FFmpeg in the worker) | Trim, merge clips, subtitles, music / voice-over, export sizes (9:16, 1:1, 16:9) | A user cuts two clips together with subtitles and downloads the MP4 | 4–6 |
@@ -1108,3 +1108,10 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   **Not yet:** images saved before this have no `created_by_id`, so their makers get no email; no review of videos; no per-SKU
   or per-tool rules; store publishing itself is still demo-tested until B8.
   **Test setup:** the suite now signs up more than 30 times, the sign-in/up limit per address, so `templates.spec.ts` failed in full runs with "Too many attempts". `AUTH_LIMIT_PER_IP` (optional, set to 1000 in `playwright.config.ts`) raises it for the browser tests only; the default stays 30, and 0 or junk can't switch it off. **Found, not fixed:** at 390 px, History's date range is cut off and the upload banner is cramped.
+- **2026-11-08, Roadmap B7: bulk improvements (local).** **Catalog image:** bulk Generate, Recolor and A+ get a chip to pick Image
+  1 to 5 for the whole run (default 1). A product with fewer images uses its last one rather than failing, since the rest of the
+  run still has value; History records the image actually used (`catalogImage`). Runs started earlier use the first image.
+  **Arabic titles:** bulk A+ picks the main or Arabic catalog name (`nameAr`) for rows with no title, defaulting to the page's
+  language; a product with no Arabic name uses its main name; a title in the row always wins. Settings live in the run's JSON, so no
+  migration. Verified: tsc + eslint clean; 306 Vitest tests (`image-batch-choices.test.ts`); `next build` clean; full Playwright suite (31, `bulk-recolor-aplus.spec.ts` sets both); screenshot en and ar 390 px. **Not yet:** a different image per product, or
+  a preview of each product's images; how well a live model renders Arabic text on an A+ image (A8).

@@ -71,6 +71,14 @@ test("bulk A+: a CSV with per-product text, one A+ image each", async ({ page })
   await page.locator("#bulk-category").selectOption("furniture");
   await page.getByRole("button", { name: /^A\+ Reference/ }).click();
   await page.getByRole("radio", { name: "Let the AI design it" }).click();
+  // Second catalog image, and Arabic catalog names for the row with no title.
+  await page.getByRole("button", { name: /^Catalog image/ }).click();
+  await page.getByRole("radio", { name: "Image 2" }).click();
+  await expect(page.getByText("A product with fewer images uses its last one.")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: /^Catalog titles/ }).click();
+  await page.getByRole("radio", { name: "Arabic name" }).click();
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Create 2 A+ images" }).click();
 
   await expect(page.getByText("Finished", { exact: true }).first()).toBeVisible({ timeout: 45_000 });

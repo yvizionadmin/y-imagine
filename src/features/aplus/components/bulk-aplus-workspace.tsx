@@ -1,18 +1,19 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { Languages } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { cn } from "cn";
 import { ConfigPanel, Field, FormatFields, PanelBody, PanelFooter, PanelHeader, RequiredTag, Section } from "@/components/app/config-panel";
 import { blockedReason } from "@/components/app/job-errors";
-import { CategoryFields, StyleChips } from "@/features/image-batch/components/bulk-fields";
+import { CategoryFields, StyleChips, CatalogImageSection } from "@/features/image-batch/components/bulk-fields";
 import { BulkImageCanvas } from "@/features/image-batch/components/bulk-image-canvas";
 import { BulkModeTabs } from "@/features/image-batch/components/bulk-mode-tabs";
 import { ProductListField, StartErrorBox, useStartError, type StartError } from "@/features/image-batch/components/product-list-field";
 import { useImageRuns } from "@/features/image-batch/components/use-image-runs";
 import type { AplusLayout } from "@/lib/ai/types";
 import { categoryPresets, findCategory } from "@/lib/catalog-presets";
-import { IMAGE_BATCH_MAX_ROWS, parseAplusRows } from "@/lib/image-batch/rows";
+import { CATALOG_TITLE_LANGUAGES, IMAGE_BATCH_MAX_ROWS, parseAplusRows, type CatalogTitleLanguage } from "@/lib/image-batch/rows";
 import type { AspectRatio, Resolution } from "@/lib/image-formats";
 import { startAplusBatch } from "../batch-actions";
 import { layoutPresets } from "../config";
@@ -46,6 +47,9 @@ export function BulkAplusWorkspace() {
   const [style, setStyle] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("1:1");
   const [resolution, setResolution] = useState<Resolution>("HD");
+  const [catalogImage, setCatalogImage] = useState(1);
+  const locale = useLocale();
+  const [titleLanguage, setTitleLanguage] = useState<CatalogTitleLanguage>(locale === "ar" ? "ar" : "en");
   const [error, setError] = useState<StartError | null>(null);
   const [pending, startTransition] = useTransition();
   const parsed = useMemo(() => parseAplusRows(text), [text]);
@@ -60,7 +64,7 @@ export function BulkAplusWorkspace() {
       const result = await startAplusBatch({
         text,
         name: fileName ?? undefined,
-        settings: { category, subcategory, layout, scene, style, aspectRatio, resolution, title: layout ? ta(`layouts.${layout}`) : t("layoutAuto") },
+        settings: { category, subcategory, layout, scene, style, aspectRatio, resolution, catalogImage, catalogTitle: titleLanguage, title: layout ? ta(`layouts.${layout}`) : t("layoutAuto") },
       });
       if (!result.ok) {
         const blocked = blockedReason(result.error);
@@ -158,6 +162,26 @@ export function BulkAplusWorkspace() {
             )}
           </Section>
 
+          <CatalogImageSection value={catalogImage} onChange={setCatalogImage} />
+
+          <Section title={t("catalogTitle")} summary={t(`catalogTitleChoice.${titleLanguage}`)} icon={<Languages className="size-3.5 shrink-0" aria-hidden />}>
+            <div role="radiogroup" aria-label={t("catalogTitle")} className="flex flex-wrap gap-1.5">
+              {CATALOG_TITLE_LANGUAGES.map((language) => (
+                <button
+                  key={language}
+                  type="button"
+                  role="radio"
+                  aria-checked={titleLanguage === language}
+                  onClick={() => setTitleLanguage(language)}
+                  className={cn("rounded-full border bg-muted px-3 py-2 text-xs font-medium text-muted-foreground", titleLanguage === language && "border-primary bg-primary text-primary-foreground")}
+                >
+                  {t(`catalogTitleChoice.${language}`)}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">{t("catalogTitleHint")}</p>
+          </Section>
+
           <Section title={ta("output")}>
             <FormatFields aspectRatio={aspectRatio} onAspectRatioChange={setAspectRatio} resolution={resolution} onResolutionChange={setResolution} />
           </Section>
@@ -178,6 +202,8 @@ export function BulkAplusWorkspace() {
             setScene(null);
             setStyle(null);
             setAspectRatio("1:1");
+            setCatalogImage(1);
+            setTitleLanguage(locale === "ar" ? "ar" : "en");
             setResolution("HD");
             setError(null);
           }}

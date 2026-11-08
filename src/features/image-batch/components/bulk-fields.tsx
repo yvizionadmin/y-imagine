@@ -1,11 +1,12 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Images } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
-import { Field } from "@/components/app/config-panel";
+import { Field, Section } from "@/components/app/config-panel";
 import { SubcategoryField } from "@/components/app/subcategory-field";
 import { categoryPresets, findCategory } from "@/lib/catalog-presets";
+import { CATALOG_IMAGE_POSITIONS } from "@/lib/image-batch/rows";
 
 // Panel fields the bulk image tools share with their single-product panels.
 
@@ -76,5 +77,29 @@ export function StyleChips({ category, value, onChange }: { category: string; va
         ))}
       </div>
     </Field>
+  );
+}
+
+/** Which catalog image every product of the run starts from, as a prompt-dock chip. */
+export function CatalogImageSection({ value, onChange }: { value: number; onChange: (position: number) => void }) {
+  const t = useTranslations("ImageBulk");
+  return (
+    <Section title={t("catalogImage")} summary={t("catalogImageChoice", { position: value })} icon={<Images className="size-3.5 shrink-0" aria-hidden />}>
+      <div role="radiogroup" aria-label={t("catalogImage")} className="flex flex-wrap gap-1.5">
+        {CATALOG_IMAGE_POSITIONS.map((position) => (
+          <button
+            key={position}
+            type="button"
+            role="radio"
+            aria-checked={value === position}
+            onClick={() => onChange(position)}
+            className={cn("rounded-full border bg-muted px-3 py-2 text-xs font-medium text-muted-foreground", value === position && "border-primary bg-primary text-primary-foreground")}
+          >
+            {t("catalogImageChoice", { position })}
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground">{t("catalogImageHint")}</p>
+    </Section>
   );
 }

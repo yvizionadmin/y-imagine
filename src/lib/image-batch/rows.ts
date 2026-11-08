@@ -12,6 +12,26 @@ export type ImageBatchTool = (typeof IMAGE_BATCH_TOOLS)[number];
 /** Image jobs are slow and use the org's own provider budget, so runs stay small. */
 export const IMAGE_BATCH_MAX_ROWS = 50;
 
+/** Which of a product's catalog images a run uses: 1 is the first. Stores keep their main photo first. */
+export const CATALOG_IMAGE_POSITIONS = [1, 2, 3, 4, 5] as const;
+
+/** The setting from a request: absent means the first image; anything out of range is refused (null). */
+export function parseCatalogImage(value: unknown): number | null {
+  if (value === undefined || value === null || value === "") return 1;
+  const position = Number(value);
+  return (CATALOG_IMAGE_POSITIONS as readonly number[]).includes(position) ? position : null;
+}
+
+/** The position a product can actually serve: its last image when it has fewer than asked for. 0 when it has none. */
+export const usableImagePosition = (imageCount: number, wanted: number) => Math.min(imageCount, Math.max(1, wanted));
+
+/** A+ titles taken from the catalog, for rows without their own. */
+export const CATALOG_TITLE_LANGUAGES = ["en", "ar"] as const;
+export type CatalogTitleLanguage = (typeof CATALOG_TITLE_LANGUAGES)[number];
+
+/** The catalog name in the chosen language, or the main name when the product has no Arabic one. */
+export const catalogTitle = (product: { name: string; nameAr?: string | null }, language: CatalogTitleLanguage | undefined) => (language === "ar" && product.nameAr?.trim()) || product.name;
+
 /** Generate settings shared by every product of a run. Scene uploads aren't offered in bulk. */
 export type GenerateBatchSettings = {
   category: string;
@@ -25,6 +45,8 @@ export type GenerateBatchSettings = {
   instructions: string;
   /** History title for every image, written in the UI language when the run starts. */
   title: string;
+  /** Absent on runs started before this existed: the first image. */
+  catalogImage?: number;
 };
 
 /** Recolor: one swatch (stored as an asset when the run starts) applied to every product. */
@@ -42,6 +64,7 @@ export type RecolorBatchSettings = {
   resolution: Resolution;
   notes: string;
   title: string;
+  catalogImage?: number;
 };
 
 /** A+: layout, scene and format shared by the run; each product brings its own text (row data). */
@@ -54,11 +77,14 @@ export type AplusBatchSettings = {
   aspectRatio: AspectRatio;
   resolution: Resolution;
   title: string;
+  catalogImage?: number;
+  /** Absent on runs started before this existed: the main name. */
+  catalogTitle?: CatalogTitleLanguage;
 };
 
 export type ImageBatchSettings = GenerateBatchSettings | RecolorBatchSettings | AplusBatchSettings;
 
-/** Per-product A+ text. An empty title is filled from the catalog name when the item runs. */
+/** Per-product A+ text. An empty title is filled from the catalog name when the item runs (see `catalogTitle` in the settings). */
 export type AplusRowData = { title: string; subtitle: string; features: AplusFeature[] };
 
 export type ImageBatchRow = { sku: string; productSize: string; data?: AplusRowData | null };

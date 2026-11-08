@@ -1015,7 +1015,8 @@
       "subtitle": "العنوان الفرعي",
       "features": "كتل الميزات",
       "customScene": "مشهد مخصص",
-      "sceneUpload": "خلفية مرفوعة"
+      "sceneUpload": "خلفية مرفوعة",
+      "catalogImage": "صورة الكتالوج"
     },
     "featureCount": "{count, plural, one {كتلة واحدة} two {كتلتان} few {# كتل} other {# كتلة}}",
     "emptyTitle": "لا توجد صور مُنشأة بعد",
@@ -2648,7 +2649,10 @@
     "problemRow": "الصف {row}: {reason}",
     "sourceLabel": "طريقة إضافة المنتجات",
     "sourcePaste": "لصق الرموز",
-    "sourceCsv": "رفع ملف CSV"
+    "sourceCsv": "رفع ملف CSV",
+    "catalogImage": "صورة الكتالوج",
+    "catalogImageChoice": "الصورة {position}",
+    "catalogImageHint": "تُستخدم لكل المنتجات في هذه الدفعة. يستخدم المنتج الذي لديه صور أقل آخر صورة له."
   },
   "RecolorBulk": {
     "panelTitle": "إعادة تلوين بالجملة",
@@ -2665,7 +2669,13 @@
     "start": "{count, plural, =0 {إنشاء صور A+} one {إنشاء صورة A+ واحدة} two {إنشاء صورتي A+} few {إنشاء # صور A+} many {إنشاء # صورة A+} other {إنشاء # صورة A+}}",
     "emptyTitle": "صور A+ لكتالوج كامل",
     "emptyBody": "ارفع ملف CSV بعنوان كل منتج وميزاته. يحصل كل منتج على صورة A+ بالتصميم والمشهد الذي تختاره، في الخلفية، برصيد واحد لكل صورة، وتُحفظ في السجل.",
-    "layoutAuto": "دع الذكاء الاصطناعي يصمّمها"
+    "layoutAuto": "دع الذكاء الاصطناعي يصمّمها",
+    "catalogTitle": "عناوين الكتالوج",
+    "catalogTitleChoice": {
+      "en": "الاسم الرئيسي",
+      "ar": "الاسم العربي"
+    },
+    "catalogTitleHint": "للصفوف التي لا تحتوي على عنوان في ملفك. يستخدم المنتج الذي ليس له اسم عربي اسمه الرئيسي."
   },
   "Studio": {
     "title": "أنشئ <em>كل ما</em> تتخيله",
