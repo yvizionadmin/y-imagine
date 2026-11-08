@@ -1,6 +1,7 @@
 import "server-only";
 import { ProviderError } from "../errors";
 import type { GeneratedVideo, VideoProvider } from "../types";
+import { videoCapabilities } from "../video-models";
 import { videoPrompt } from "../video-prompt";
 import { downloadVideo } from "./video-download";
 
@@ -77,7 +78,10 @@ export function createByteplusVideoProvider(config: ByteplusVideoConfig): VideoP
     model: config.model,
 
     async generateVideo(request): Promise<GeneratedVideo> {
-      const content: unknown[] = [{ type: "text", text: videoPrompt(request) }];
+      // ModelArk's own camera setting is a flag at the end of the prompt text.
+      const nativeCamera = videoCapabilities(config.model).nativeCamera.includes(request.camera);
+      const text = `${videoPrompt(request, { nativeCamera })}${nativeCamera ? " --camerafixed true" : ""}`;
+      const content: unknown[] = [{ type: "text", text }];
       if (request.startFrame) {
         const base64 = Buffer.from(request.startFrame.bytes).toString("base64");
         content.push({ type: "image_url", image_url: { url: `data:${request.startFrame.mimeType};base64,${base64}` }, role: "first_frame" });

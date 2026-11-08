@@ -2677,11 +2677,11 @@
     "recent": "Recent",
     "viewHistory": "View all in History",
     "emptyRecent": "Your images will appear here.",
-    "promptDirection": "Camera and motion are added to your prompt as direction; the model has no separate setting for them.",
+    "promptDirection": "Camera and motion are added to your prompt as direction, unless noted below.",
     "videoModel": "Model",
     "videoModelNote": "Videos are made with {model}. Your admin picks the model in Settings → API Keys.",
     "changeModel": "Change model",
-    "promptDirectionAudio": "Camera and motion are added to your prompt as direction. The model also makes a soundtrack.",
+    "promptDirectionAudio": "Camera and motion are added to your prompt as direction, unless noted below. The model also makes a soundtrack.",
     "videoNeedsKey": "Videos need a Google Gemini key with video access, a BytePlus ModelArk key (Seedance) or a Kling key.",
     "addKey": "Add it in Settings → API Keys",
     "videoQueued": "Your video is being made. It usually takes 1–3 minutes; you can keep working.",
@@ -2693,7 +2693,28 @@
     "toolsLabel": "Other tools",
     "consent": "I have the rights to this image, and anyone recognisable in it has agreed to appear in an AI-made video.",
     "storage": "Video storage: {used} of {limit} · clips are kept {days, plural, one {# day} other {# days}}",
-    "storageFull": "Your video storage is full. Delete videos in History to make room."
+    "storageFull": "Your video storage is full. Delete videos in History to make room.",
+    "look": "Look",
+    "lens": "Lens",
+    "lighting": "Lighting",
+    "lensPresets": {
+      "auto": "Auto",
+      "wide": "Wide",
+      "standard": "Standard",
+      "portrait": "Portrait",
+      "macro": "Macro",
+      "telephoto": "Telephoto"
+    },
+    "lightingPresets": {
+      "auto": "Auto",
+      "natural": "Natural",
+      "studio": "Studio",
+      "goldenHour": "Golden hour",
+      "dramatic": "Dramatic",
+      "neon": "Neon"
+    },
+    "lookHint": "Lens and lighting are added to your prompt as direction. Auto adds nothing.",
+    "cameraNative": "{model} sets {move} with its own camera setting, not through your prompt."
   },
   "Emails": {
     "footer": "Imagine AI · You're getting this email because of your Imagine AI workspace.",

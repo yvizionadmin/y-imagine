@@ -281,7 +281,7 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
 | # | Step | Scope | Done when | Est. |
 |---|------|-------|-----------|------|
 | B1 ✅ | More video providers | Kling adapter, same pattern as `byteplus-video.ts` (OpenAI dropped: its Videos API shut down 2026-09-24) | Each one selectable and tested with the API stubbed | 1–2 |
-| B2 | Cinema controls | Camera / lens / lighting presets → native parameters where a model has them, else labelled prompt text | Presets in the Studio, driven by the model's capabilities | 1 |
+| B2 ✅ | Cinema controls | Camera / lens / lighting presets → native parameters where a model has them, else labelled prompt text | Presets in the Studio, driven by the model's capabilities | 1 |
 | B3 | Agents with tools | Agent runs with catalog search, generate image, write copy; steps shown live; credits per tool call | An agent finds a product, writes copy and makes an image in one run | 3–4 |
 | B4 | Image approvals + publish gate | Review status for History images; "Upload to Website" only for approved items when the org turns it on | Same review flow as copy, for images | 1–2 |
 | B5 | Prompt helpers | "Improve with AI" for merchant text; per-team suggestions from saved results | Both available in Generate and Recolor | 1–2 |
@@ -1084,3 +1084,14 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   clipping (container now `relative`). Desktop layout unchanged. Verified: tsc + eslint clean; 264 Vitest tests; `next build` clean; full Playwright suite (30, with 3 new in
   `tests/e2e/settings-phone.spec.ts`); all five pages measured en and ar at 390 px, en at 320 px and 1280 px, with screenshots
   of most at 390 px and API Keys at 1280 px.
+- **2026-11-08, Roadmap B2: cinema controls (local).** Studio video gets a **Look** chip: lens (Auto, Wide, Standard, Portrait,
+  Macro, Telephoto) and lighting (Auto, Natural, Studio, Golden hour, Dramatic, Neon), next to the existing camera and motion.
+  Saved on the job and in History; Auto adds nothing; jobs queued earlier run as Auto. **Native where a model has it:**
+  `nativeCamera` in `video-models.ts`. Only Seedance has one (static camera, sent as `--camerafixed true` at the end of the
+  prompt, replacing the prompt line), and the Studio says so when it applies. Kling 3.0's API has no camera field, and
+  Google's Omni docs put camera and lighting in the prompt, so everything else is prompt text, labelled in the Studio. No
+  provider documents a lens or lighting parameter. Presets cost nothing extra. Verified: tsc + eslint clean; 275 Vitest tests (`tests/unit/video-prompt.test.ts`, BytePlus, Kling and integration additions); `next build` clean; full Playwright suite (30, `studio.spec.ts` now sets a Look); screenshots en and ar 390 px. **Check on the first live run
+  (A8):** that Seedance 2.5 honours `--camerafixed` alongside the JSON fields we send (BytePlus's examples show it inline; the
+  API reference page couldn't be read); how much each model visibly follows the lens and lighting text. **Not yet:** Omni
+  and Seedance might gain presets from their own prompt guides; no preview of a preset's effect.
+  **Found, not fixed:** on the Studio at 390 px in Arabic, the top bar runs out of room and the user name is cut off.

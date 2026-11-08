@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { ProviderError, type ProviderErrorCode } from "@/lib/ai/errors";
 import { getImageProvider, videoModelFor } from "@/lib/ai/registry";
-import { CAMERA_MOVES, CREATE_ASPECT_RATIOS, MOTION_LEVELS, type CreateAspectRatio, type GeneratedImage } from "@/lib/ai/types";
+import { CAMERA_MOVES, CREATE_ASPECT_RATIOS, LENS_PRESETS, LIGHTING_PRESETS, MOTION_LEVELS, type CreateAspectRatio, type GeneratedImage } from "@/lib/ai/types";
 import { DEFAULT_VIDEO_MODEL, fitsCapabilities, ratioParts, videoCapabilities, videoModelName } from "@/lib/ai/video-models";
 import { planAllows, videoCost, type CreditRules } from "@/lib/credits";
 import { insertGeneration, listRecentGenerations, type Generation } from "@/lib/generations";
@@ -124,6 +124,8 @@ export async function startVideo(formData: FormData): Promise<StartVideoResult> 
     resolution: String(formData.get("resolution") ?? ""),
     camera: String(formData.get("camera") ?? ""),
     motion: String(formData.get("motion") ?? ""),
+    lens: String(formData.get("lens") ?? "auto"),
+    lighting: String(formData.get("lighting") ?? "auto"),
   };
   const frame = formData.get("startFrame");
   const startFrame = frame instanceof File && frame.size > 0 ? frame : null;
@@ -136,6 +138,8 @@ export async function startVideo(formData: FormData): Promise<StartVideoResult> 
     fitsCapabilities(videoCapabilities(video.model), { ...settings, hasStartFrame: startFrame !== null }) &&
     (CAMERA_MOVES as readonly string[]).includes(settings.camera) &&
     (MOTION_LEVELS as readonly string[]).includes(settings.motion) &&
+    (LENS_PRESETS as readonly string[]).includes(settings.lens) &&
+    (LIGHTING_PRESETS as readonly string[]).includes(settings.lighting) &&
     (startFrame === null || (PRODUCT_IMAGE_TYPES.includes(startFrame.type) && startFrame.size <= MAX_REFERENCE_BYTES));
   if (!valid) return { ok: false, error: "invalid_input" };
   // A start frame may show a real person: the creator confirms the rights and consent first.

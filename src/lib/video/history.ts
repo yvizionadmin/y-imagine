@@ -36,6 +36,8 @@ export async function saveVideoToHistory(job: VideoJob, video: { assetId: string
       resolution: job.settings.resolution,
       camera: job.settings.camera,
       motion: job.settings.motion,
+      lens: job.settings.lens ?? "auto",
+      lighting: job.settings.lighting ?? "auto",
     },
     provider: video.provider,
     model: video.model,

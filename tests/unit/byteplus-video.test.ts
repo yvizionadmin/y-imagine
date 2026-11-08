@@ -38,6 +38,8 @@ const request = (over: Partial<VideoRequest> = {}): VideoRequest => ({
   startFrame: null,
   camera: "orbit",
   motion: "low",
+  lens: "auto",
+  lighting: "auto",
   ...over,
 });
 
@@ -81,6 +83,30 @@ describe("Seedance on BytePlus ModelArk", () => {
     await provider().generateVideo(request({ aspectRatio: "16:9", startFrame: { bytes: new Uint8Array([9, 9]), mimeType: "image/png", name: "f" } }));
     expect(calls[0].body).toMatchObject({ ratio: "adaptive" });
     expect((calls[0].body?.content as unknown[])[1]).toEqual({ type: "image_url", image_url: { url: "data:image/png;base64,CQk=" }, role: "first_frame" });
+  });
+
+  it("holds the camera still with ModelArk's own flag, not prompt text", async () => {
+    stubModelArk([
+      [200, { id: "cgt-3" }],
+      [200, { status: "succeeded", content: { video_url: "https://ark-output.example.com/c.mp4" } }],
+    ]);
+    await provider().generateVideo(request({ camera: "static" }));
+    const text = (calls[0].body?.content as { text: string }[])[0].text;
+    expect(text.endsWith(" --camerafixed true")).toBe(true);
+    expect(text).not.toContain("Locked-off");
+  });
+
+  it("leaves other camera moves in the prompt, with no flag", async () => {
+    stubModelArk([
+      [200, { id: "cgt-4" }],
+      [200, { status: "succeeded", content: { video_url: "https://ark-output.example.com/d.mp4" } }],
+    ]);
+    await provider().generateVideo(request({ camera: "pan", lens: "macro", lighting: "neon" }));
+    const text = (calls[0].body?.content as { text: string }[])[0].text;
+    expect(text).not.toContain("--camerafixed");
+    expect(text).toContain("Camera: Smooth horizontal pan");
+    expect(text).toContain("Lens: Macro lens");
+    expect(text).toContain("Lighting: Colourful neon");
   });
 
   it("marks a rejected key invalid", async () => {

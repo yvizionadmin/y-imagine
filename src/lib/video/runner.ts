@@ -1,7 +1,7 @@
 import "server-only";
 import { ProviderError } from "@/lib/ai/errors";
 import { getVideoProvider } from "@/lib/ai/registry";
-import type { CameraMove, MotionLevel } from "@/lib/ai/types";
+import type { CameraMove, LensPreset, LightingPreset, MotionLevel } from "@/lib/ai/types";
 import { reportError } from "@/lib/observability/report";
 import { readAsset, saveAsset } from "@/lib/storage/assets";
 import { saveVideoToHistory } from "./history";
@@ -30,6 +30,9 @@ export async function runVideoJob(orgId: string, id: string): Promise<VideoJobOu
       startFrame,
       camera: job.settings.camera as CameraMove,
       motion: job.settings.motion as MotionLevel,
+      // Jobs queued before the cinema presets have neither.
+      lens: (job.settings.lens ?? "auto") as LensPreset,
+      lighting: (job.settings.lighting ?? "auto") as LightingPreset,
     });
     const assetId = await saveAsset(orgId, video.bytes, video.mimeType, "video");
     await finishVideoJob(orgId, id, { status: "ok", assetId, mimeType: video.mimeType, provider: video.provider, model: video.model });

@@ -43,6 +43,8 @@ const request = (over: Partial<VideoRequest> = {}): VideoRequest => ({
   startFrame: null,
   camera: "orbit",
   motion: "low",
+  lens: "auto",
+  lighting: "auto",
   ...over,
 });
 
@@ -93,6 +95,13 @@ describe("Kling video", () => {
     await provider().generateVideo(request({ startFrame: { bytes: new Uint8Array(webp), mimeType: "image/webp", name: "f" } }));
     const frame = (calls[0].body?.contents as { url?: string }[])[1].url!;
     expect((await sharp(Buffer.from(frame, "base64")).metadata()).format).toBe("png");
+  });
+
+  it("has no native camera setting, so a static shot stays in the prompt", async () => {
+    stubKling([created(), done()]);
+    await provider().generateVideo(request({ camera: "static" }));
+    expect(calls[0].body?.prompt).toContain("Camera: Locked-off");
+    expect(calls[0].body?.prompt).not.toContain("--camerafixed");
   });
 
   it("marks a rejected key invalid", async () => {

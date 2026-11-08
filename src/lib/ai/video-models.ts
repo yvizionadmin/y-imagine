@@ -1,9 +1,9 @@
 import type { VideoResolution } from "@/lib/credits";
-import type { VideoAspectRatio } from "./types";
+import type { CameraMove, VideoAspectRatio } from "./types";
 
 // What each video model can do natively (Model Capability Registry). The Studio builds its video
-// options from this, so a setting a model doesn't support is never offered. Camera move and motion
-// are not native parameters of these models: they are added to the prompt, and the UI says so.
+// options from this, so a setting a model doesn't support is never offered. Camera, motion, lens and
+// lighting are added to the prompt, and the UI says so, except camera moves in `nativeCamera`.
 
 export type { VideoAspectRatio };
 
@@ -16,6 +16,8 @@ export type VideoCapabilities = {
   startFrame: boolean;
   /** Generates a soundtrack with the video. */
   audio: boolean;
+  /** Camera moves the model sets with its own parameter, not through the prompt. */
+  nativeCamera: readonly CameraMove[];
 };
 
 /** Gemini Omni Flash: 16:9 / 9:16, 3–15 s, 360p–1080p (4K not offered), audio by default. */
@@ -25,6 +27,7 @@ const OMNI_FLASH: VideoCapabilities = {
   resolutions: ["360p", "720p", "1080p"],
   startFrame: true,
   audio: true,
+  nativeCamera: [],
 };
 
 /**
@@ -37,6 +40,7 @@ const SEEDANCE_2_5: VideoCapabilities = {
   resolutions: ["480p", "720p", "1080p"],
   startFrame: true,
   audio: true,
+  nativeCamera: ["static"],
 };
 
 /** Kling 3.0: 3–15 s, three ratios, sound on. 4K exists but isn't offered, as with Omni Flash. */
@@ -46,6 +50,7 @@ const KLING_3: VideoCapabilities = {
   resolutions: ["720p", "1080p"],
   startFrame: true,
   audio: true,
+  nativeCamera: [],
 };
 
 const CAPABILITIES: Record<string, VideoCapabilities> = {

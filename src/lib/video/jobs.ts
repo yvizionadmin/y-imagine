@@ -9,7 +9,7 @@ import { db, schema } from "@/lib/db";
 // except the scheduled stale-job sweep, which spans orgs like the other maintenance jobs.
 
 export type VideoJobStatus = "pending" | "running" | "ok" | "failed";
-export type VideoSettings = { aspectRatio: VideoAspectRatio; seconds: number; resolution: VideoResolution; camera: string; motion: string };
+export type VideoSettings = { aspectRatio: VideoAspectRatio; seconds: number; resolution: VideoResolution; camera: string; motion: string; lens?: string; lighting?: string };
 
 export type VideoJob = {
   id: string;

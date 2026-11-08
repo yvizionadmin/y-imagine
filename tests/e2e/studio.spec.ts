@@ -77,6 +77,13 @@ test("Studio video on a paid plan: queue, progress, then playback", async ({ pag
   await page.getByRole("button", { name: /^Duration:/ }).click();
   await page.getByRole("radiogroup", { name: "Duration" }).getByRole("radio", { name: "4s" }).click();
   await page.keyboard.press("Escape");
+  // Cinema presets, labelled as prompt direction.
+  await page.getByRole("button", { name: /^Look:/ }).click();
+  await page.getByRole("radiogroup", { name: "Lens" }).getByRole("radio", { name: "Macro" }).click();
+  await page.getByRole("radiogroup", { name: "Lighting" }).getByRole("radio", { name: "Golden hour" }).click();
+  await expect(page.getByText("Lens and lighting are added to your prompt")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Look: Macro · Golden hour" })).toBeVisible();
   await page.getByRole("button", { name: "Generate" }).click();
   await expect(page.getByText("Your video is being made.")).toBeVisible();
   await expect(page.locator("video")).toBeVisible({ timeout: 45_000 });

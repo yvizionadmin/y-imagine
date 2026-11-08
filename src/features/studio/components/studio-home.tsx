@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowUp, ChevronDown, Clapperboard, Clock, Cpu, ImagePlus, Images, Loader2, Lock, Plus, Sparkles, X } from "lucide-react";
+import { Aperture, ArrowUp, ChevronDown, Clapperboard, Clock, Cpu, ImagePlus, Images, Loader2, Lock, Plus, Sparkles, X } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { cn } from "cn";
 import { blockedReason } from "@/components/app/job-errors";
@@ -10,7 +10,7 @@ import { ToolShortcuts } from "@/components/app/tool-shortcuts";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Link } from "@/i18n/navigation";
-import { CAMERA_MOVES, CREATE_ASPECT_RATIOS, MOTION_LEVELS, type CameraMove, type CreateAspectRatio, type MotionLevel } from "@/lib/ai/types";
+import { CAMERA_MOVES, CREATE_ASPECT_RATIOS, LENS_PRESETS, LIGHTING_PRESETS, MOTION_LEVELS, type CameraMove, type CreateAspectRatio, type LensPreset, type LightingPreset, type MotionLevel } from "@/lib/ai/types";
 import type { VideoAspectRatio, VideoCapabilities } from "@/lib/ai/video-models";
 import { videoCost, type VideoResolution } from "@/lib/credits";
 import { LATN } from "@/lib/format";
@@ -23,7 +23,7 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const POLL_MS = 4000;
 
 type ImageOptions = { aspectRatio: CreateAspectRatio; resolution: "HD" | "2K"; count: number };
-type VideoOptions = { seconds: number; aspectRatio: VideoAspectRatio; resolution: VideoResolution; camera: CameraMove; motion: MotionLevel };
+type VideoOptions = { seconds: number; aspectRatio: VideoAspectRatio; resolution: VideoResolution; camera: CameraMove; motion: MotionLevel; lens: LensPreset; lighting: LightingPreset };
 
 /** Keeps each option inside what the org's video model supports. */
 function fitVideo(options: VideoOptions, caps: VideoCapabilities): VideoOptions {
@@ -59,7 +59,7 @@ export function StudioHome() {
   /** Rights and likeness consent for the start frame; asked again for every new frame. */
   const [consent, setConsent] = useState(false);
   const [image, setImage] = useState<ImageOptions>({ aspectRatio: "1:1", resolution: "HD", count: 1 });
-  const [video, setVideo] = useState<VideoOptions>({ seconds: 8, aspectRatio: "9:16", resolution: "720p", camera: "static", motion: "medium" });
+  const [video, setVideo] = useState<VideoOptions>({ seconds: 8, aspectRatio: "9:16", resolution: "720p", camera: "static", motion: "medium", lens: "auto", lighting: "auto" });
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -138,6 +138,8 @@ export function StudioHome() {
     form.set("resolution", video.resolution);
     form.set("camera", video.camera);
     form.set("motion", video.motion);
+    form.set("lens", video.lens);
+    form.set("lighting", video.lighting);
     if (startFrame) {
       form.set("startFrame", startFrame);
       if (consent) form.set("likenessConsent", "yes");
@@ -259,6 +261,14 @@ export function StudioHome() {
                         <ChipGroup label={t("motion")} options={MOTION_LEVELS} value={video.motion} onChange={(motion) => setVideo({ ...video, motion })} render={(m) => t(`motionLevels.${m}`)} />
                         <ChipGroup label={t("camera")} options={CAMERA_MOVES} value={video.camera} onChange={(camera) => setVideo({ ...video, camera })} render={(c) => t(`cameraMoves.${c}`)} wrap />
                         <p className="max-w-64 text-[11px] text-muted-foreground">{t(setup?.videoCaps.audio ? "promptDirectionAudio" : "promptDirection")}</p>
+                        {setup?.videoModel && setup.videoCaps.nativeCamera.includes(video.camera) && (
+                          <p className="max-w-64 text-[11px] text-muted-foreground">{t("cameraNative", { model: setup.videoModel, move: t(`cameraMoves.${video.camera}`) })}</p>
+                        )}
+                      </OptionChip>
+                      <OptionChip icon={<Aperture className="size-3.5" aria-hidden />} label={t("look")} value={`${t(`lensPresets.${video.lens}`)} · ${t(`lightingPresets.${video.lighting}`)}`}>
+                        <ChipGroup label={t("lens")} options={LENS_PRESETS} value={video.lens} onChange={(lens) => setVideo({ ...video, lens })} render={(l) => t(`lensPresets.${l}`)} wrap />
+                        <ChipGroup label={t("lighting")} options={LIGHTING_PRESETS} value={video.lighting} onChange={(lighting) => setVideo({ ...video, lighting })} render={(l) => t(`lightingPresets.${l}`)} wrap />
+                        <p className="max-w-64 text-[11px] text-muted-foreground">{t("lookHint")}</p>
                       </OptionChip>
                       {setup?.videoModel && (
                         <OptionChip icon={<Cpu className="size-3.5" aria-hidden />} label={t("videoModel")} value={setup.videoModel}>

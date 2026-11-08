@@ -1,3 +1,5 @@
+import { db } from "@/lib/db";
+import { listGenerations } from "@/lib/generations";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { saveProviderKey } from "@/lib/ai/provider-keys";
@@ -127,6 +129,35 @@ describe("studio video", () => {
     expect(await runVideoJob(org.id, dispatched[0])).toBe("done");
     const [job] = await getVideoJobs(org.id, dispatched);
     expect(job.credits).toBe(videoCost(DEFAULT_CREDIT_RULES, { seconds: 30, resolution: "480p" }));
+  });
+
+  it("keeps the cinema presets on the job and in History, and refuses unknown ones", async () => {
+    const { org } = await signedIn("pro");
+    expect(await startVideo(form({ lens: "fisheye" }))).toEqual({ ok: false, error: "invalid_input" });
+    expect(await startVideo(form({ lighting: "disco" }))).toEqual({ ok: false, error: "invalid_input" });
+    expect(dispatched).toHaveLength(0);
+
+    expect((await startVideo(form({ lens: "macro", lighting: "goldenHour" }))).ok).toBe(true);
+    expect(await runVideoJob(org.id, dispatched[0])).toBe("done");
+    const [job] = await getVideoJobs(org.id, dispatched);
+    expect(job.settings).toMatchObject({ lens: "macro", lighting: "goldenHour" });
+    const [saved] = await listGenerations(org.id);
+    expect(saved.settings).toMatchObject({ lens: "macro", lighting: "goldenHour" });
+  });
+
+  it("treats a request with no presets, or a job queued before them, as Auto", async () => {
+    const { org } = await signedIn("pro");
+    expect((await startVideo(form())).ok).toBe(true);
+    const [job] = await getVideoJobs(org.id, dispatched);
+    expect(job.settings).toMatchObject({ lens: "auto", lighting: "auto" });
+    await db.$client`update video_jobs set settings = settings - 'lens' - 'lighting' where id = ${job.id}`;
+    expect(await runVideoJob(org.id, job.id)).toBe("done");
+  });
+
+  it("tells the Studio which camera moves a model sets natively", async () => {
+    const { org } = await signedIn("pro", { key: false });
+    await saveProviderKey({ orgId: org.id, provider: "byteplus", key: "demo-byteplus-key-123456", models: null, createdBy: "t" });
+    expect((await getStudioSetup()).videoCaps.nativeCamera).toEqual(["static"]);
   });
 
   it("uses Kling's options with a Kling key and runs the job", async () => {

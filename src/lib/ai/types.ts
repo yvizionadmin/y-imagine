@@ -121,6 +121,11 @@ export const CAMERA_MOVES = ["static", "pushIn", "pullOut", "pan", "tilt", "orbi
 export type CameraMove = (typeof CAMERA_MOVES)[number];
 export const MOTION_LEVELS = ["low", "medium", "high"] as const;
 export type MotionLevel = (typeof MOTION_LEVELS)[number];
+/** Cinema presets. "auto" adds nothing and leaves the choice to the model. */
+export const LENS_PRESETS = ["auto", "wide", "standard", "portrait", "macro", "telephoto"] as const;
+export type LensPreset = (typeof LENS_PRESETS)[number];
+export const LIGHTING_PRESETS = ["auto", "natural", "studio", "goldenHour", "dramatic", "neon"] as const;
+export type LightingPreset = (typeof LIGHTING_PRESETS)[number];
 
 export const VIDEO_ASPECT_RATIOS = ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"] as const;
 export type VideoAspectRatio = (typeof VIDEO_ASPECT_RATIOS)[number];
@@ -132,9 +137,11 @@ export type VideoRequest = {
   resolution: VideoResolution;
   /** Image-to-video: the first frame. */
   startFrame: ImageInput | null;
-  /** Prompt-based direction (not native model parameters). */
+  /** Direction written into the prompt, except what a model sets natively (`nativeCamera`). */
   camera: CameraMove;
   motion: MotionLevel;
+  lens: LensPreset;
+  lighting: LightingPreset;
 };
 
 export type GeneratedVideo = {
