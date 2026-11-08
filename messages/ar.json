@@ -1427,6 +1427,10 @@
       "byteplus": {
         "name": "BytePlus ModelArk",
         "blurb": "نماذج Seedance للفيديو عبر BytePlus ModelArk. لإنشاء الفيديو فقط."
+      },
+      "kling": {
+        "name": "Kling",
+        "blurb": "نماذج Kling للفيديو عبر واجهة Kling مباشرة. لإنشاء الفيديو فقط."
       }
     },
     "capabilitiesLabel": "القدرات",
@@ -1673,7 +1677,7 @@
       "looks": "تسوّق الإطلالة",
       "resize": "تغيير الحجم دفعة واحدة"
     },
-    "byok": "استخدم مفاتيح الذكاء الاصطناعي الخاصة بك: OpenAI أو Anthropic أو Gemini أو OpenRouter أو BytePlus",
+    "byok": "استخدم مفاتيح الذكاء الاصطناعي الخاصة بك: OpenAI أو Anthropic أو Gemini أو OpenRouter أو BytePlus أو Kling",
     "footer": "© إيماجن AI. مفاتيحك مشفّرة ولا تغادر خوادمنا.",
     "signInTitle": "مرحبًا بعودتك",
     "signInBody": "سجّل الدخول إلى مساحة عملك.",
@@ -2678,7 +2682,7 @@
     "videoModelNote": "تُنشأ الفيديوهات باستخدام {model}. يختار المسؤول النموذج من الإعدادات ← مفاتيح API.",
     "changeModel": "تغيير النموذج",
     "promptDirectionAudio": "تُضاف الكاميرا والحركة إلى وصفك كتوجيه. ويُنشئ النموذج أيضًا مقطعًا صوتيًا.",
-    "videoNeedsKey": "يتطلب الفيديو مفتاح Google Gemini يدعم الفيديو أو مفتاح BytePlus ModelArk (Seedance).",
+    "videoNeedsKey": "يتطلب الفيديو مفتاح Google Gemini يدعم الفيديو أو مفتاح BytePlus ModelArk (Seedance) أو مفتاح Kling.",
     "addKey": "أضفه من الإعدادات ← مفاتيح API",
     "videoQueued": "يجري إنشاء الفيديو. يستغرق عادةً من دقيقة إلى 3 دقائق؛ يمكنك متابعة العمل.",
     "videoPending": "في انتظار البدء…",
@@ -2878,7 +2882,7 @@
         "title": "كيف يعمل",
         "connect": {
           "title": "اربط مفتاحك",
-          "body": "أضف مفتاحًا من OpenAI أو Gemini أو Anthropic أو OpenRouter أو BytePlus. ويحدد المسؤولون النموذج لكل أداة."
+          "body": "أضف مفتاحًا من OpenAI أو Gemini أو Anthropic أو OpenRouter أو BytePlus أو Kling. ويحدد المسؤولون النموذج لكل أداة."
         },
         "create": {
           "title": "أنشئ",
@@ -2926,7 +2930,7 @@
           "title": "استوديو الفيديو",
           "prompt": "أنشئ مقاطع من وصف نصي مع توجيه الكاميرا والحركة",
           "frame": "ابدأ من صورة منتج",
-          "models": "تتبع الخيارات نموذجك: Gemini Omni أو Seedance",
+          "models": "تتبع الخيارات نموذجك: Gemini Omni أو Seedance أو Kling",
           "consent": "تأكيد الموافقة على الظهور عند استخدام إطار أول، وحد للتخزين في كل باقة"
         },
         "copy": {
@@ -2974,7 +2978,7 @@
       "faq": {
         "keys": {
           "q": "هل أحتاج إلى مفتاحي الخاص؟",
-          "a": "نعم. لإنشاء أي محتوى، يربط مسؤول المؤسسة مفتاحًا من OpenAI أو Anthropic أو Gemini أو OpenRouter أو BytePlus في الإعدادات ← مفاتيح API. ويحتاج الفيديو إلى مفتاح Gemini يتيح الفيديو أو مفتاح BytePlus."
+          "a": "نعم. لإنشاء أي محتوى، يربط مسؤول المؤسسة مفتاحًا من OpenAI أو Anthropic أو Gemini أو OpenRouter أو BytePlus أو Kling في الإعدادات ← مفاتيح API. ويحتاج الفيديو إلى مفتاح Gemini يتيح الفيديو أو مفتاح BytePlus أو مفتاح Kling."
         },
         "credits": {
           "q": "ما هي الأرصدة؟",

@@ -2,7 +2,7 @@ import type { BrandKit } from "@/lib/brand/limits";
 import type { CameraAngle } from "@/lib/camera-angles";
 import type { VideoResolution } from "@/lib/credits";
 
-export type ProviderId = "demo" | "openai" | "anthropic" | "gemini" | "openrouter" | "byteplus" | "openai-compatible";
+export type ProviderId = "demo" | "openai" | "anthropic" | "gemini" | "openrouter" | "byteplus" | "kling" | "openai-compatible";
 
 export type Feature = "create" | "video" | "generate" | "recolor" | "aplus" | "looks" | "upscale" | "copy" | "chat";
 

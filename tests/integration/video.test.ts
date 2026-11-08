@@ -129,6 +129,24 @@ describe("studio video", () => {
     expect(job.credits).toBe(videoCost(DEFAULT_CREDIT_RULES, { seconds: 30, resolution: "480p" }));
   });
 
+  it("uses Kling's options with a Kling key and runs the job", async () => {
+    const { org } = await signedIn("pro", { key: false });
+    await saveProviderKey({ orgId: org.id, provider: "kling", key: "demo-kling-key-123456", models: null, createdBy: "t" });
+    const setup = await getStudioSetup();
+    expect(setup).toMatchObject({ videoProblem: null, videoModel: "Kling 3.0" });
+    expect(setup.videoCaps.aspectRatios).toEqual(["16:9", "9:16", "1:1"]);
+
+    // Settings Kling doesn't take are refused before a job exists.
+    expect(await startVideo(form({ aspectRatio: "21:9" }))).toEqual({ ok: false, error: "invalid_input" });
+    expect(await startVideo(form({ seconds: "30" }))).toEqual({ ok: false, error: "invalid_input" });
+    expect(dispatched).toHaveLength(0);
+
+    expect((await startVideo(form({ aspectRatio: "1:1", seconds: "5", resolution: "1080p" }))).ok).toBe(true);
+    expect(await runVideoJob(org.id, dispatched[0])).toBe("done");
+    const [job] = await getVideoJobs(org.id, dispatched);
+    expect(job.credits).toBe(videoCost(DEFAULT_CREDIT_RULES, { seconds: 5, resolution: "1080p" }));
+  });
+
   it("uses the video model chosen in Settings → API Keys, else Automatic", async () => {
     const { org } = await signedIn("pro");
     await saveProviderKey({ orgId: org.id, provider: "byteplus", key: "demo-byteplus-key-123456", models: null, createdBy: "t" });

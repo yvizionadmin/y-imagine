@@ -134,7 +134,7 @@ describe("Seedance models and capabilities", () => {
     ]);
     expect(textModelsFor("byteplus", null)).toEqual([]);
     // Video has its own model picker: video providers only.
-    expect(providersFor("video")).toEqual(["gemini", "byteplus"]);
+    expect(providersFor("video")).toEqual(["gemini", "byteplus", "kling"]);
     expect(modelsFor("video", "byteplus", null)).toEqual(["dreamina-seedance-2-5-260628"]);
     expect(modelsFor("video", "openai", null)).toEqual([]);
     expect(modelsFor("copy", "byteplus", null)).toEqual([]);

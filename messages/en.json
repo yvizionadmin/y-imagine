@@ -1427,6 +1427,10 @@
       "byteplus": {
         "name": "BytePlus ModelArk",
         "blurb": "Seedance video models on BytePlus ModelArk. Video generation only."
+      },
+      "kling": {
+        "name": "Kling",
+        "blurb": "Kling video models on Kling's own API. Video generation only."
       }
     },
     "capabilitiesLabel": "Capabilities",
@@ -1673,7 +1677,7 @@
       "looks": "Shop the Look",
       "resize": "Batch resize"
     },
-    "byok": "Bring your own AI keys: OpenAI, Anthropic, Gemini, OpenRouter or BytePlus",
+    "byok": "Bring your own AI keys: OpenAI, Anthropic, Gemini, OpenRouter, BytePlus or Kling",
     "footer": "© Imagine AI. Your keys stay encrypted and never leave our servers.",
     "signInTitle": "Welcome back",
     "signInBody": "Sign in to your workspace.",
@@ -2678,7 +2682,7 @@
     "videoModelNote": "Videos are made with {model}. Your admin picks the model in Settings → API Keys.",
     "changeModel": "Change model",
     "promptDirectionAudio": "Camera and motion are added to your prompt as direction. The model also makes a soundtrack.",
-    "videoNeedsKey": "Videos need a Google Gemini key with video access or a BytePlus ModelArk key (Seedance).",
+    "videoNeedsKey": "Videos need a Google Gemini key with video access, a BytePlus ModelArk key (Seedance) or a Kling key.",
     "addKey": "Add it in Settings → API Keys",
     "videoQueued": "Your video is being made. It usually takes 1–3 minutes; you can keep working.",
     "videoPending": "Waiting to start…",
@@ -2878,7 +2882,7 @@
         "title": "How it works",
         "connect": {
           "title": "Connect your AI key",
-          "body": "Add a key from OpenAI, Gemini, Anthropic, OpenRouter or BytePlus. Admins choose which model each tool uses."
+          "body": "Add a key from OpenAI, Gemini, Anthropic, OpenRouter, BytePlus or Kling. Admins choose which model each tool uses."
         },
         "create": {
           "title": "Create",
@@ -2926,7 +2930,7 @@
           "title": "Video studio",
           "prompt": "Generate clips from a text prompt, with camera and motion direction",
           "frame": "Start from a product image",
-          "models": "Options follow your model: Gemini Omni or Seedance",
+          "models": "Options follow your model: Gemini Omni, Seedance or Kling",
           "consent": "A likeness consent check for start frames, and a storage limit for each plan"
         },
         "copy": {
@@ -2974,7 +2978,7 @@
       "faq": {
         "keys": {
           "q": "Do I need my own AI key?",
-          "a": "Yes. To generate anything, an org admin connects a key from OpenAI, Anthropic, Gemini, OpenRouter or BytePlus in Settings → API Keys. Video needs a Gemini key with video access or a BytePlus key."
+          "a": "Yes. To generate anything, an org admin connects a key from OpenAI, Anthropic, Gemini, OpenRouter, BytePlus or Kling in Settings → API Keys. Video needs a Gemini key with video access, a BytePlus key or a Kling key."
         },
         "credits": {
           "q": "What are credits?",

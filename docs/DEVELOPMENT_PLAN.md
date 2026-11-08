@@ -280,7 +280,7 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
 ### Part B: after launch (about 6–9 weeks)
 | # | Step | Scope | Done when | Est. |
 |---|------|-------|-----------|------|
-| B1 | More video providers | Kling and OpenAI video adapters, same pattern as `byteplus-video.ts` | Each one selectable and tested with the API stubbed | 1–2 |
+| B1 ✅ | More video providers | Kling adapter, same pattern as `byteplus-video.ts` (OpenAI dropped: its Videos API shut down 2026-09-24) | Each one selectable and tested with the API stubbed | 1–2 |
 | B2 | Cinema controls | Camera / lens / lighting presets → native parameters where a model has them, else labelled prompt text | Presets in the Studio, driven by the model's capabilities | 1 |
 | B3 | Agents with tools | Agent runs with catalog search, generate image, write copy; steps shown live; credits per tool call | An agent finds a product, writes copy and makes an image in one run | 3–4 |
 | B4 | Image approvals + publish gate | Review status for History images; "Upload to Website" only for approved items when the org turns it on | Same review flow as copy, for images | 1–2 |
@@ -1061,3 +1061,20 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   to sign-up and the footer has no Contact link); set `APP_URL` at build time for the sitemap and canonical links. **Not
   yet:** real Stripe amounts on the page (A8); with Clerk, the paid plan buttons land on onboarding rather than Billing;
   terms acceptance isn't recorded per user; an Arabic legal review.
+- **2026-11-08, Roadmap B1: Kling video (local, API stubbed).** Taken out of order: A8 is waiting on provider keys and A9
+  on A8. New video provider `kling` (`providers/kling-video.ts`), model `kling-3.0`, built from Kling's official API docs:
+  Bearer key, `POST /text-to-video/{model}` or `/image-to-video/{model}`, then `GET /tasks`. 16:9, 9:16, 1:1; 3–15 s;
+  720p and 1080p (4K exists, not offered, since `VideoResolution` and pricing stop at 1080p); sound on; one shot per clip.
+  Automatic tries it after Gemini and BytePlus; pick it in Settings → API Keys. **OpenAI dropped from this step:** OpenAI
+  removed the Videos API and `sora-2` on 2026-09-24 and names no replacement. Details: empty balance codes (1101, 1102)
+  come as HTTP 429 but map to `no_credits`, so they aren't retried; passing failures while polling don't fail the job, since
+  a retry would pay for a second clip; WebP start frames become PNG. The download moved to `providers/video-download.ts`,
+  shared with BytePlus. Verified: tsc + eslint clean; 264 Vitest tests (`tests/unit/kling-video.test.ts`, an integration test with a demo
+  key); `next build` clean; full Playwright suite (27); Kling's card on Settings → API Keys, en and ar 390 px. **Check on the first live run (A8):** the key check uses `GET /tasks?task_ids=0`, as Kling has no key endpoint,
+  and treats a 400 as a good key (assumed, not documented); bare base64 for frames (docs say only "URL or Base64"); that
+  the "hotlink protected" result URL downloads from the worker; the failure message wording behind `content_rejected`.
+  **Not yet:** frame limits (at least 300 px, ratio 1:2.5 to 2.5:1) aren't checked up front, so a bad frame fails as
+  `generation_failed`; tasks can't be cancelled at the time limit (no documented endpoint); Kling's older AccessKey +
+  SecretKey standard isn't supported, only API keys.
+  **Found, not fixed:** at phone width the Settings sidebar stays open beside the page, so API Keys cards are squeezed and
+  cut off (also for the existing providers; the settings layout is untouched here).

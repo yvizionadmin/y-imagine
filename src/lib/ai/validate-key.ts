@@ -1,10 +1,11 @@
 import "server-only";
 import { safeFetch } from "@/lib/safe-fetch";
 import { MODELARK_BASE_URL } from "./providers/byteplus-video";
+import { KLING_BASE_URL } from "./providers/kling-video";
 import type { AiProviderId, KeyError } from "./providers-info";
 
-// Checks a key with a cheap authenticated read (list models, OpenRouter's key endpoint, or one page
-// of BytePlus ModelArk's video tasks, which needs no model to be activated). The key
+// Checks a key with a cheap authenticated read (list models, OpenRouter's key endpoint, one page of
+// BytePlus ModelArk's video tasks, which needs no model to be activated, or a Kling task lookup). The key
 // only travels in request headers, never in a URL, so it can't end up in proxy or access logs.
 
 const REQUESTS: Record<AiProviderId, (key: string) => { url: string; headers: Record<string, string> }> = {
@@ -16,6 +17,8 @@ const REQUESTS: Record<AiProviderId, (key: string) => { url: string; headers: Re
   gemini: (key) => ({ url: "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000", headers: { "x-goog-api-key": key } }),
   openrouter: (key) => ({ url: "https://openrouter.ai/api/v1/key", headers: { authorization: `Bearer ${key}` } }),
   byteplus: (key) => ({ url: `${MODELARK_BASE_URL}/contents/generations/tasks?page_num=1&page_size=1`, headers: { authorization: `Bearer ${key}` } }),
+  // Kling has no key or account endpoint. Querying tasks costs nothing and checks the key.
+  kling: (key) => ({ url: `${KLING_BASE_URL}/tasks?task_ids=0`, headers: { authorization: `Bearer ${key}` } }),
 };
 
 const DEMO_MODELS: Record<AiProviderId, string[]> = {
@@ -24,13 +27,14 @@ const DEMO_MODELS: Record<AiProviderId, string[]> = {
   gemini: ["gemini-3-pro", "gemini-3-flash-image"],
   openrouter: [],
   byteplus: [],
+  kling: [],
 };
 
 export type KeyCheck = { ok: true; models: string[] | null } | { ok: false; error: KeyError };
 
 function modelIds(provider: AiProviderId, json: unknown): string[] | null {
-  // Neither lists models: OpenRouter routes to many, ModelArk's preferred Seedance id is assumed.
-  if (provider === "openrouter" || provider === "byteplus") return null;
+  // None lists models: OpenRouter routes to many; ModelArk's and Kling's preferred ids are assumed.
+  if (provider === "openrouter" || provider === "byteplus" || provider === "kling") return null;
   const body = json as { data?: { id?: unknown }[]; models?: { name?: unknown }[] };
   const ids =
     provider === "gemini"
@@ -50,6 +54,8 @@ export async function checkProviderKey(provider: AiProviderId, key: string): Pro
   if (!response.ok) {
     if (response.error !== "http_error") return { ok: false, error: "unreachable" };
     const status = response.status ?? 0;
+    // Past the key check, Kling may refuse the made-up task id: the key is still good.
+    if (provider === "kling" && status === 400) return { ok: true, models: null };
     if (status === 401 || status === 403 || (provider === "gemini" && status === 400)) return { ok: false, error: "invalid_key" };
     if (status === 402) return { ok: false, error: "no_credits" };
     if (status === 429) return { ok: false, error: "rate_limited" };

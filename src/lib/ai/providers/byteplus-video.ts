@@ -1,8 +1,8 @@
 import "server-only";
-import { safeFetch } from "@/lib/safe-fetch";
 import { ProviderError } from "../errors";
 import type { GeneratedVideo, VideoProvider } from "../types";
 import { videoPrompt } from "../video-prompt";
+import { downloadVideo } from "./video-download";
 
 // Seedance on BytePlus ModelArk, built per job from the org's decrypted key (BYOK). ModelArk runs
 // video as an async task: create it, poll it, then download the clip from `content.video_url`
@@ -24,7 +24,6 @@ const POLL_INTERVAL_MS = 5_000;
 // A 30 s 1080p clip can queue behind others on the account (3 concurrent tasks on individual plans).
 const TIMEOUT_MS = 15 * 60_000;
 const REQUEST_TIMEOUT_MS = 30_000;
-const MAX_VIDEO_BYTES = 300 * 1024 * 1024;
 
 type Task = {
   id?: string;
@@ -103,7 +102,7 @@ export function createByteplusVideoProvider(config: ByteplusVideoConfig): VideoP
         if (task.status === "succeeded") {
           const url = task.content?.video_url;
           if (!url) throw new ProviderError("generation_failed");
-          return { bytes: await download(url), mimeType: "video/mp4", provider: "byteplus", model: config.model };
+          return { bytes: await downloadVideo(url), mimeType: "video/mp4", provider: "byteplus", model: config.model };
         }
         if (task.status === "failed") throw modelArkError(200, task.error?.code);
         if (task.status === "cancelled" || task.status === "expired") throw new ProviderError("generation_failed");
@@ -115,11 +114,4 @@ export function createByteplusVideoProvider(config: ByteplusVideoConfig): VideoP
       }
     },
   };
-}
-
-/** The clip from ModelArk's signed link (provider-supplied URL, so through safeFetch). */
-async function download(url: string): Promise<Uint8Array> {
-  const response = await safeFetch(url, { maxBytes: MAX_VIDEO_BYTES, types: ["video/mp4", "application/octet-stream", "binary/octet-stream"], timeoutMs: 120_000 });
-  if (!response.ok || response.result.bytes.byteLength === 0) throw new ProviderError("generation_failed");
-  return response.result.bytes;
 }

@@ -39,9 +39,19 @@ const SEEDANCE_2_5: VideoCapabilities = {
   audio: true,
 };
 
+/** Kling 3.0: 3–15 s, three ratios, sound on. 4K exists but isn't offered, as with Omni Flash. */
+const KLING_3: VideoCapabilities = {
+  aspectRatios: ["16:9", "9:16", "1:1"],
+  durations: [3, 5, 8, 10, 12, 15],
+  resolutions: ["720p", "1080p"],
+  startFrame: true,
+  audio: true,
+};
+
 const CAPABILITIES: Record<string, VideoCapabilities> = {
   "gemini-omni-1.2-flash": OMNI_FLASH,
   "dreamina-seedance-2-5-260628": SEEDANCE_2_5,
+  "kling-3.0": KLING_3,
   // The offline demo provider accepts the same settings as Omni Flash.
   "demo-video-v1": OMNI_FLASH,
 };
@@ -49,11 +59,13 @@ const CAPABILITIES: Record<string, VideoCapabilities> = {
 export const DEFAULT_VIDEO_MODEL = "gemini-omni-1.2-flash";
 
 /**
- * A model's capabilities. A newer dated version of a known family gets the current one's until it
- * is listed (Seedance ids → Seedance 2.5, otherwise Omni Flash).
+ * A model's capabilities. A newer version of a known family gets the current one's until it is
+ * listed (Seedance ids → Seedance 2.5, Kling ids → Kling 3.0, otherwise Omni Flash).
  */
 export function videoCapabilities(model: string): VideoCapabilities {
-  return CAPABILITIES[model] ?? (model.startsWith("dreamina-seedance-") ? SEEDANCE_2_5 : OMNI_FLASH);
+  if (CAPABILITIES[model]) return CAPABILITIES[model];
+  if (model.startsWith("dreamina-seedance-")) return SEEDANCE_2_5;
+  return model.startsWith("kling-") ? KLING_3 : OMNI_FLASH;
 }
 
 /** Whether a request fits what the model supports. */
@@ -72,6 +84,8 @@ export function videoModelName(model: string): string {
   if (seedance) return `Seedance ${seedance[1]}.${seedance[2]}${seedance[3] ? " Fast" : ""}`;
   const omni = /^gemini-omni-([\d.]+)-flash$/.exec(model);
   if (omni) return `Gemini Omni ${omni[1]} Flash`;
+  const kling = /^kling-([\d.]+)$/.exec(model);
+  if (kling) return `Kling ${kling[1]}`;
   if (model === "demo-video-v1") return "Demo";
   return model;
 }

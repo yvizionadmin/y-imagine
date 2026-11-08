@@ -52,7 +52,7 @@ export const TEXT_FEATURES = ["copy", "chat"] as const satisfies readonly Featur
 export type TextFeature = (typeof TEXT_FEATURES)[number];
 export const isTextFeature = (value: unknown): value is TextFeature => (TEXT_FEATURES as readonly unknown[]).includes(value);
 
-/** Providers that write text (all but video-only BytePlus); "Automatic" tries them in this order. */
+/** Providers that write text (all but video-only BytePlus and Kling); "Automatic" tries them in this order. */
 export const TEXT_PROVIDERS = ["openai", "anthropic", "gemini", "openrouter"] as const satisfies readonly AiProviderId[];
 export type TextProviderId = (typeof TEXT_PROVIDERS)[number];
 export const isTextProvider = (value: unknown): value is TextProviderId => (TEXT_PROVIDERS as readonly unknown[]).includes(value);
@@ -81,7 +81,7 @@ export const VIDEO_FEATURES = ["video"] as const satisfies readonly Feature[];
 export type VideoFeature = (typeof VIDEO_FEATURES)[number];
 
 /** Providers with video generation, in the order "Automatic" tries them. */
-export const VIDEO_PROVIDERS = ["gemini", "byteplus"] as const satisfies readonly AiProviderId[];
+export const VIDEO_PROVIDERS = ["gemini", "byteplus", "kling"] as const satisfies readonly AiProviderId[];
 export type VideoProviderId = (typeof VIDEO_PROVIDERS)[number];
 export const isVideoProvider = (value: unknown): value is VideoProviderId => (VIDEO_PROVIDERS as readonly unknown[]).includes(value);
 export const isVideoFeature = (value: unknown): value is VideoFeature => (VIDEO_FEATURES as readonly unknown[]).includes(value);
@@ -89,12 +89,13 @@ export const isVideoFeature = (value: unknown): value is VideoFeature => (VIDEO_
 /**
  * Video models, best first. Google shut the Veo 3.1 previews down in the Gemini API (2026-10-22)
  * and points to Gemini Omni Flash (GA). BytePlus ModelArk serves Seedance (dated ids, newest
- * first); its key check lists no models, so the preferred id is used. Capabilities per model live
- * in video-models.ts.
+ * first); its key check lists no models, so the preferred id is used. Kling has no model list either. Capabilities
+ * per model live in video-models.ts.
  */
 const VIDEO_MODELS: Record<VideoProviderId, { preferred: readonly string[]; pattern: RegExp }> = {
   gemini: { preferred: ["gemini-omni-1.2-flash"], pattern: /^gemini-omni-[\d.]+-flash$/ },
   byteplus: { preferred: ["dreamina-seedance-2-5-260628"], pattern: /^dreamina-seedance-\d+-\d+(-fast)?-\d{6}$/ },
+  kling: { preferred: ["kling-3.0"], pattern: /^kling-\d+\.\d+$/ },
 };
 
 /** Video models this key can use, best first; the preferred list when the key reports none. */

@@ -32,6 +32,7 @@ import { createAiTextProvider } from "./providers/ai-sdk-text";
 import { createAiVideoProvider } from "./providers/ai-sdk-video";
 import { createByteplusVideoProvider } from "./providers/byteplus-video";
 import { demoVideoProvider } from "./providers/demo-video";
+import { createKlingVideoProvider } from "./providers/kling-video";
 import { demoProvider } from "./providers/demo";
 import { demoTextProvider } from "./providers/demo-text";
 import type { AiProviderId } from "./providers-info";
@@ -125,14 +126,16 @@ async function resolveVideoProvider(orgId: string): Promise<Resolved<VideoProvid
     const model = preference?.provider === provider && models.includes(preference.model) ? preference.model : models[0];
     if (!model) continue;
     // An offline demo key keeps its provider's model, so the Studio shows that model's options.
-    if (demoMode() && stored.key.startsWith("demo-")) return { ok: true, provider: provider === "byteplus" ? { ...demoVideoProvider, model } : demoVideoProvider };
+    if (demoMode() && stored.key.startsWith("demo-")) return { ok: true, provider: provider === "gemini" ? demoVideoProvider : { ...demoVideoProvider, model } };
     const onKeyRejected = keyRejected(orgId, provider);
     return {
       ok: true,
       provider:
         provider === "byteplus"
           ? createByteplusVideoProvider({ apiKey: stored.key, model, onKeyRejected })
-          : createAiVideoProvider({ provider, apiKey: stored.key, model, onKeyRejected }),
+          : provider === "kling"
+            ? createKlingVideoProvider({ apiKey: stored.key, model, onKeyRejected })
+            : createAiVideoProvider({ provider, apiKey: stored.key, model, onKeyRejected }),
     };
   }
   return demoMode() ? { ok: true, provider: demoVideoProvider } : { ok: false, code: "no_provider" };
