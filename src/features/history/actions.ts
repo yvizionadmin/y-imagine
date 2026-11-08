@@ -119,7 +119,7 @@ const FEED_SIZE = 40;
 
 /** The signed-in user's latest results for one tool (and one SKU, when opened from History), oldest first. */
 export async function listToolFeed(mode: GenerationMode, sku?: string): Promise<HistoryItem[]> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   if (!FEED_MODES.includes(mode)) return [];
   const forSku = typeof sku === "string" && sku.trim() ? sku.trim().slice(0, 64) : undefined;
   const newest = await listUserGenerations(workspace.orgId, mode, workspace.user.name, FEED_SIZE, forSku);
@@ -138,7 +138,7 @@ export async function queryHistory(filters: HistoryFilters): Promise<{
   canApprove: boolean;
   approvalRequired: boolean;
 }> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const all = await listGenerations(workspace.orgId);
   const sku = filters.sku?.trim().toLowerCase();
   const from = filters.from ? Date.parse(`${filters.from}T00:00:00${ORG_TZ_OFFSET}`) : null;

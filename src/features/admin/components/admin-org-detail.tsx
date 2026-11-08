@@ -16,6 +16,7 @@ import {
   getAdminOrg,
   removeAdminOrgMember,
   setAdminOrgStatus,
+  startViewAs,
   type AdminOrgDetail as Detail,
 } from "../actions";
 import { AuditList } from "./admin-audit";
@@ -78,7 +79,16 @@ export function AdminOrgDetail({ id }: { id: string }) {
           </p>
           {suspended && org.suspendedReason && <p className="text-xs text-danger">{t("orgs.reason", { reason: org.suspendedReason })}</p>}
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <Button
+            variant="outline"
+            className="h-10 px-4 text-[13px] font-semibold"
+            onClick={() => {
+              if (window.confirm(t("orgs.viewAsConfirm", { name: org.name }))) void startViewAs(org.id);
+            }}
+          >
+            {t("orgs.viewAs")}
+          </Button>
           <Button variant="outline" onClick={() => setEditing(true)} className="h-10 px-4 text-[13px] font-semibold">
             {t("orgs.edit")}
           </Button>

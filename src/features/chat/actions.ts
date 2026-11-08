@@ -9,7 +9,7 @@ import { getWorkspace } from "@/lib/workspace";
 
 /** The user's threads, and whether they can send (viewers read only). */
 export async function getChatState(): Promise<{ threads: ChatThread[]; canSend: boolean }> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   return { threads: await listThreads(workspace.orgId, workspace.user.id), canSend: workspace.role !== "viewer" };
 }
 

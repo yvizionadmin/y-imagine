@@ -38,7 +38,7 @@ function cleanUrl(value: unknown) {
 }
 
 export async function getLinks(): Promise<{ connection: BitlyConnectionView | null; links: LinkView[]; canManage: boolean; canCreate: boolean; demo: boolean }> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   return {
     connection: await getConnection(workspace.orgId),
     links: (await listLinks(workspace.orgId)).map(toView),

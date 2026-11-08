@@ -33,7 +33,7 @@ const DATA_URL = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/;
 const text = (value: unknown, max: number) => (typeof value === "string" ? value.trim().slice(0, max) : "");
 
 export async function searchLookProducts(query: string): Promise<{ ok: true; products: CatalogProduct[] } | { ok: false; error: SearchError }> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const loaded = await loadConnection(workspace.orgId);
   if (!loaded) return { ok: false, error: "no_connection" };
   const result = await runSearch(loaded.connection.type, loaded.settings, text(query, 100));
@@ -233,12 +233,12 @@ export async function saveLook(
 }
 
 export async function getLooks(): Promise<{ looks: LookView[]; canEdit: boolean }> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   return { looks: (await listLooks(workspace.orgId)).map(toLookView), canEdit: workspace.role !== "viewer" };
 }
 
 export async function getLookById(id: string): Promise<{ look: LookView; canEdit: boolean } | null> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const look = await getLook(workspace.orgId, String(id));
   return look ? { look: toLookView(look), canEdit: workspace.role !== "viewer" } : null;
 }
@@ -360,8 +360,9 @@ export async function uploadLookBackground(
 // ---- Room backgrounds (admin) ----
 
 export async function getRoomBackgrounds(): Promise<{ backgrounds: RoomBackgroundView[]; canManage: boolean }> {
-  const workspace = await getWorkspace();
-  return { backgrounds: (await listRoomBackgrounds(workspace.orgId)).map(toBackgroundView), canManage: workspace.role === "admin" };
+  const workspace = await getWorkspace({ read: true });
+  // The first visit seeds an org's backgrounds, which a read-only view must not do.
+  return { backgrounds: (await listRoomBackgrounds(workspace.orgId, { seed: !workspace.viewAs })).map(toBackgroundView), canManage: workspace.role === "admin" };
 }
 
 const isRoomType = (v: string) => (ROOM_TYPES as readonly string[]).includes(v);

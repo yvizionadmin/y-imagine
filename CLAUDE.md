@@ -30,6 +30,8 @@ OpenRouter keys and use AI product-content features (recolor, lookbooks, A+ cont
 - Auth: get the user/org from `getWorkspace()` (org-scoped) or `requireSuperAdmin()` (console), never from client input.
   Clerk owns identity only (when its keys are set; else the local login). Orgs, memberships, roles and the platform
   role live in Postgres; account operations go through `src/lib/auth/users.ts` / `session.ts`, never Clerk directly.
+- Read-only org view (super admin): a Server Action that only reads calls `getWorkspace({ read: true })`; anything else is refused
+  during a view. Reads must not write, lazy seeding included.
 - RTL: one component per screen, using logical Tailwind classes (`ms-`, `pe-`, `start-`, `end-`), never left/right.
 - UI follows the **light + icon-rail** design (Figma Sections 1/3/4/5, master `98:32`). Brand is "Imagine AI", never "Magnific".
   Tool pages use the **prompt dock** (`src/components/app/config-panel.tsx`): results on top, a compact prompt card pinned

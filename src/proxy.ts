@@ -1,7 +1,7 @@
 import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import createMiddleware from "next-intl/middleware";
-import { clerkEnabled, SESSION_COOKIE } from "./lib/auth/constants";
+import { clerkEnabled, SESSION_COOKIE, VIEW_AS_COOKIE } from "./lib/auth/constants";
 import { routing } from "./i18n/routing";
 
 const intl = createMiddleware(routing);
@@ -34,7 +34,15 @@ function route(request: NextRequest, signedIn: boolean) {
 // otherwise the local session cookie is checked.
 const clerk = clerkEnabled() ? clerkMiddleware(async (auth, request) => route(request, !!(await auth()).userId)) : null;
 
+/**
+ * A super admin's read-only view of an org: API calls and forms posted without JavaScript never reach the app.
+ * Server Actions go on to getWorkspace(), which knows which of them only read.
+ */
+const refusedByView = (request: NextRequest) =>
+  request.cookies.has(VIEW_AS_COOKIE) && !["GET", "HEAD"].includes(request.method) && !request.headers.has("next-action");
+
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
+  if (refusedByView(request)) return NextResponse.json({ error: "read_only" }, { status: 403 });
   return clerk ? clerk(request, event) : route(request, request.cookies.has(SESSION_COOKIE));
 }
 

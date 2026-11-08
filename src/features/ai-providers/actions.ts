@@ -45,7 +45,7 @@ export async function getProviderKeys(): Promise<{
   models: ModelOptions;
   preferences: Partial<Record<ModelFeature, ModelPreference>>;
 }> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const [keys, activity, models, preferences] = await Promise.all([
     listProviderKeys(workspace.orgId),
     listAudit(workspace.orgId, { prefix: "provider_", limit: 10 }),
@@ -60,7 +60,7 @@ export async function getProviderKeys(): Promise<{
  * `inUse` marks the one Studio images run on: the tool's chosen model, else Automatic's first pick.
  */
 export async function getImageModelMenu(): Promise<{ models: ImageModelEntry[]; canManage: boolean }> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const [options, preferences] = await Promise.all([modelOptions(workspace.orgId), listModelPreferences(workspace.orgId)]);
   const byProvider = options.create;
   const automatic = IMAGE_PROVIDERS.find((p) => byProvider[p]?.length);

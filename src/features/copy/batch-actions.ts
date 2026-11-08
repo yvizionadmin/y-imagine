@@ -76,14 +76,14 @@ export async function startCopyBatch(input: { text: string; name?: string; setti
 }
 
 export async function listCopyBatches(): Promise<BatchView[]> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const batches = await listBatches(workspace.orgId, 20);
   const counts = await countBatchItems(workspace.orgId, batches.map((b) => b.id));
   return batches.map((b) => toView(workspace, b, counts.get(b.id)!));
 }
 
 export async function getCopyBatch(id: string): Promise<{ batch: BatchView; items: BatchItemView[] } | null> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const batch = typeof id === "string" ? await getBatch(workspace.orgId, id) : null;
   if (!batch) return null;
   const [items, counts] = await Promise.all([listBatchItems(workspace.orgId, id), countBatchItems(workspace.orgId, [id])]);

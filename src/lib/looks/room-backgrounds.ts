@@ -46,10 +46,10 @@ export const toBackgroundView = (b: RoomBackground): RoomBackgroundView => ({
   imageUrl: assetUrl(b.assetId),
 });
 
-export async function listRoomBackgrounds(orgId: string): Promise<RoomBackground[]> {
+export async function listRoomBackgrounds(orgId: string, { seed = true }: { seed?: boolean } = {}): Promise<RoomBackground[]> {
   const org = db.forOrg(orgId);
   const all = await org.select(roomBackgrounds, undefined, { orderBy: [asc(roomBackgrounds.createdAt)] });
-  if (all.length > 0) return all;
+  if (all.length > 0 || !seed) return all;
   // Claim the one-time seed; a concurrent request (or an admin who deleted them all) gets none.
   const claimed = await db
     .update(organizations)

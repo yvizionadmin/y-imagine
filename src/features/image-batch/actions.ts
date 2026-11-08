@@ -12,7 +12,7 @@ import { getWorkspace } from "@/lib/workspace";
 
 /** Newest 20 runs of one tool. */
 export async function listImageBatchRuns(tool: ImageBatchTool): Promise<ImageBatchView[]> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   if (!IMAGE_BATCH_TOOLS.includes(tool)) return [];
   const batches = await listImageBatches(workspace.orgId, tool, 20);
   const counts = await countImageBatchItems(workspace.orgId, batches.map((b) => b.id));
@@ -20,7 +20,7 @@ export async function listImageBatchRuns(tool: ImageBatchTool): Promise<ImageBat
 }
 
 export async function getImageBatchRun(id: string): Promise<{ batch: ImageBatchView; items: ImageBatchItemView[] } | null> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const batch = typeof id === "string" ? await getImageBatch(workspace.orgId, id) : null;
   if (!batch) return null;
   const [items, counts] = await Promise.all([listImageBatchItems(workspace.orgId, id), countImageBatchItems(workspace.orgId, [id])]);

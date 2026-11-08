@@ -32,7 +32,7 @@ export async function getCatalogIntegrations(): Promise<{
   canManage: boolean;
   imageApprovalRequired: boolean;
 }> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   return {
     connections: await listConnections(workspace.orgId),
     definitions: availableDefinitions(),

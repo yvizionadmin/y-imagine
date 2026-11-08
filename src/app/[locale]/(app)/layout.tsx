@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { IconRail } from "@/components/app/icon-rail";
 import { NewJobScope } from "@/components/app/new-job";
 import { TopBar } from "@/components/app/top-bar";
+import { ViewAsBanner } from "@/features/admin/components/view-as-banner";
 import { getWorkspace } from "@/lib/workspace";
 
 // The session is read at request time, so the shell chrome streams in behind Suspense while the
@@ -9,6 +10,9 @@ import { getWorkspace } from "@/lib/workspace";
 export default function AppLayout({ children }: LayoutProps<"/[locale]">) {
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
+      <Suspense>
+        <SignedInViewAs />
+      </Suspense>
       <Suspense fallback={<div className="h-topbar shrink-0 bg-topbar" />}>
         <SignedInTopBar />
       </Suspense>
@@ -31,6 +35,11 @@ export default function AppLayout({ children }: LayoutProps<"/[locale]">) {
       </div>
     </div>
   );
+}
+
+async function SignedInViewAs() {
+  const { viewAs, orgName } = await getWorkspace();
+  return viewAs ? <ViewAsBanner orgName={orgName} expiresAt={viewAs.expiresAt} /> : null;
 }
 
 async function SignedInTopBar() {

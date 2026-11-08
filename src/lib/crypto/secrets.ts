@@ -1,5 +1,5 @@
 import "server-only";
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, randomBytes, hkdfSync } from "node:crypto";
 
 // Envelope encryption for org secrets (AI provider keys, store credentials): each secret gets its
 // own random data key (DEK); the DEK is wrapped with the key-encryption key (KEK) from the
@@ -21,6 +21,9 @@ function kek(): Buffer {
   }
   return key;
 }
+
+/** A key for signing, derived from the KEK so a signature can never be used to attack the encrypted secrets. */
+export const signingKey = (purpose: string) => Buffer.from(hkdfSync("sha256", kek(), "", purpose, 32));
 
 function seal(key: Buffer, plaintext: Buffer) {
   const iv = randomBytes(12);

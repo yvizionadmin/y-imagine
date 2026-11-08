@@ -9,7 +9,7 @@ import { recordAudit } from "@/lib/audit";
 import { db, schema } from "@/lib/db";
 import { acceptInvites } from "@/lib/team/members";
 import { countClerkSessions, revokeClerkSessions } from "./clerk";
-import { clerkEnabled, ORG_COOKIE, SESSION_COOKIE } from "./constants";
+import { clerkEnabled, ORG_COOKIE, SESSION_COOKIE, VIEW_AS_COOKIE } from "./constants";
 import { findUserByClerkId, getUser, linkClerkUser, syncBootstrapRole, updateUser, type User } from "./users";
 
 // Sessions. With Clerk (clerkEnabled()), Clerk's session cookie is the session and the picked org
@@ -111,7 +111,9 @@ export async function setSessionOrg(orgId: string) {
 export async function endSession() {
   const session = await currentSession();
   if (session) await db.delete(sessions).where(eq(sessions.id, session.id));
-  (await cookies()).delete(SESSION_COOKIE);
+  const jar = await cookies();
+  jar.delete(SESSION_COOKIE);
+  jar.delete(VIEW_AS_COOKIE);
 }
 
 /** Signs a user out everywhere (disable, password reset, "force sign-out"). */

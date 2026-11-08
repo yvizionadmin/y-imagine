@@ -55,7 +55,7 @@ function summarize(events: UsageEvent[]) {
 }
 
 export async function getAnalytics(rangeInput: number): Promise<Analytics> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const range: AnalyticsRange = (ANALYTICS_RANGES as readonly number[]).includes(rangeInput) ? (rangeInput as AnalyticsRange) : 30;
   const now = new Date();
   const days = lastDays(range * 2, now);

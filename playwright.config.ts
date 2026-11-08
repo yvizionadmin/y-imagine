@@ -4,6 +4,7 @@ import { defineConfig, devices } from "@playwright/test";
 // 3100, with its own database and demo mode: no Clerk, Stripe, Sentry or real AI provider is called.
 const PORT = 3100;
 const DATABASE_URL = process.env.E2E_DATABASE_URL ?? "postgres://localhost:5432/imagine_e2e_test";
+process.env.E2E_DATABASE_URL = DATABASE_URL; // For specs that check what was stored.
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -30,7 +31,7 @@ export default defineConfig({
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "",
       STRIPE_SECRET_KEY: "",
       SENTRY_DSN: "",
-      SUPER_ADMIN_EMAILS: "",
+      SUPER_ADMIN_EMAILS: "view-as-staff@e2e.test",
       APP_URL: `http://localhost:${PORT}`,
       EMAIL_OUTBOX_DIR: ".data/e2e-outbox",
     },

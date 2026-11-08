@@ -7,14 +7,14 @@ import { getWorkspace } from "@/lib/workspace";
 type Failure = { ok: false; error: "forbidden" | "invalid_input" };
 
 export async function getBrandKitSettings(): Promise<{ kit: SavedBrandKit | null; canManage: boolean; activity: AuditEntry[] }> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const [kit, activity] = await Promise.all([getBrandKit(workspace.orgId), listAudit(workspace.orgId, { prefix: "brand_kit.", limit: 10 })]);
   return { kit, canManage: workspace.role === "admin", activity };
 }
 
 /** For the Copy panel: whether there is a kit to write with, and its name. */
 export async function getBrandKitSummary(): Promise<{ name: string } | null> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const kit = await getBrandKit(workspace.orgId);
   return kit ? { name: kit.name } : null;
 }

@@ -1,5 +1,7 @@
 "use server";
 
+import { redirect } from "next/navigation";
+import { getLocale } from "next-intl/server";
 import type { AnalyticsDay } from "@/features/analytics/actions";
 import { JOB_FEATURES, type JobFeature } from "@/features/analytics/config";
 import type { ProviderKeyView } from "@/lib/ai/provider-keys";
@@ -9,6 +11,7 @@ import { listAllAudit, PLATFORM_ORG, recordAudit, type AuditEntry } from "@/lib/
 import { IdentityError } from "@/lib/auth/clerk";
 import { PASSWORD_MAX, PASSWORD_MIN } from "@/lib/auth/password";
 import { countActiveSessions, getSession, revokeUserSessions } from "@/lib/auth/session";
+import { beginViewAs, endViewAs, readViewAs, VIEW_AS_MINUTES } from "@/lib/auth/view-as";
 import { findUserByEmail, insertUser, listUsers, normalizeEmail, setUserPassword, setUserStatus, toView, updateUser, type UserView } from "@/lib/auth/users";
 import { hasLiveSubscription } from "@/lib/billing/billing";
 import { listConnections } from "@/lib/catalog/connections";
@@ -591,4 +594,26 @@ export async function saveAdminCredits(input: unknown): Promise<Result<{ rules: 
   const changes = creditChanges(before, rules);
   await recordAudit({ orgId: PLATFORM_ORG, action: "platform.credits_updated", actor: actor.name, target: "platform", meta: { changes: changes.join(", ").slice(0, 1000) || "none" } });
   return { ok: true, rules: saved.creditRules, updatedAt: saved.updatedAt, updatedBy: saved.updatedBy };
+}
+
+/** Opens an org as its admin would see it: read-only, for a limited time, and always in the audit log. */
+export async function startViewAs(orgId: string) {
+  const actor = await admin();
+  if (!actor) return { ok: false as const, error: "forbidden" as const };
+  const org = await getOrganization(orgId);
+  if (!org) return { ok: false as const, error: "not_found" as const };
+  await recordAudit({ orgId: org.id, action: "org.view_started", actor: actor.name, target: org.name, meta: { minutes: String(VIEW_AS_MINUTES) } });
+  await beginViewAs(actor.id, org.id);
+  redirect(`/${await getLocale()}/home`);
+}
+
+export async function stopViewAs() {
+  const actor = await admin();
+  const view = actor && (await readViewAs(actor.id));
+  await endViewAs();
+  if (actor && view) {
+    const org = await getOrganization(view.orgId);
+    await recordAudit({ orgId: view.orgId, action: "org.view_ended", actor: actor.name, target: org?.name ?? view.orgId });
+  }
+  redirect(`/${await getLocale()}${view ? `/admin/organizations/${view.orgId}` : "/home"}`);
 }

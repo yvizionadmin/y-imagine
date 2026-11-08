@@ -28,7 +28,7 @@ async function requireAdmin() {
 }
 
 export async function getTeam(): Promise<{ members: MemberView[]; departments: string[]; canManage: boolean }> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const [members, usage] = await Promise.all([listMembers(workspace), listUsage(workspace.orgId)]);
 
   const monthStart = startOfMonth().toISOString();
@@ -134,6 +134,6 @@ export async function removeTeamMember(id: string): Promise<{ ok: true } | Failu
 }
 
 export async function getTeamActivity() {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   return listAudit(workspace.orgId, { prefix: "member.", limit: 10 });
 }

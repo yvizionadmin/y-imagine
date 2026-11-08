@@ -63,7 +63,7 @@ const toVideoItem = (j: VideoJob): StudioItem => {
 };
 
 export async function getStudioSetup(): Promise<StudioSetup> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const [{ creditRules, disabledFeatures }, video, videoStorage] = await Promise.all([
     getPlatformSettings(),
     videoModelFor(workspace.orgId),
@@ -89,14 +89,14 @@ export async function getStudioSetup(): Promise<StudioSetup> {
 
 /** Recent images and videos, newest first. */
 export async function listStudioRecent(): Promise<StudioItem[]> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const [images, videos] = await Promise.all([listRecentGenerations(workspace.orgId, "create", 24), listRecentVideoJobs(workspace.orgId, 24)]);
   return [...images.map(toItem), ...videos.map(toVideoItem)].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 /** Current state of video jobs the page is waiting on. */
 export async function pollStudioVideos(ids: string[]): Promise<StudioItem[]> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const clean = (Array.isArray(ids) ? ids : []).filter((id) => typeof id === "string" && /^[0-9a-f-]{36}$/.test(id)).slice(0, 50);
   return (await getVideoJobs(workspace.orgId, clean)).map(toVideoItem);
 }

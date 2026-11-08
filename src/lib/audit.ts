@@ -29,6 +29,8 @@ export type AuditAction =
   | "org.suspended"
   | "org.reactivated"
   | "org.credits_adjusted"
+  | "org.view_started"
+  | "org.view_ended"
   | "user.created"
   | "user.disabled"
   | "user.enabled"

@@ -44,7 +44,7 @@ async function requireAdmin() {
 const billingUrl = async () => `${await appUrl()}/${await getLocale()}/settings/billing`;
 
 export async function getBilling(): Promise<BillingView> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const [org, members, settings] = await Promise.all([getOrganization(workspace.orgId), listMembers(workspace), getPlatformSettings()]);
   const enabled = billingEnabled();
   // Prices come from Stripe; the page still works (without amounts) if Stripe can't be reached.

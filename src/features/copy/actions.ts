@@ -59,7 +59,7 @@ export async function generateProductCopy(form: FormData): Promise<{ ok: true; c
 
 /** Newest 20, or only one approval status (e.g. the "In review" queue). */
 export async function listRecentCopies(status?: ReviewStatus): Promise<CopyView[]> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const only = status && REVIEW_STATUSES.includes(status) ? status : undefined;
   return (await listCopies(workspace.orgId, 20, only)).map(toView);
 }
@@ -88,7 +88,7 @@ export async function reviewCopy(id: string, action: ReviewAction, note?: string
 
 /** One saved copy, to open it in the editor (?copy=<id>, e.g. from a bulk run). */
 export async function getSavedCopy(id: string): Promise<CopyView | null> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   const copy = typeof id === "string" ? await getCopy(workspace.orgId, id) : null;
   return copy ? toView(copy) : null;
 }
@@ -138,6 +138,6 @@ export async function deleteCopy(id: string): Promise<{ ok: true } | CopyFailure
 
 /** What the current user may do in review, for the Copy UI. */
 export async function getCopyReviewRights(): Promise<ReviewRights> {
-  const workspace = await getWorkspace();
+  const workspace = await getWorkspace({ read: true });
   return { submit: workspace.role !== "viewer", approve: workspace.role === "admin" };
 }

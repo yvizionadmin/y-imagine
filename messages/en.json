@@ -1872,7 +1872,9 @@
         "suspended": "suspended organization",
         "reactivated": "reactivated organization",
         "credits_adjusted": "adjusted credits for",
-        "image_approval_changed": "changed the approval rule for store uploads:"
+        "image_approval_changed": "changed the approval rule for store uploads:",
+        "view_started": "opened a read-only view of",
+        "view_ended": "closed the read-only view of"
       },
       "user": {
         "created": "created user",
@@ -2016,7 +2018,9 @@
       "adjustSubmit": "Apply",
       "adjusted": "Credits updated for {name}.",
       "adjustmentsNone": "No adjustments yet.",
-      "adjustedThisMonth": "{amount} adjusted this month"
+      "adjustedThisMonth": "{amount} adjusted this month",
+      "viewAs": "View as admin",
+      "viewAsConfirm": "Open {name} as its admin would see it? It's read-only, ends after 30 minutes, and the visit goes in the audit log."
     },
     "users": {
       "title": "Users",
@@ -3097,5 +3101,10 @@
       "updated": "Last updated: {date}",
       "draft": "Draft: this text is not yet legally reviewed, and details in [brackets] are still to be completed."
     }
+  },
+  "ViewAs": {
+    "banner": "Viewing {org} as an admin. Read-only. Ends at {time}.",
+    "exit": "Exit view",
+    "refused": "That wasn't saved: nothing can be changed in this view."
   }
 }
