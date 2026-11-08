@@ -17,6 +17,7 @@ import { LATN } from "@/lib/format";
 import { createImages, getStudioSetup, listStudioRecent, pollStudioVideos, startVideo } from "../actions";
 import { parseMediaMode, PROMPT_MAX, STUDIO_MAX_IMAGES, STUDIO_MAX_REFERENCES, type MediaMode, type StudioItem, type StudioSetup } from "../types";
 import { MediaModeSwitch } from "./media-mode-switch";
+import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 
 const IMAGE_TYPES = "image/png,image/jpeg,image/webp";
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -528,7 +529,7 @@ function Recent({ items, pending }: { items: StudioItem[] | null; pending: numbe
             <li key={item.id} className="group relative mb-3 break-inside-avoid overflow-hidden rounded-xl border bg-muted">
               <a href={item.url ?? undefined} target="_blank" rel="noreferrer">
                 {/* eslint-disable-next-line @next/next/no-img-element -- org asset served by /api/assets */}
-                <img src={item.url ?? undefined} alt={item.prompt} width={item.width} height={item.height} loading="lazy" className="h-auto w-full" />
+                <img src={thumbnailUrl(item.url, 640)} alt={item.prompt} width={item.width} height={item.height} loading="lazy" className="h-auto w-full" />
               </a>
               <p className="pointer-events-none absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100">
                 {item.prompt}

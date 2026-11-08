@@ -41,13 +41,16 @@ export function UserMenu({ user, isSuperAdmin, org }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label={t("userMenu")}
-        className="flex items-center gap-2 rounded-full py-1 ps-1 pe-3 hover:bg-white/10 data-popup-open:bg-white/10"
+        aria-label={`${user.name}, ${t("userMenu")}`}
+        className="flex items-center gap-2 rounded-full py-1 ps-1 pe-3 hover:bg-white/10 data-popup-open:bg-white/10 max-md:pe-1"
       >
-        <span className="flex size-8 items-center justify-center rounded-full bg-primary text-xs leading-4 font-semibold uppercase">
-          {user.name.charAt(0)}
-        </span>
-        <span className="text-sm leading-5 font-medium capitalize">{user.name}</span>
+        {/* Drawn by CSS so the letter isn't part of the button's text, which starts with the visible name. */}
+        <span
+          aria-hidden
+          data-initial={user.name.charAt(0)}
+          className="flex size-8 items-center justify-center rounded-full bg-primary text-xs leading-4 font-semibold text-primary-foreground uppercase before:content-[attr(data-initial)]"
+        />
+        <span className="text-sm leading-5 font-medium whitespace-nowrap capitalize max-md:hidden">{user.name}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60 font-sans">
         <DropdownMenuGroup>

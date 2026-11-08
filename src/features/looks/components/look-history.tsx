@@ -11,6 +11,7 @@ import { regenerateLook, type LookView } from "../actions";
 import { LookDrawer } from "./look-drawer";
 import { LookMenu, LookModeBadge, type LookMenuActions } from "./look-menu";
 import { useLooks } from "./use-looks";
+import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 
 const DAY = 24 * 60 * 60 * 1000;
 const DATE_RANGES = { all: null, last7: 7, last30: 30 } as const;
@@ -157,7 +158,7 @@ function HistoryTable({
             <tr key={look.id} onClick={() => actions.onDetails?.(look)} className="cursor-pointer border-t font-medium text-muted-foreground even:bg-muted/40 hover:bg-accent/50">
               <td className="py-3 ps-6 pe-3">
                 {/* eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route */}
-                <img src={look.imageUrl} alt="" loading="lazy" className="size-10 rounded-md bg-muted object-cover" />
+                <img src={thumbnailUrl(look.imageUrl, 96)} alt="" loading="lazy" className="size-10 rounded-md bg-muted object-cover" />
               </td>
               <td className="max-w-[240px] px-3">
                 <button

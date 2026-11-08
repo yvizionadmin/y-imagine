@@ -127,7 +127,7 @@ export function RecolorCanvas({
           after={state.image.url}
           className="h-[460px] w-[720px]"
           beforeBadge={<Tag className="bg-[#374151]">{t("originalBadge")}</Tag>}
-          afterBadge={<Tag className="bg-[#8b5cf6]">{t("recoloredBadge")}</Tag>}
+          afterBadge={<Tag className="bg-[#7c3aed]">{t("recoloredBadge")}</Tag>}
         />
       )}
 
@@ -185,7 +185,7 @@ export function RecolorCanvas({
 
       {state.kind === "failed" && (
         <div className="flex w-[480px] max-w-full flex-col items-center gap-4 rounded-2xl border bg-background p-8 text-center shadow-[0_8px_24px_rgba(0,0,0,0.06)]" role="alert">
-          <div className="flex size-14 items-center justify-center rounded-full bg-red-50 text-[#ef4444]">
+          <div className="flex size-14 items-center justify-center rounded-full bg-red-50 text-danger">
             <TriangleAlert className="size-6" aria-hidden />
           </div>
           <div className="flex flex-col gap-2">

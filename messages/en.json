@@ -2336,8 +2336,7 @@
       "cancel": "Cancel",
       "saveFirst": "Save your edits first",
       "error": "That didn't work. Reload the page and try again."
-    },
-    "sourcePaste": "Paste rows"
+    }
   },
   "CopyBulk": {
     "panelTitle": "Bulk copy",
@@ -2416,7 +2415,8 @@
     "approval": "Approval",
     "submitAll": "Submit all for review",
     "approveAll": "Approve all",
-    "exportApproved": "Download approved ({count})"
+    "exportApproved": "Download approved ({count})",
+    "sourcePaste": "Paste rows"
   },
   "PromptHints": {
     "suggestions": "Suggestions",

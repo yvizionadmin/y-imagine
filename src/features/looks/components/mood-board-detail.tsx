@@ -11,6 +11,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import type { CatalogProduct } from "@/lib/catalog/types";
 import { addLookProduct, duplicateLook, getLookById, regenerateLook, searchLookProducts, swapLookProduct, type AddedProduct, type LookView } from "../actions";
 import { LOOK_RATIOS, type LookItem } from "../config";
+import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 
 type Busy = "regenerate" | "swap" | "duplicate" | null;
 
@@ -174,7 +175,7 @@ function ProductCard({ item, onSwap }: { item: LookItem; onSwap: (() => void) | 
   const body = (
     <>
       {/* eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route */}
-      <img src={item.imageUrl} alt="" className="h-[100px] w-full rounded-lg bg-muted object-contain" />
+      <img src={thumbnailUrl(item.imageUrl, 256)} alt="" loading="lazy" className="h-[100px] w-full rounded-lg bg-muted object-contain" />
       <span className="flex w-full flex-col gap-0.5 text-start">
         <span className="truncate text-xs font-bold">{item.name}</span>
         <span className="truncate text-[10px] text-muted-foreground" dir="ltr">#{item.sku}</span>
@@ -251,7 +252,7 @@ function SwapPanel({
         <h3 className="text-[11px] font-bold text-muted-foreground uppercase">{t("currentSelection")}</h3>
         <div className="flex items-center gap-3 rounded-xl border border-primary bg-accent p-3">
           {/* eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route */}
-          <img src={item.imageUrl} alt="" className="size-14 shrink-0 rounded-lg bg-background object-contain" />
+          <img src={thumbnailUrl(item.imageUrl, 256)} alt="" className="size-14 shrink-0 rounded-lg bg-background object-contain" />
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="truncate text-[13px] font-bold text-primary">{item.name}</span>
             <span className="truncate text-[11px] text-muted-foreground" dir="ltr">
@@ -275,7 +276,7 @@ function SwapPanel({
                 className={cn("size-10 overflow-hidden rounded-md border-2 border-transparent bg-muted", i.id === item.id && "border-primary")}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route */}
-                <img src={i.imageUrl} alt="" className="size-full object-contain" />
+                <img src={thumbnailUrl(i.imageUrl, 256)} alt="" className="size-full object-contain" />
               </button>
             ))}
           </div>
@@ -314,7 +315,7 @@ function SwapPanel({
             {results.map((p) => (
               <li key={p.sku} className="flex items-center gap-3 rounded-xl border p-2.5">
                 {/* eslint-disable-next-line @next/next/no-img-element -- catalog image */}
-                <img src={p.images[0]} alt="" className="size-12 shrink-0 rounded-lg bg-muted object-cover" />
+                <img src={thumbnailUrl(p.images[0], 96)} alt="" className="size-12 shrink-0 rounded-lg bg-muted object-cover" />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate text-xs font-bold">{p.name}</span>
                   <span className="truncate text-[10px] text-muted-foreground" dir="ltr">

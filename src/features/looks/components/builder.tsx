@@ -30,6 +30,7 @@ import {
 } from "../config";
 import { LookCanvas } from "./look-canvas";
 import { useJobCost } from "@/features/credits/use-job-cost";
+import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 
 type Settings = { title: string; prompt: string; category: string; style: string | null; ratio: LookRatio; backgroundId: string | null };
 type Result = { image: GeneratedImage; saved: "none" | "look" | "board" };
@@ -318,7 +319,7 @@ function Builder({ lookId }: { lookId: string | null }) {
                   <button key={b.id} type="button" role="radio" aria-checked={background?.id === b.id} aria-label={b.name} title={b.name} onClick={() => set("backgroundId", b.id)}
                     className={cn("h-9 w-12 overflow-hidden rounded-md border-2 border-transparent", background?.id === b.id && "border-primary")}>
                     {/* eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route */}
-                    <img src={b.imageUrl} alt="" className="size-full object-cover" />
+                    <img src={thumbnailUrl(b.imageUrl, 256)} alt="" loading="lazy" className="size-full object-cover" />
                   </button>
                 ))}
                 <button type="button" aria-label={t("uploadBackground")} title={t("uploadBackground")} disabled={uploading} onClick={() => uploadRef.current?.click()}
@@ -381,7 +382,7 @@ function Builder({ lookId }: { lookId: string | null }) {
               </span>
               <button type="button" aria-pressed={grid} onClick={() => setGrid((g) => !g)} className={cn(grid && "text-primary")}>{t("grid")}</button>
               <button type="button" onClick={() => setZoom(100)}>{t("fit")}</button>
-              <button type="button" onClick={() => { commit([]); setSelectedId(null); }} className="text-[#ef4444]">{t("reset")}</button>
+              <button type="button" onClick={() => { commit([]); setSelectedId(null); }} className="text-danger">{t("reset")}</button>
             </div>
           )}
           <LookCanvas
@@ -451,7 +452,7 @@ function ProductRow({ name, sku, category, imageUrl, action }: { name: string; s
   return (
     <li className="flex items-center gap-3 rounded-xl border p-2">
       {/* eslint-disable-next-line @next/next/no-img-element -- catalog / asset image */}
-      <img src={imageUrl} alt="" className="size-11 shrink-0 rounded-lg bg-muted object-cover" />
+      <img src={thumbnailUrl(imageUrl, 96)} alt="" className="size-11 shrink-0 rounded-lg bg-muted object-cover" />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-xs font-semibold">{name}</span>
         <span className="truncate text-[10px] text-muted-foreground" dir="ltr">#{sku}{category ? ` • ${category}` : ""}</span>
@@ -584,7 +585,7 @@ function ProductPanel({
                     )}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element -- catalog image */}
-                    <img src={p.images[0]} alt="" className="aspect-square w-full bg-muted object-contain p-2" />
+                    <img src={thumbnailUrl(p.images[0], 256)} alt="" loading="lazy" className="aspect-square w-full bg-muted object-contain p-2" />
                     <span className="flex flex-col gap-0.5 border-t px-2 py-1.5">
                       <span className="truncate text-[11px] font-semibold">{p.name}</span>
                       <span className="truncate text-[10px] text-muted-foreground" dir="ltr">#{p.sku}</span>

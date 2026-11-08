@@ -166,7 +166,7 @@ export function BulkCopyWorkspace() {
           </Section>
 
           {error && (
-            <p role="alert" className="rounded-lg bg-red-50 p-3 text-xs text-[#ef4444]">
+            <p role="alert" className="rounded-lg bg-red-50 p-3 text-xs text-danger">
               {error}
             </p>
           )}

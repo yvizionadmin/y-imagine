@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Link } from "@/i18n/navigation";
 import type { LookView } from "../actions";
 import { LOOK_RATIOS } from "../config";
+import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 
 /** Look Details drawer (Figma 98:10207), opened from a History row. */
 export function LookDrawer({
@@ -83,7 +84,7 @@ export function LookDrawer({
                   {look.items.map((item) => (
                     <li key={item.id} className="flex items-center gap-3 rounded-lg border bg-background p-2">
                       {/* eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route */}
-                      <img src={item.imageUrl} alt="" className="size-9 shrink-0 rounded bg-muted object-contain" />
+                      <img src={thumbnailUrl(item.imageUrl, 96)} alt="" className="size-9 shrink-0 rounded bg-muted object-contain" />
                       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                         <span className="truncate text-xs font-bold">{item.name}</span>
                         <span className="truncate text-[10px] text-muted-foreground" dir="ltr">

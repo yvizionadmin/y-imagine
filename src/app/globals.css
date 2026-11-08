@@ -79,7 +79,7 @@
   --secondary-foreground: #111827;
   --muted: #f3f4f6;
   --muted-foreground: #4b5563;
-  --subtle: #9ca3af;
+  --subtle: #5b6472;
   --accent: #eef2ff;
   --accent-foreground: #4338ca;
   --destructive: oklch(0.577 0.245 27.325);
@@ -121,14 +121,15 @@
   --card-foreground: #f3f4f6;
   --popover: #1f1f25;
   --popover-foreground: #f3f4f6;
-  --primary: #6366f1;
-  --primary-foreground: #ffffff;
+  /* Lighter than the light theme: this indigo is also used as text on dark surfaces. */
+  --primary: #818cf8;
+  --primary-foreground: #0f0f12;
   --primary-strong: #818cf8;
   --secondary: #24242b;
   --secondary-foreground: #f3f4f6;
   --muted: #24242b;
   --muted-foreground: #a1a1aa;
-  --subtle: #71717a;
+  --subtle: #8f8f99;
   --accent: #262450;
   --accent-foreground: #c7d2fe;
   --destructive: oklch(0.704 0.191 22.216);
@@ -163,6 +164,8 @@
   --color-emerald-700: #6ee7b7;
   --color-emerald-800: #6ee7b7;
   --color-amber-700: #fbbf24;
+  --color-amber-800: #fde68a;
+  --color-amber-900: #fde68a;
   --color-red-700: #fca5a5;
 }
 

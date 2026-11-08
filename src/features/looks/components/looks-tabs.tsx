@@ -28,7 +28,7 @@ function RoutedTabs() {
 function Tabs({ pathname }: { pathname: string | null }) {
   const t = useTranslations("Looks");
   return (
-    <nav className="flex shrink-0 gap-2 border-b bg-background px-6 py-2.5" aria-label={t("title")}>
+    <nav className="flex shrink-0 gap-2 overflow-x-auto border-b bg-background px-6 py-2.5 max-md:px-3" aria-label={t("title")}>
       {tabs.map(({ key, href }) => {
         const active = href === "/looks" ? pathname === "/looks" : Boolean(pathname?.startsWith(href));
         return (
@@ -37,7 +37,7 @@ function Tabs({ pathname }: { pathname: string | null }) {
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "rounded-lg px-4 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-muted",
+              "shrink-0 rounded-lg px-4 py-1.5 text-[13px] font-medium whitespace-nowrap text-muted-foreground hover:bg-muted",
               active && "bg-primary font-semibold text-primary-foreground hover:bg-primary",
             )}
           >

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PromptChips, PromptTips } from "@/components/app/prompt-assist";
 import { useObjectUrl } from "@/components/app/upload-inputs";
 import { categoryPresets, CUSTOM_SCENE_MAX, findScene, sceneLibrary, type ScenePreset } from "@/lib/catalog-presets";
+import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 
 /** A library scene, a scene the merchant describes in words, their own background photo, or none (the model decides). */
 export type SceneChoice = { kind: "preset"; key: string } | { kind: "custom"; prompt: string } | { kind: "upload"; file: File } | null;
@@ -141,7 +142,7 @@ function SceneCard({ scene, selected, onClick, className }: { scene: ScenePreset
       )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- tenant-configurable preset images */}
-      <img src={scene.image} alt="" className="h-[70px] w-full shrink-0 object-cover" />
+      <img src={thumbnailUrl(scene.image, 256)} alt="" loading="lazy" className="h-[70px] w-full shrink-0 object-cover" />
       <span className="line-clamp-2 w-full p-1.5 text-[11px] leading-tight font-semibold">{tp(`scenes.${scene.key}`)}</span>
     </button>
   );

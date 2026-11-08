@@ -34,13 +34,13 @@ export function HistoryFilterBar({
 
   return (
     <form
-      className="flex flex-wrap items-end gap-3 rounded-xl border bg-background p-4"
+      className="grid grid-cols-2 items-end gap-3 rounded-xl border bg-background p-4 md:flex md:flex-wrap"
       onSubmit={(e) => {
         e.preventDefault();
         onApply();
       }}
     >
-      <Labeled label={t("skuLabel")} htmlFor="history-sku" className="w-44">
+      <Labeled label={t("skuLabel")} htmlFor="history-sku" className="col-span-2 md:w-44">
         <div className="relative">
           <Search className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-subtle" aria-hidden />
           <input
@@ -54,17 +54,17 @@ export function HistoryFilterBar({
         </div>
       </Labeled>
 
-      <fieldset className="flex flex-col gap-1.5">
+      <fieldset className="col-span-2 flex min-w-0 flex-col gap-1.5">
         <legend className="mb-1.5 text-[10px] font-semibold text-muted-foreground uppercase">{t("dateRange")}</legend>
         <div className="flex h-9 items-center gap-1.5 rounded-lg border px-2.5">
-          <Calendar className="size-3.5 shrink-0 text-subtle" aria-hidden />
+          <Calendar className="size-3.5 shrink-0 text-subtle max-md:hidden" aria-hidden />
           <input
             type="date"
             aria-label={t("from")}
             value={draft.from ?? ""}
             max={draft.to || undefined}
             onChange={(e) => onChange({ ...draft, from: e.target.value || undefined })}
-            className="bg-transparent text-xs outline-none"
+            className="min-w-0 bg-transparent text-xs outline-none max-md:flex-1"
           />
           <span className="text-subtle">–</span>
           <input
@@ -73,12 +73,12 @@ export function HistoryFilterBar({
             value={draft.to ?? ""}
             min={draft.from || undefined}
             onChange={(e) => onChange({ ...draft, to: e.target.value || undefined })}
-            className="bg-transparent text-xs outline-none"
+            className="min-w-0 bg-transparent text-xs outline-none max-md:flex-1"
           />
         </div>
       </fieldset>
 
-      <Labeled label={t("modeLabel")} htmlFor="history-mode" className="w-36">
+      <Labeled label={t("modeLabel")} htmlFor="history-mode" className="min-w-0 md:w-36">
         <Select
           id="history-mode"
           value={draft.mode ?? ""}
@@ -87,7 +87,7 @@ export function HistoryFilterBar({
         />
       </Labeled>
 
-      <Labeled label={t("statusLabel")} htmlFor="history-status" className="w-36">
+      <Labeled label={t("statusLabel")} htmlFor="history-status" className="min-w-0 md:w-36">
         <Select
           id="history-status"
           value={draft.status ?? ""}
@@ -96,7 +96,7 @@ export function HistoryFilterBar({
         />
       </Labeled>
 
-      <Labeled label={t("approvalLabel")} htmlFor="history-review" className="w-36">
+      <Labeled label={t("approvalLabel")} htmlFor="history-review" className="min-w-0 md:w-36">
         <Select
           id="history-review"
           value={draft.review ?? ""}
@@ -105,7 +105,7 @@ export function HistoryFilterBar({
         />
       </Labeled>
 
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 self-center pt-5">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 self-center pt-5 max-md:col-span-2 max-md:row-start-5 max-md:pt-0 max-md:empty:hidden">
         {chips.map((chip) => (
           <span key={chip.label} className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-[11px] font-medium">
             {chip.label}
@@ -116,7 +116,7 @@ export function HistoryFilterBar({
         ))}
       </div>
 
-      <Button type="submit" className="h-9 px-5 font-semibold">
+      <Button type="submit" className="h-9 px-5 font-semibold max-md:w-full">
         {t("search")}
       </Button>
     </form>

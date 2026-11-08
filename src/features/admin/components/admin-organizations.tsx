@@ -61,7 +61,7 @@ export function AdminOrganizations() {
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-[320px]">
+        <div className="relative w-[320px] max-w-full">
           <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-subtle" aria-hidden />
           <input
             value={query}

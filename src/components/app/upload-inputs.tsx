@@ -105,7 +105,7 @@ export function FileActions({ onReplace, onRemove }: { onReplace: () => void; on
       <button type="button" onClick={onReplace} className="text-primary">
         {t("replace")}
       </button>
-      <button type="button" onClick={onRemove} className="text-[#ef4444]">
+      <button type="button" onClick={onRemove} className="text-danger">
         {t("remove")}
       </button>
     </div>
@@ -213,7 +213,7 @@ export function FilePickerRow({
         {file ? file.name : placeholder}
       </button>
       {file && (
-        <button type="button" onClick={() => onChange(null)} className="text-[11px] font-semibold text-[#ef4444]">
+        <button type="button" onClick={() => onChange(null)} className="text-[11px] font-semibold text-danger">
           {t("remove")}
         </button>
       )}

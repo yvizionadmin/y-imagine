@@ -106,7 +106,7 @@ export function LanguageLink() {
     <Link
       href={pathname}
       locale={locale === "ar" ? "en" : "ar"}
-      aria-label={t("languageLabel")}
+      aria-label={`${t("language")}, ${t("languageLabel")}`}
       className="rounded-lg border px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
     >
       {t("language")}

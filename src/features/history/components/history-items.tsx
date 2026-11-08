@@ -13,13 +13,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ReviewBadge } from "@/features/copy/components/review-bar";
 import type { GenerationMode, HistoryItem, PublishStatus } from "../types";
+import { thumbnailUrl, type ThumbnailWidth } from "@/lib/image/thumbnail-url";
 
 const modeBadge: Record<GenerationMode, string> = {
-  create: "bg-[#8b5cf6]",
-  video: "bg-[#f97316]",
-  lifestyle: "bg-primary",
-  recolor: "bg-[#ec4899]",
-  aplus: "bg-[#06b6d4]",
+  create: "bg-[#7c3aed]",
+  video: "bg-[#c2410c]",
+  lifestyle: "bg-[#4f46e5]",
+  recolor: "bg-[#db2777]",
+  aplus: "bg-[#0e7490]",
 };
 
 const statusDot: Record<PublishStatus, string> = {
@@ -29,7 +30,7 @@ const statusDot: Record<PublishStatus, string> = {
 };
 
 /** The item's image, or a video player for Studio videos. */
-export function HistoryMedia({ item, className, controls, alt }: { item: HistoryItem; className?: string; controls?: boolean; alt?: string }) {
+export function HistoryMedia({ item, className, controls, alt, thumbnail = 640 }: { item: HistoryItem; className?: string; controls?: boolean; alt?: string; thumbnail?: ThumbnailWidth }) {
   if (item.mode === "video") {
     return (
       <video
@@ -44,8 +45,9 @@ export function HistoryMedia({ item, className, controls, alt }: { item: History
       />
     );
   }
+  // `controls` is the full view in the drawer; everywhere else it's a preview.
   // eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route
-  return <img src={item.imageUrl} alt={alt ?? (item.title || item.sku)} loading="lazy" className={className} />;
+  return <img src={controls ? item.imageUrl : thumbnailUrl(item.imageUrl, thumbnail)} alt={alt ?? (item.title || item.sku)} loading="lazy" className={className} />;
 }
 
 export function ModeBadge({ mode, className }: { mode: GenerationMode; className?: string }) {
@@ -190,7 +192,7 @@ export function HistoryRow({
       </td>
       <td className="py-2">
         <button type="button" onClick={() => actions.onOpen(item)} className="flex items-center gap-3 text-start">
-          <HistoryMedia item={item} alt="" className="h-10 w-14 rounded-md bg-muted object-cover" />
+          <HistoryMedia item={item} alt="" thumbnail={96} className="h-10 w-14 rounded-md bg-muted object-cover" />
           <span className="flex min-w-0 flex-col">
             <span className="text-[13px] font-bold" dir="ltr">
               {item.sku}

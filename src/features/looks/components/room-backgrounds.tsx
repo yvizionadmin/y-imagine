@@ -10,6 +10,7 @@ import { categoryPresets } from "@/lib/catalog-presets";
 import type { RoomBackgroundView } from "@/lib/looks/room-backgrounds";
 import { deleteRoomBackground, editRoomBackground, getRoomBackgrounds, uploadRoomBackground } from "../actions";
 import { DEFAULT_LOOK_CATEGORY, LOOK_STYLES, ROOM_TYPES, lookStyles } from "../config";
+import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 
 type Editing = { mode: "upload" } | { mode: "edit"; background: RoomBackgroundView } | null;
 
@@ -64,7 +65,7 @@ export function RoomBackgroundsManager() {
           {visible.map((b) => (
             <article key={b.id} className="flex flex-col overflow-hidden rounded-xl border bg-background">
               {/* eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route */}
-              <img src={b.imageUrl} alt={b.name} loading="lazy" className="aspect-[16/9] w-full object-cover" />
+              <img src={thumbnailUrl(b.imageUrl, 640)} alt={b.name} loading="lazy" className="aspect-[16/9] w-full object-cover" />
               <div className="flex flex-col gap-2 p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex min-w-0 flex-col">
@@ -86,7 +87,7 @@ export function RoomBackgroundsManager() {
                       <button type="button" onClick={() => setEditing({ mode: "edit", background: b })} className="text-primary">{t("edit")}</button>
                       <button
                         type="button"
-                        className="text-[#ef4444]"
+                        className="text-danger"
                         onClick={async () => {
                           if (!window.confirm(t("deleteConfirm", { name: b.name }))) return;
                           await deleteRoomBackground(b.id);

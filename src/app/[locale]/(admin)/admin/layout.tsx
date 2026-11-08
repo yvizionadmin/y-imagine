@@ -9,7 +9,7 @@ export default function AdminLayout({ children }: LayoutProps<"/[locale]/admin">
       <Suspense fallback={<div className="h-topbar shrink-0 bg-topbar" />}>
         <SignedInTopBar />
       </Suspense>
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <AdminNav />
         <main className="min-w-0 flex-1 overflow-y-auto bg-canvas">
           <Suspense>

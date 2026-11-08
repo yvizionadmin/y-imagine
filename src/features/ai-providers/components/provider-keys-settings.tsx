@@ -202,7 +202,7 @@ function ProviderCard({
               {stored.status === "valid" ? (
                 <CircleCheck className="size-3.5 text-emerald-500" aria-hidden />
               ) : (
-                <CircleAlert className="size-3.5 text-[#ef4444]" aria-hidden />
+                <CircleAlert className="size-3.5 text-danger" aria-hidden />
               )}
               <span className={stored.status === "valid" ? "font-semibold text-emerald-700" : "font-semibold text-danger"}>
                 {t(`status.${stored.status}`)}

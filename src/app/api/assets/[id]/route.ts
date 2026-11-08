@@ -1,3 +1,5 @@
+import { makeThumbnail, thumbnailWidth } from "@/lib/image/thumbnail";
+import { reportError } from "@/lib/observability/report";
 import { getAsset } from "@/lib/storage/assets";
 import { parseRange } from "@/lib/storage/range";
 import { getWorkspace } from "@/lib/workspace";
@@ -16,6 +18,17 @@ export async function GET(request: Request, { params }: RouteContext<"/api/asset
     "x-content-type-options": "nosniff",
     "accept-ranges": "bytes",
   };
+
+  // `?w=` serves a small preview. If it can't be made, the original still shows.
+  const width = thumbnailWidth(new URL(request.url).searchParams.get("w"), asset.mimeType);
+  if (width) {
+    try {
+      const thumbnail = new Uint8Array(await makeThumbnail(asset.bytes, width));
+      return new Response(thumbnail, { headers: { ...headers, "accept-ranges": "none", "content-type": "image/webp", "content-length": String(thumbnail.length) } });
+    } catch (error) {
+      reportError("asset thumbnail failed", error, { orgId: workspace.orgId, assetId: id });
+    }
+  }
 
   const range = parseRange(request.headers.get("range"), bytes.length);
   if (range === "invalid") return new Response(null, { status: 416, headers: { ...headers, "content-range": `bytes */${bytes.length}` } });

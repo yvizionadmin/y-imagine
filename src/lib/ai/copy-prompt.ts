@@ -21,7 +21,7 @@ const LENGTH_WORDS: Record<CopyLength, string> = { short: "about 60 words", medi
 
 const LANGUAGE_RULES: Record<CopyLanguage, string> = {
   en: "English (en): clear, natural retail English.",
-  ar: "Arabic (ar): Modern Standard Arabic as written by Gulf (UAE/KSA) retailers. Write it natively, not as a translation of the English. Keep brand names, model numbers and units in Latin script, use Western digits (0-9), and Arabic punctuation (، ؛ ؟).",
+  ar: "Arabic (ar): Modern Standard Arabic as written by Gulf (UAE/KSA) retailers. Write it natively, not as a translation of the English. Keep brand names and model numbers in Latin script, write units in Arabic (سم، مم، م، كجم، جم، مل، لتر), use Western digits (0-9), and Arabic punctuation (، ؛ ؟).",
 };
 
 const productCopy = z.object({

@@ -15,8 +15,8 @@ export function TopBar({ workspace }: { workspace: Workspace }) {
   const { user, creditsRemaining } = workspace;
 
   return (
-    <header className="flex h-topbar shrink-0 items-center gap-6 bg-topbar px-[27px] font-ui text-topbar-foreground">
-      <Link href="/" className="text-xl font-bold tracking-tight">
+    <header className="flex h-topbar shrink-0 items-center gap-6 bg-topbar px-[27px] font-ui text-topbar-foreground max-md:gap-2 max-md:px-3">
+      <Link href="/" className="text-xl font-bold tracking-tight whitespace-nowrap max-md:text-base">
         {t("brand")}
       </Link>
 
@@ -25,8 +25,8 @@ export function TopBar({ workspace }: { workspace: Workspace }) {
         <ToolBadge />
       </Suspense>
 
-      <div className="ms-auto flex items-center gap-3">
-        <div className="flex items-center gap-1.5 rounded-full border border-credits-border bg-credits px-3 py-1.5 text-xs leading-4 font-medium text-credits-foreground">
+      <div className="ms-auto flex items-center gap-3 max-md:gap-1">
+        <div className="flex items-center gap-1.5 rounded-full border border-credits-border bg-credits px-3 py-1.5 text-xs leading-4 font-medium whitespace-nowrap text-credits-foreground max-md:px-2">
           <Coins className="size-3.5" aria-hidden />
           {t("credits", { count: format.number(creditsRemaining, LATN) })}
         </div>
@@ -51,8 +51,9 @@ function ToolBadge() {
   const t = useTranslations("Shell");
   const tool = activeTool(usePathname());
   if (!tool) return null;
+  // Phones: the rail already marks the tool, and the bar needs the room for the account menu.
   return (
-    <div className="flex items-center gap-2 rounded-[20px] bg-accent px-4 py-2 font-sans text-[13px] font-semibold text-accent-foreground">
+    <div className="flex items-center gap-2 rounded-[20px] bg-accent px-4 py-2 font-sans text-[13px] font-semibold text-accent-foreground max-md:hidden">
       <Wand className="size-3.5" aria-hidden />
       {t(`tools.${tool.key}`)}
     </div>

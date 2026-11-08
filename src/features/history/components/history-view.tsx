@@ -183,9 +183,9 @@ export function HistoryView() {
 
       {data && data.pendingCount > 0 && data.canEdit && (
         data.publishTarget ? (
-          <div className="flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/30 dark:bg-amber-500/10">
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 max-md:flex-col max-md:items-stretch dark:border-amber-500/30 dark:bg-amber-500/10">
             <span className="flex items-center gap-2.5 text-[13px] font-semibold text-amber-900 dark:text-amber-200">
-              <Info className="size-4 text-primary" aria-hidden />
+              <Info className="size-4 shrink-0 text-primary" aria-hidden />
               {t("pendingBanner", { count: data.pendingCount, target: data.publishTarget.name })}
             </span>
             <Button onClick={() => publish("all-pending")} disabled={publishing === "all"} className="font-semibold">
@@ -194,7 +194,7 @@ export function HistoryView() {
             </Button>
           </div>
         ) : (
-          <div className="flex items-center justify-between gap-4 rounded-xl border bg-background px-4 py-3">
+          <div className="flex items-center justify-between gap-4 rounded-xl border bg-background px-4 py-3 max-md:flex-col max-md:items-stretch">
             <span className="flex items-center gap-2.5 text-xs text-muted-foreground">
               <CircleAlert className="size-4 shrink-0 text-subtle" aria-hidden />
               {t("noTarget", { count: data.pendingCount })}
@@ -274,7 +274,7 @@ export function HistoryView() {
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <div className="flex items-center gap-3">
               {items.length > 0 && (
                 <Checkbox
@@ -349,7 +349,7 @@ export function HistoryView() {
           )}
 
           {data.total > 0 && (
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
               <span className="text-xs text-muted-foreground">
                 {t("range", {
                   start: (page - 1) * pageSize + 1,
@@ -357,7 +357,7 @@ export function HistoryView() {
                   total: t("count", { count: data.total }),
                 })}
               </span>
-              <nav className="flex items-center gap-1.5" aria-label="pagination">
+              <nav className="flex flex-wrap items-center gap-1.5" aria-label="pagination">
                 <PageButton label={t("prev")} disabled={page <= 1} onClick={() => setPage(page - 1)}>
                   <ArrowLeft className="size-3.5 rtl:-scale-x-100" aria-hidden />
                 </PageButton>

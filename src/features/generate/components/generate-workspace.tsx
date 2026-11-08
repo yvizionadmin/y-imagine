@@ -42,6 +42,7 @@ import { GenerateCanvas, type CanvasState } from "./generate-canvas";
 import { DimensionsField, ShotFields, type Dimensions, type ShotSettings } from "./shot-fields";
 import { BulkModeTabs } from "@/features/image-batch/components/bulk-mode-tabs";
 import { useJobCost } from "@/features/credits/use-job-cost";
+import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 
 type FormState = {
   sku: string;
@@ -134,7 +135,8 @@ export function GenerateWorkspace() {
   const preset = findCategory(form.category) ?? null;
   const scenePreview = useObjectUrl(form.scene?.kind === "upload" ? form.scene.file : null);
   const sceneImage = form.scene?.kind === "preset" ? (findScene(form.scene.key)?.image ?? null) : scenePreview;
-  const previewSrc = sceneImage ?? productPreview;
+  // Display only: the job is sent the scene key, and the frame is at most 640px wide.
+  const previewSrc = (sceneImage && thumbnailUrl(sceneImage, 640)) ?? productPreview;
   const shot = shots?.[activeShot] ?? null;
   const outcome = shot?.outcome ?? null;
   const shotCount = form.shots.angles.length;

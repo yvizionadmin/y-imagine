@@ -205,7 +205,7 @@ export function FeatureBlocks({
                 type="button"
                 aria-label={t("removeFeature", { n: i + 1 })}
                 onClick={() => onChange(value.filter((_, j) => j !== i))}
-                className="text-subtle hover:text-[#ef4444]"
+                className="text-subtle hover:text-danger"
               >
                 <X className="size-3.5" aria-hidden />
               </button>

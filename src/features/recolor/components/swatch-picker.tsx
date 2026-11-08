@@ -69,7 +69,7 @@ export function SwatchPicker({
               </span>
             )}
             {state?.status === "ready" && t(`finish.${state.analysis.finish}`)}
-            {state?.status === "error" && <span className="text-[#ef4444]">{t("analysisFailed")}</span>}
+            {state?.status === "error" && <span className="text-danger">{t("analysisFailed")}</span>}
           </span>
         </div>
       </div>

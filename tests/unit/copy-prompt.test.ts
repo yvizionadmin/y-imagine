@@ -24,6 +24,12 @@ describe("copy prompt", () => {
     expect(prompt).not.toMatch(/photo is attached/);
   });
 
+  it("asks for Arabic units but keeps brand names and model numbers in Latin script", () => {
+    const prompt = copyPrompt(request({ languages: ["ar"] }), words);
+    expect(prompt).toContain("Keep brand names and model numbers in Latin script");
+    expect(prompt).toContain("write units in Arabic (سم");
+  });
+
   it("only briefs the requested languages and mentions an attached photo", () => {
     const prompt = copyPrompt(request({ languages: ["ar"], image: { bytes: new Uint8Array(), mimeType: "image/png", name: "p" } }), words);
     expect(prompt).not.toContain("English (en)");

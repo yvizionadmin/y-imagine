@@ -82,7 +82,7 @@ export function CopyCanvas({
 
       {state.kind === "failed" && (
         <div className="mx-auto mt-16 flex w-[480px] max-w-full flex-col items-center gap-4 rounded-2xl border bg-background p-8 text-center" role="alert">
-          <div className="flex size-14 items-center justify-center rounded-full bg-red-50 text-[#ef4444]">
+          <div className="flex size-14 items-center justify-center rounded-full bg-red-50 text-danger">
             <TriangleAlert className="size-6" aria-hidden />
           </div>
           <h2 className="text-lg font-bold">{isBlocked(state.reason) ? tw(`blocked.${state.reason}.title`) : t("failedTitle")}</h2>

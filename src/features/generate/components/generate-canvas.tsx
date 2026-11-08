@@ -156,7 +156,7 @@ export function GenerateCanvas({
 
       {state.kind === "failed" && (
         <div className="flex w-[480px] max-w-full flex-col items-center gap-4 rounded-2xl border bg-background p-8 text-center shadow-[0_8px_24px_rgba(0,0,0,0.06)]" role="alert">
-          <div className="flex size-14 items-center justify-center rounded-full bg-red-50 text-[#ef4444]">
+          <div className="flex size-14 items-center justify-center rounded-full bg-red-50 text-danger">
             <TriangleAlert className="size-6" aria-hidden />
           </div>
           <div className="flex flex-col gap-2">
@@ -204,7 +204,7 @@ function ShotStrip({ shots, active, onSelect }: { shots: ShotThumb[]; active: nu
               // eslint-disable-next-line @next/next/no-img-element -- provider output URL
               <img src={shot.src} alt="" className="size-full object-cover" />
             ) : shot.status === "failed" ? (
-              <TriangleAlert className="size-4 text-[#ef4444]" aria-hidden />
+              <TriangleAlert className="size-4 text-danger" aria-hidden />
             ) : (
               <span className="size-5 animate-spin rounded-full border-2 border-dashed border-primary [animation-duration:3s]" />
             )}

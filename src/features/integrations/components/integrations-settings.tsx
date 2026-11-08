@@ -173,7 +173,7 @@ function ConnectionCard({
               </>
             ) : (
               <>
-                <CircleAlert className="size-3.5 text-[#ef4444]" aria-hidden />
+                <CircleAlert className="size-3.5 text-danger" aria-hidden />
                 <span className="text-danger">{t("statusError", { error: t(`errors.${last.error ?? "bad_response"}`) })}</span>
               </>
             )}
@@ -199,7 +199,7 @@ function ConnectionCard({
             <Button
               variant="ghost"
               size="sm"
-              className="text-[#ef4444] hover:text-[#ef4444]"
+              className="text-danger hover:text-danger"
               onClick={async () => {
                 if (!window.confirm(t("removeConfirm", { name: connection.name }))) return;
                 await deleteCatalogConnection(connection.id);

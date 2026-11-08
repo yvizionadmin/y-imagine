@@ -9,6 +9,7 @@ import type { LookView } from "../actions";
 import { ROOM_TYPES } from "../config";
 import { LookMenu, type LookMenuActions } from "./look-menu";
 import { useLooks } from "./use-looks";
+import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 
 /** Mood Boards: looks promoted to boards (Figma 98:9358). Each card opens the board detail. */
 export function LooksGallery() {
@@ -80,7 +81,7 @@ function LookCard({ look, canEdit, actions }: { look: LookView; canEdit: boolean
     <article className="relative flex flex-col overflow-hidden rounded-xl border bg-background transition-shadow hover:shadow-md">
       <Link href={`/looks/boards/${look.id}`} className="flex flex-col">
         {/* eslint-disable-next-line @next/next/no-img-element -- org-scoped asset route */}
-        <img src={look.imageUrl} alt={look.title} loading="lazy" className="aspect-[16/10] w-full object-cover" />
+        <img src={thumbnailUrl(look.imageUrl, 640)} alt={look.title} loading="lazy" className="aspect-[16/10] w-full object-cover" />
         <div className="flex flex-col gap-2 p-3">
           <h2 className="truncate text-sm font-bold">{look.title}</h2>
           <div className="flex flex-wrap gap-1.5">

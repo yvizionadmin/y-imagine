@@ -183,10 +183,10 @@ function MembersTable({
   return (
     <div className="relative overflow-x-auto rounded-xl border bg-background">
       <table className="w-full min-w-[820px] text-[13px]">
-        <thead className="border-b bg-muted/60 text-[11px] font-semibold text-muted-foreground uppercase">
+        <thead className="border-b bg-muted text-[11px] font-semibold text-muted-foreground uppercase">
           <tr>
             {columns.map((c) => (
-              <th key={c} scope="col" className={cn("px-3 py-3 text-start first:ps-4 last:pe-4", c === "actions" && "w-12")}>
+              <th key={c} scope="col" className={cn("px-3 py-3 text-start first:ps-4 last:pe-4", c === "actions" && "sticky end-0 w-12 bg-muted")}>
                 {c === "actions" ? <span className="sr-only">{t("columns.actions")}</span> : t(`columns.${c}`)}
               </th>
             ))}
@@ -243,7 +243,7 @@ function MembersTable({
                   t("never")
                 )}
               </td>
-              <td className="py-3 ps-3 pe-4">
+              <td className="sticky end-0 bg-background py-3 ps-3 pe-4">
                 {canManage && !m.isYou && (
                   <DropdownMenu>
                     <DropdownMenuTrigger

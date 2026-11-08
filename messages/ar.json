@@ -2336,8 +2336,7 @@
       "cancel": "إلغاء",
       "saveFirst": "احفظ تعديلاتك أولًا",
       "error": "لم تنجح العملية. أعد تحميل الصفحة وحاول مرة أخرى."
-    },
-    "sourcePaste": "لصق الصفوف"
+    }
   },
   "CopyBulk": {
     "panelTitle": "محتوى بالجملة",
@@ -2416,7 +2415,8 @@
     "approval": "الاعتماد",
     "submitAll": "إرسال الكل للمراجعة",
     "approveAll": "اعتماد الكل",
-    "exportApproved": "تنزيل المعتمد ({count})"
+    "exportApproved": "تنزيل المعتمد ({count})",
+    "sourcePaste": "لصق الصفوف"
   },
   "PromptHints": {
     "suggestions": "اقتراحات",

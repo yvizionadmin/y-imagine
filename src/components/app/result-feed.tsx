@@ -9,6 +9,7 @@ import type { GenerationMode, HistoryItem } from "@/features/history/types";
 import { ImageActions, ImageViewer, type ViewerImage } from "@/components/app/image-viewer";
 import { Link } from "@/i18n/navigation";
 import { feedTurns, promptOf } from "@/lib/feed-turns";
+import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 
 // A tool's results feed, Gemini-style: every result is saved to History, and the tool lists the user's own
 // earlier results above the current job, oldest at the top. Results made together (one job, one SKU and
@@ -121,7 +122,7 @@ export function ResultFeed({
                     <button type="button" onClick={() => setViewing(viewerImage(item))} aria-label={`${tv("open")}: ${item.title || item.sku}`} className="block cursor-zoom-in">
                       {/* eslint-disable-next-line @next/next/no-img-element -- stored asset, served by /api/assets */}
                       <img
-                        src={item.imageUrl}
+                        src={thumbnailUrl(item.imageUrl, 640)}
                         alt={item.title || item.sku}
                         width={item.width || undefined}
                         height={item.height || undefined}

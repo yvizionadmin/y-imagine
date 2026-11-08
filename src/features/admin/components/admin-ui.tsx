@@ -14,16 +14,16 @@ import { Link, usePathname } from "@/i18n/navigation";
 export function AdminTopBar({ user }: { user: { name: string; email: string } }) {
   const t = useTranslations("Admin");
   return (
-    <header className="flex h-topbar shrink-0 items-center gap-6 bg-topbar px-[27px] font-ui text-topbar-foreground">
-      <Link href="/home" className="text-xl font-bold tracking-tight">
+    <header className="flex h-topbar shrink-0 items-center gap-6 bg-topbar px-[27px] font-ui text-topbar-foreground max-md:gap-2 max-md:px-3">
+      <Link href="/home" className="text-xl font-bold tracking-tight whitespace-nowrap max-md:text-base">
         {t("brand")}
       </Link>
-      <div className="flex items-center gap-2 rounded-[20px] bg-white/10 px-4 py-2 font-sans text-[13px] font-semibold">
+      <div className="flex items-center gap-2 rounded-[20px] bg-white/10 px-4 py-2 font-sans text-[13px] font-semibold max-md:hidden">
         <ShieldCheck className="size-3.5" aria-hidden />
         {t("console")}
       </div>
-      <div className="ms-auto flex items-center gap-3">
-        <Link href="/home" className="rounded-full px-3 py-1.5 text-[13px] font-medium text-white/80 hover:bg-white/10 hover:text-white">
+      <div className="ms-auto flex items-center gap-3 max-md:gap-1">
+        <Link href="/home" className="rounded-full px-3 py-1.5 text-[13px] font-medium whitespace-nowrap text-white/80 hover:bg-white/10 hover:text-white">
           {t("backToApp")}
         </Link>
         <UserMenu user={user} isSuperAdmin />
@@ -48,8 +48,8 @@ function Nav({ pathname }: { pathname: string }) {
   const t = useTranslations("Shell.more");
   const tAdmin = useTranslations("Admin");
   return (
-    <nav aria-label={tAdmin("console")} className="flex w-60 shrink-0 flex-col gap-1 border-e bg-background p-4">
-      <p className="px-3 pb-3 text-base font-bold">{tAdmin("console")}</p>
+    <nav aria-label={tAdmin("console")} className="flex shrink-0 flex-wrap gap-1 border-b bg-background p-2 md:w-60 md:flex-col md:flex-nowrap md:border-e md:border-b-0 md:p-4">
+      <p className="px-3 pb-3 text-base font-bold max-md:sr-only">{tAdmin("console")}</p>
       {adminItems.map(({ key, href, icon: Icon }) => {
         const active = href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
         return (
@@ -152,7 +152,7 @@ export function Card({ title, action, children, className }: { title: string; ac
 
 export function Table({ head, children, minWidth = 760 }: { head: React.ReactNode; children: React.ReactNode; minWidth?: number }) {
   return (
-    <div className="overflow-x-auto rounded-xl border bg-background">
+    <div className="relative overflow-x-auto rounded-xl border bg-background">
       <table className="w-full text-[13px]" style={{ minWidth }}>
         <thead className="border-b bg-muted/60 text-[11px] font-semibold text-muted-foreground uppercase">{head}</thead>
         <tbody>{children}</tbody>

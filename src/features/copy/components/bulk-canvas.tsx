@@ -22,7 +22,7 @@ const ITEM_TONE: Record<BatchItemStatus, string> = {
   pending: "bg-muted text-muted-foreground",
   running: "bg-accent text-primary",
   done: "bg-emerald-50 text-emerald-700",
-  failed: "bg-red-50 text-[#ef4444]",
+  failed: "bg-red-50 text-danger",
   cancelled: "bg-muted text-subtle",
 };
 const RUN_TONE: Record<BatchStatus, string> = { running: "bg-accent text-primary", done: "bg-emerald-50 text-emerald-700", cancelled: "bg-muted text-subtle" };
@@ -168,7 +168,7 @@ function RunView({
           </div>
           <div className="flex flex-wrap gap-x-3 text-[11px] text-muted-foreground">
             <span className="font-semibold text-foreground">{t("progress", { done: batch.counts.done, total: batch.total })}</span>
-            {batch.counts.failed > 0 && <span className="text-[#ef4444]">{t("countFailed", { count: batch.counts.failed })}</span>}
+            {batch.counts.failed > 0 && <span className="text-danger">{t("countFailed", { count: batch.counts.failed })}</span>}
             {batch.counts.cancelled > 0 && <span>{t("countCancelled", { count: batch.counts.cancelled })}</span>}
           </div>
           {waiting && stuck && <p className="text-[11px] text-amber-600">{t("waitingWorker")}</p>}
@@ -221,7 +221,7 @@ function RunView({
                 </td>
                 <td className="max-w-0 px-4 py-2.5">
                   <span className={cn("block truncate", !item.productName && "text-subtle")}>{item.productName || t("fromCatalog")}</span>
-                  {item.status === "failed" && item.error && <span className="block truncate text-[11px] text-[#ef4444]">{t.has(`itemErrors.${item.error}`) ? t(`itemErrors.${item.error}`) : t("itemErrors.generation_failed")}</span>}
+                  {item.status === "failed" && item.error && <span className="block truncate text-[11px] text-danger">{t.has(`itemErrors.${item.error}`) ? t(`itemErrors.${item.error}`) : t("itemErrors.generation_failed")}</span>}
                 </td>
                 <td className="px-4 py-2.5">
                   <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold", ITEM_TONE[item.status])}>
