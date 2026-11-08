@@ -1124,3 +1124,13 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   Vitest tests; `next build`; 31 Playwright specs (+ rail fits at 1280×720; main flow checks the upscale is filed with
   its product). **Not yet:** the Looks sub-pages keep their own heading sizes; Templates and Settings have no top-bar
   page pill; the Figma file still shows the old layout.
+- **2026-11-08, Roadmap A8, live run 4 (OpenAI only, in progress).** Key saved for `demo-org` through Settings → API Keys (valid, 96
+  models). Confirmed in `usage_events` as provider `openai` (none `demo`): Chat (`gpt-5`, first live run), Studio image, Copy (`gpt-5`),
+  Generate, Upscale to 2K (90 s, the slowest), bulk A+ with Arabic titles, bulk Recolor with Image 2 (all `gpt-image-2`). **Arabic A+:** the text is
+  drawn by the app (`compose-aplus.ts`), not the model, so it is exact and right to left. **Found:** (1) With 2 features at 1:1, the A+
+  image leaves the lower half mostly blank; not fixed (add to B14). (2) `npm run worker` has no file watching, so a worker started before a
+  code change runs the old code: bulk A+ ignored `catalogTitle` until run on current code. Restart it after pulling, and deploys must
+  restart it. Blue edges on the Generate result come from the demo photo `public/demo/sofa-source.png`, not the model. **Not run this round:**
+  single Recolor, Single A+, Looks and Improve with AI (live on 2026-11-04/05, screens changed since); Gemini, BytePlus, Kling, Anthropic,
+  OpenRouter, Clerk, Stripe, Sentry, real email. The bulk runs called the runner directly with current code, not through the queue,
+  as the running worker was out of date. The OpenAI key used was pasted in a chat, so it must be replaced.
