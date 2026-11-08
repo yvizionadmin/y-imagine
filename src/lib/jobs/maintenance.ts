@@ -8,6 +8,8 @@ import { releaseStaleImageItems } from "@/lib/image-batch/batches";
 import { releaseStaleJobs } from "@/lib/usage";
 import { releaseStaleVideoJobs } from "@/lib/video/jobs";
 
+export { cleanupOldVideos } from "@/lib/video/storage";
+
 // Scheduled platform jobs, run by the worker (src/worker.ts). Each returns a small summary for the log.
 
 const KEY_CHECK_CONCURRENCY = 4;

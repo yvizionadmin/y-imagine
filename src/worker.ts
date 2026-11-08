@@ -6,7 +6,7 @@ import { DelayedError, Queue, Worker, type Job } from "bullmq";
 import { runBatchItem } from "@/lib/copy/batch-runner";
 import { runImageItem } from "@/lib/image-batch/runner";
 import { runVideoJob } from "@/lib/video/runner";
-import { closeStaleJobs, revalidateAllKeys } from "@/lib/jobs/maintenance";
+import { cleanupOldVideos, closeStaleJobs, revalidateAllKeys } from "@/lib/jobs/maintenance";
 import {
   COPY_BATCH_QUEUE,
   IMAGE_BATCH_QUEUE,
@@ -27,6 +27,7 @@ Sentry.init({ ...sentryOptions(process.env.SENTRY_DSN), initialScope: { tags: { 
 const HANDLERS: Record<MaintenanceJob, () => Promise<unknown>> = {
   "revalidate-keys": revalidateAllKeys,
   "close-stale-jobs": closeStaleJobs,
+  "cleanup-videos": () => cleanupOldVideos(),
 };
 
 const connection = queueConnection();

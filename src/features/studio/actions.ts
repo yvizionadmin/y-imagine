@@ -14,6 +14,8 @@ import { saveAsset } from "@/lib/storage/assets";
 import { decodeImage } from "@/lib/storage/decode-image";
 import { countOpenVideoJobs, getVideoJobs, insertVideoJob, listRecentVideoJobs, MAX_OPEN_VIDEO_JOBS, type VideoJob, type VideoSettings } from "@/lib/video/jobs";
 import { dispatchVideoJob } from "@/lib/video/queue";
+import { videoStorageFor } from "@/lib/video/storage";
+import { recordAudit } from "@/lib/audit";
 import { getWorkspace } from "@/lib/workspace";
 import { PROMPT_MAX, STUDIO_MAX_IMAGES, STUDIO_MAX_REFERENCES, type StudioItem, type StudioSetup } from "./types";
 
@@ -62,7 +64,11 @@ const toVideoItem = (j: VideoJob): StudioItem => {
 
 export async function getStudioSetup(): Promise<StudioSetup> {
   const workspace = await getWorkspace();
-  const [{ creditRules, disabledFeatures }, video] = await Promise.all([getPlatformSettings(), videoModelFor(workspace.orgId)]);
+  const [{ creditRules, disabledFeatures }, video, videoStorage] = await Promise.all([
+    getPlatformSettings(),
+    videoModelFor(workspace.orgId),
+    videoStorageFor(workspace.orgId, workspace.plan),
+  ]);
   const model = video.ok ? video.model : DEFAULT_VIDEO_MODEL;
   return {
     plan: workspace.plan,
@@ -77,6 +83,7 @@ export async function getStudioSetup(): Promise<StudioSetup> {
     imageCost: creditRules.featureCosts.create,
     video: creditRules.video satisfies CreditRules["video"],
     creditsRemaining: workspace.creditsRemaining,
+    videoStorage,
   };
 }
 
@@ -96,11 +103,12 @@ export async function pollStudioVideos(ids: string[]): Promise<StudioItem[]> {
 
 export type StartVideoResult =
   | { ok: true; item: StudioItem }
-  | { ok: false; error: ProviderErrorCode | "invalid_input" | "forbidden" | "not_enough_credits" | "too_many_jobs" };
+  | { ok: false; error: ProviderErrorCode | "invalid_input" | "forbidden" | "not_enough_credits" | "too_many_jobs" | "consent_required" | "storage_full" };
 
 /**
- * Checks a video request (plan, model capabilities, credits, per-org limit) and queues it. The
- * credits are reserved when the worker starts the provider call, and given back if it fails.
+ * Checks a video request (plan, model capabilities, likeness consent for a start frame, credits,
+ * storage, per-org limit) and queues it. The credits are reserved when the worker starts the
+ * provider call, and given back if it fails.
  */
 export async function startVideo(formData: FormData): Promise<StartVideoResult> {
   const workspace = await getWorkspace();
@@ -130,9 +138,12 @@ export async function startVideo(formData: FormData): Promise<StartVideoResult> 
     (MOTION_LEVELS as readonly string[]).includes(settings.motion) &&
     (startFrame === null || (PRODUCT_IMAGE_TYPES.includes(startFrame.type) && startFrame.size <= MAX_REFERENCE_BYTES));
   if (!valid) return { ok: false, error: "invalid_input" };
+  // A start frame may show a real person: the creator confirms the rights and consent first.
+  if (startFrame && formData.get("likenessConsent") !== "yes") return { ok: false, error: "consent_required" };
 
   const credits = videoCost(creditRules, { seconds: settings.seconds, resolution: settings.resolution as VideoSettings["resolution"] });
   if (credits > workspace.creditsRemaining) return { ok: false, error: "not_enough_credits" };
+  if ((await videoStorageFor(workspace.orgId, workspace.plan)).full) return { ok: false, error: "storage_full" };
   if ((await countOpenVideoJobs(workspace.orgId)) >= MAX_OPEN_VIDEO_JOBS) return { ok: false, error: "too_many_jobs" };
 
   const frameAsset = startFrame ? await saveAsset(workspace.orgId, new Uint8Array(await startFrame.arrayBuffer()), startFrame.type, "video-frame") : null;
@@ -142,10 +153,14 @@ export async function startVideo(formData: FormData): Promise<StartVideoResult> 
     settings: settings as VideoSettings,
     startFrameAssetId: frameAsset,
     startFrameMime: startFrame?.type ?? null,
+    consentedAt: startFrame ? new Date().toISOString() : null,
     credits,
     createdBy: workspace.user.name,
     createdById: workspace.user.id,
   });
+  if (startFrame) {
+    await recordAudit({ orgId: workspace.orgId, action: "video.consent_given", actor: workspace.user.name, target: prompt.slice(0, 80), meta: { job: job.id } });
+  }
   await dispatchVideoJob(workspace.orgId, job.id);
   return { ok: true, item: toVideoItem(job) };
 }

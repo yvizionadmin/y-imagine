@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import postgres from "postgres";
+import sharp from "sharp";
 
 const unique = () => Math.random().toString(36).slice(2, 8);
 
@@ -80,4 +81,15 @@ test("Studio video on a paid plan: queue, progress, then playback", async ({ pag
   await expect(page.getByText("Your video is being made.")).toBeVisible();
   await expect(page.locator("video")).toBeVisible({ timeout: 45_000 });
   await expect(page.getByText(/^9:16 · 4s$/)).toBeVisible();
+  await expect(page.getByText(/^Video storage: .+ of 25 GB · clips are kept 90 days$/)).toBeVisible();
+
+  // A start frame may show a person: Generate waits for the rights and consent box.
+  const png = await sharp({ create: { width: 90, height: 160, channels: 3, background: "#884422" } }).png().toBuffer();
+  await page.locator('input[type="file"]').setInputFiles({ name: "frame.png", mimeType: "image/png", buffer: png });
+  const consent = page.getByRole("checkbox", { name: /anyone recognisable in it has agreed/ });
+  await expect(consent).not.toBeChecked();
+  await expect(page.getByRole("button", { name: "Generate" })).toBeDisabled();
+  await consent.check();
+  await page.getByRole("button", { name: "Generate" }).click();
+  await expect(page.locator("video")).toHaveCount(2, { timeout: 45_000 });
 });

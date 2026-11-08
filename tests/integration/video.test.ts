@@ -78,7 +78,7 @@ describe("studio video", () => {
   it("takes a start frame for image-to-video", async () => {
     const { org } = await signedIn();
     const png = await sharp({ create: { width: 90, height: 160, channels: 3, background: "#123456" } }).png().toBuffer();
-    const started = await startVideo(form({}, new File([png], "frame.png", { type: "image/png" })));
+    const started = await startVideo(form({ likenessConsent: "yes" }, new File([png], "frame.png", { type: "image/png" })));
     expect(started.ok).toBe(true);
     const [job] = await getVideoJobs(org.id, dispatched);
     expect(job.startFrameMime).toBe("image/png");

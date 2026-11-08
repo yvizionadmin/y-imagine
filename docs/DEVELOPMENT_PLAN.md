@@ -272,7 +272,7 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
 | A3 ✅ | Emails | Transactional email service (provider through an env setting): invites, password reset (local login), reviewer notices for copy approvals | Invite and approval emails arrive, with en/ar templates | 1–2 |
 | A4 ✅ | Clerk profile sync | `user.updated` webhook → name/email synced to the users table | Changing a name in Clerk shows in Team | 0.5 |
 | A5 ✅ | Chat / assistant | Streaming chat through `getTextProvider`, saved threads per user, org-scoped, credits per message | Users chat, reload, and see their history; viewers read only | 2–3 |
-| A6 | Video safety + storage | Content-rejected code, likeness consent checkbox, storage quota per plan, cleanup job in `SCHEDULES` | Over quota is refused with a message; old clips removed on schedule | 2 |
+| A6 ✅ | Video safety + storage | Content-rejected code, likeness consent checkbox, storage quota per plan, cleanup job in `SCHEDULES` | Over quota is refused with a message; old clips removed on schedule | 2 |
 | A7 | Marketing pages | Home, features, pricing (Stripe prices), legal pages, en/ar | Signed-out visitors see the site and can sign up | 2–3 |
 | A8 | Live-key testing | Real OpenAI, Gemini (image + Omni video), BytePlus Seedance, Anthropic, OpenRouter, Clerk, Stripe test mode, Sentry; fix what turns up | Every tool runs once with a real key; the open checks in the Progress entries are closed | 3–5 |
 | A9 | Production deploy | Railway: web, worker, Postgres, Redis, Bucket, custom domain, health check, env secrets, backups | The production URL works end to end with a paying test org | 1–2 |
@@ -1028,3 +1028,18 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   desktop + phone. The email test now skips macOS `._` files in the outbox (exFAT). **Not yet:** a live provider run
   (A8); Markdown rendering of replies (plain text with line breaks for now); attaching images or catalog products.
   **Found, not fixed:** `CopyBulk.sourcePaste` is missing in en + ar (the label is under `Copy`), logged during `next build`.
+- **2026-11-08, Roadmap A6: video safety + storage (local).** The content-rejected code was already done in A2. **Likeness
+  consent:** a Studio start frame shows a rights-and-consent checkbox, asked again for each new frame; Generate waits for
+  it and `startVideo` refuses without it (`consent_required`). Saved as `video_jobs.consented_at` (migration `0015`) and
+  audited `video.consent_given`. **Storage quota per plan** (`videoStorageBytes` in `src/lib/plans.ts`: Starter 5 GB, Pro
+  25 GB, Enterprise 100 GB): clips and start frames are counted from the `assets` index (`src/lib/video/storage.ts`); a
+  full org gets `storage_full` with a message and a link to History, and the Studio shows usage and retention. The check
+  runs before a job starts, so the clip that crosses the limit still finishes. **Cleanup:** new schedule `cleanup-videos`
+  (daily 04:00 UTC, `SCHEDULES`) removes finished or failed videos past the plan's `videoRetentionDays` (Free and Starter
+  30, Pro 90, Enterprise 365) with their clip, start frame and History item, at most 200 jobs per org per run; open jobs
+  are never touched; audited `video.cleaned_up`. **Bug fixed:** deleting a video in History left its start frame behind.
+  Verified: tsc + eslint clean; 238 Vitest tests (`video-safety.test.ts`); `next build` clean; Playwright `studio.spec.ts`
+  passes (consent checkbox and storage line); screenshots en, ar, ar 390 px. **Not yet:** quota and retention numbers are
+  proposed defaults awaiting a product decision, and they are not on the Billing page; nobody is warned before clips are
+  removed (a downgrade shortens retention, so older clips go on the next run); no per-org override; start frames already
+  orphaned by earlier History deletes are not swept; the schedule has not run in a real worker (A9).

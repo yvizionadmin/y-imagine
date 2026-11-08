@@ -43,7 +43,9 @@ export type AuditAction =
   | "billing.cancel_requested"
   | "billing.resumed"
   | "bitly.connected"
-  | "bitly.removed";
+  | "bitly.removed"
+  | "video.consent_given"
+  | "video.cleaned_up";
 
 /** orgId for entries that belong to no single org (platform settings, users). */
 export const PLATFORM_ORG = "platform";

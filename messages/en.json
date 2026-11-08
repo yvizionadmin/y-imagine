@@ -1854,6 +1854,10 @@
         "submitted": "submitted copy for review:",
         "approved": "approved copy:",
         "changes_requested": "requested changes to copy:"
+      },
+      "video": {
+        "consent_given": "confirmed consent for the people and rights in the start frame of the video:",
+        "cleaned_up": "removed videos past the plan's retention period:"
       }
     },
     "errors": {
@@ -2660,7 +2664,9 @@
       "forbidden": "You don't have permission to generate.",
       "invalid_input": "Check the prompt and images (PNG, JPG or WebP up to 10 MB).",
       "failed": "Couldn't generate. Try again.",
-      "too_many_jobs": "You already have 3 videos in progress. Wait for one to finish."
+      "too_many_jobs": "You already have 3 videos in progress. Wait for one to finish.",
+      "consent_required": "Confirm you have the rights and consent for the start frame.",
+      "storage_full": "Your video storage is full. Delete videos in History to make room."
     },
     "recent": "Recent",
     "viewHistory": "View all in History",
@@ -2678,7 +2684,10 @@
     "videoFailed": "Video failed",
     "videoFailedHint": "No credits were used. Try again or change the prompt.",
     "videoTimedOut": "It took too long. No credits were used.",
-    "toolsLabel": "Other tools"
+    "toolsLabel": "Other tools",
+    "consent": "I have the rights to this image, and anyone recognisable in it has agreed to appear in an AI-made video.",
+    "storage": "Video storage: {used} of {limit} · clips are kept {days, plural, one {# day} other {# days}}",
+    "storageFull": "Your video storage is full. Delete videos in History to make room."
   },
   "Emails": {
     "footer": "Imagine AI · You're getting this email because of your Imagine AI workspace.",

@@ -56,6 +56,8 @@ export function StudioHome() {
   const [prompt, setPrompt] = useState("");
   const [references, setReferences] = useState<File[]>([]);
   const [startFrame, setStartFrame] = useState<File | null>(null);
+  /** Rights and likeness consent for the start frame; asked again for every new frame. */
+  const [consent, setConsent] = useState(false);
   const [image, setImage] = useState<ImageOptions>({ aspectRatio: "1:1", resolution: "HD", count: 1 });
   const [video, setVideo] = useState<VideoOptions>({ seconds: 8, aspectRatio: "9:16", resolution: "720p", camera: "static", motion: "medium" });
   const [error, setError] = useState<string | null>(null);
@@ -103,21 +105,27 @@ export function StudioHome() {
   );
 
   const n = (v: number) => format.number(v, LATN);
+  const gb = (bytes: number) => format.number(bytes / 1024 ** 3, { ...LATN, style: "unit", unit: "gigabyte", maximumFractionDigits: bytes < 1024 ** 3 ? 2 : 1 });
+  const storageFull = mode === "video" && !!setup?.videoStorage.full;
+  const needsConsent = mode === "video" && startFrame !== null && !consent;
   const cost = setup ? (mode === "image" ? setup.imageCost * image.count : videoCost(setup, { seconds: video.seconds, resolution: video.resolution })) : null;
   const videoLocked = setup !== null && !setup.videoAllowed;
   const modeReady = !!setup && (mode === "image" ? setup.imageAllowed : setup.videoAllowed && !setup.videoDisabled && setup.videoProblem === null);
-  const canSubmit = !!setup && setup.canCreate && prompt.trim().length > 0 && !pending && modeReady && cost !== null && cost <= setup.creditsRemaining;
+  const canSubmit = !!setup && setup.canCreate && prompt.trim().length > 0 && !pending && modeReady && cost !== null && cost <= setup.creditsRemaining && !storageFull && !needsConsent;
 
   function addFiles(list: FileList | null) {
     const files = [...(list ?? [])].filter((f) => IMAGE_TYPES.split(",").includes(f.type) && f.size <= MAX_FILE_BYTES);
-    if (mode === "video") setStartFrame(files[0] ?? startFrame);
+    if (mode === "video" && files[0]) {
+      setStartFrame(files[0]);
+      setConsent(false);
+    }
     else setReferences((current) => [...current, ...files].slice(0, STUDIO_MAX_REFERENCES));
   }
 
   function failure(code: string) {
     const blocked = blockedReason(code);
     if (blocked) return tw(`blocked.${blocked}.title`);
-    if (code === "forbidden" || code === "invalid_input" || code === "too_many_jobs") return t(`errors.${code}`);
+    if (["forbidden", "invalid_input", "too_many_jobs", "consent_required", "storage_full"].includes(code)) return t(`errors.${code}`);
     if (code === "not_enough_credits") return t("notEnoughCredits", { count: cost ?? 0 });
     return t("errors.failed");
   }
@@ -130,10 +138,16 @@ export function StudioHome() {
     form.set("resolution", video.resolution);
     form.set("camera", video.camera);
     form.set("motion", video.motion);
-    if (startFrame) form.set("startFrame", startFrame);
+    if (startFrame) {
+      form.set("startFrame", startFrame);
+      if (consent) form.set("likenessConsent", "yes");
+    }
     startTransition(async () => {
       const result = await startVideo(form);
-      if (!result.ok) return setError(failure(result.error));
+      if (!result.ok) {
+        if (result.error === "storage_full") getStudioSetup().then(setSetup);
+        return setError(failure(result.error));
+      }
       setRecent((r) => [result.item, ...(r ?? [])]);
       setNotice(t("videoQueued"));
     });
@@ -161,7 +175,11 @@ export function StudioHome() {
 
   const sources = mode === "image" ? references : startFrame ? [startFrame] : [];
   const canAddSource = mode === "image" ? references.length < STUDIO_MAX_REFERENCES : !startFrame;
-  const removeSource = (i: number) => (mode === "image" ? setReferences((r) => r.filter((_, j) => j !== i)) : setStartFrame(null));
+  const removeSource = (i: number) => {
+    if (mode === "image") return setReferences((r) => r.filter((_, j) => j !== i));
+    setStartFrame(null);
+    setConsent(false);
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
@@ -277,6 +295,18 @@ export function StudioHome() {
               </div>
             </div>
 
+            {mode === "video" && startFrame && (
+              <label className="flex w-full items-start gap-2.5 rounded-xl border bg-background/80 px-3.5 py-3 text-[13px] leading-snug">
+                <input
+                  type="checkbox"
+                  checked={consent}
+                  onChange={(e) => setConsent(e.target.checked)}
+                  className="mt-0.5 size-4 shrink-0 accent-primary"
+                />
+                <span>{t("consent")}</span>
+              </label>
+            )}
+
             {mode === "video" &&
               (videoLocked ? (
                 <div className="flex w-full flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
@@ -302,6 +332,20 @@ export function StudioHome() {
                 </p>
               ) : null)}
 
+            {setup && mode === "video" && setup.videoAllowed && (
+              <p className={cn("text-xs", setup.videoStorage.full ? "font-semibold text-danger" : "text-muted-foreground")}>
+                {setup.videoStorage.full ? (
+                  <>
+                    {t("storageFull")}{" "}
+                    <Link href="/history" className="text-primary hover:underline">
+                      {t("viewHistory")}
+                    </Link>
+                  </>
+                ) : (
+                  t("storage", { used: gb(setup.videoStorage.used), limit: gb(setup.videoStorage.limit), days: setup.videoStorage.retentionDays })
+                )}
+              </p>
+            )}
             {setup && !setup.canCreate && <p className="text-xs text-muted-foreground">{t("viewerNote")}</p>}
             {setup && setup.canCreate && mode === "image" && !setup.imageAllowed && <p className="text-xs text-danger">{tw("blocked.plan.title")}</p>}
             {setup && modeReady && cost !== null && cost > setup.creditsRemaining && <p className="text-xs text-danger">{t("notEnoughCredits", { count: cost })}</p>}

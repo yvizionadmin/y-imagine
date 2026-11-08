@@ -19,6 +19,7 @@ export type VideoJob = {
   settings: VideoSettings;
   startFrameAssetId: string | null;
   startFrameMime: string | null;
+  consentedAt: string | null;
   assetId: string | null;
   mimeType: string | null;
   credits: number;
@@ -41,7 +42,7 @@ export const MAX_OPEN_VIDEO_JOBS = 3;
 
 const toJob = (row: typeof videoJobs.$inferSelect) => row as VideoJob;
 
-export async function insertVideoJob(input: Pick<VideoJob, "orgId" | "prompt" | "settings" | "startFrameAssetId" | "startFrameMime" | "credits" | "createdBy" | "createdById">) {
+export async function insertVideoJob(input: Pick<VideoJob, "orgId" | "prompt" | "settings" | "startFrameAssetId" | "startFrameMime" | "consentedAt" | "credits" | "createdBy" | "createdById">) {
   const { orgId, ...values } = input;
   const [row] = await db.forOrg(orgId).insert(videoJobs, { ...values, id: randomUUID(), status: "pending" });
   return toJob(row);

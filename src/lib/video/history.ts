@@ -2,6 +2,7 @@ import "server-only";
 import { inArray } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import { insertGeneration } from "@/lib/generations";
+import { deleteAsset } from "@/lib/storage/assets";
 import type { VideoJob } from "./jobs";
 
 // Finished Studio videos also live in History (mode "video", no SKU, never uploaded to a store),
@@ -42,8 +43,9 @@ export async function saveVideoToHistory(job: VideoJob, video: { assetId: string
   });
 }
 
-/** Removes the Studio cards of videos deleted from History (their clip is gone). */
+/** Removes the Studio cards of videos deleted from History (their clip is gone), and their start frames. */
 export async function forgetVideoJobs(orgId: string, assetIds: string[]) {
   if (!assetIds.length) return;
-  await db.forOrg(orgId).delete(schema.videoJobs, inArray(schema.videoJobs.assetId, assetIds));
+  const removed = await db.forOrg(orgId).delete(schema.videoJobs, inArray(schema.videoJobs.assetId, assetIds));
+  await Promise.all(removed.flatMap((j) => (j.startFrameAssetId && j.startFrameMime ? [deleteAsset(orgId, j.startFrameAssetId, j.startFrameMime)] : [])));
 }

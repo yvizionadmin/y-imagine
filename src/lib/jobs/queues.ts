@@ -24,6 +24,8 @@ export const SCHEDULES = {
   "revalidate-keys": { pattern: "0 3 * * *", tz: "UTC" },
   /** Every 5 minutes. */
   "close-stale-jobs": { every: 5 * 60_000 },
+  /** Daily at 04:00 UTC: Studio videos past the plan's retention (src/lib/video/storage.ts). */
+  "cleanup-videos": { pattern: "0 4 * * *", tz: "UTC" },
 } as const;
 
 export type MaintenanceJob = keyof typeof SCHEDULES;

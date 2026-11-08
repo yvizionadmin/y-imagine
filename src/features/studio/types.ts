@@ -33,6 +33,8 @@ export type StudioSetup = {
   imageCost: number;
   video: CreditRules["video"];
   creditsRemaining: number;
+  /** Video storage on the plan (bytes): clips and start frames; a new video is refused when full. */
+  videoStorage: { used: number; limit: number; retentionDays: number; full: boolean };
 };
 
 export type StudioItem = {

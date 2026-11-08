@@ -1,0 +1,1 @@
+ALTER TABLE "video_jobs" ADD COLUMN "consented_at" timestamp(3) with time zone;

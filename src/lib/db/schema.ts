@@ -246,6 +246,8 @@ export const videoJobs = pgTable(
     /** First frame for image-to-video (asset kind video-frame). */
     startFrameAssetId: text(),
     startFrameMime: text(),
+    /** When the creator confirmed they may use the start frame and the likeness of anyone in it. */
+    consentedAt: timestamp(),
     /** The finished clip (asset kind video). */
     assetId: text(),
     mimeType: text(),
