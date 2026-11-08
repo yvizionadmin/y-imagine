@@ -12,6 +12,8 @@ import {
 import { runLookup, type LookupError } from "@/lib/catalog/lookup";
 import { availableDefinitions, isConnectorType, validateSettings } from "@/lib/catalog/registry";
 import type { CatalogProduct, ConnectorDefinition } from "@/lib/catalog/types";
+import { recordAudit } from "@/lib/audit";
+import { imageApprovalRequired, setImageApprovalRequired } from "@/lib/generations";
 import { getWorkspace } from "@/lib/workspace";
 
 type SettingsInput = { type: string; config: Record<string, unknown>; secrets: Record<string, unknown> };
@@ -28,12 +30,14 @@ export async function getCatalogIntegrations(): Promise<{
   connections: ConnectionView[];
   definitions: ConnectorDefinition[];
   canManage: boolean;
+  imageApprovalRequired: boolean;
 }> {
   const workspace = await getWorkspace();
   return {
     connections: await listConnections(workspace.orgId),
     definitions: availableDefinitions(),
     canManage: workspace.role === "admin",
+    imageApprovalRequired: await imageApprovalRequired(workspace.orgId),
   };
 }
 
@@ -94,5 +98,14 @@ export async function makeDefaultCatalogConnection(id: string): Promise<{ ok: tr
   const workspace = await requireAdmin();
   if (!workspace) return { ok: false, error: "forbidden" };
   await setDefaultConnection(workspace.orgId, id);
+  return { ok: true };
+}
+
+/** Turns the publish gate on or off: with it on, only approved images can be uploaded to the store. */
+export async function setImageApproval(required: boolean): Promise<{ ok: true } | { ok: false; error: "forbidden" }> {
+  const workspace = await getWorkspace();
+  if (workspace.role !== "admin") return { ok: false, error: "forbidden" };
+  await setImageApprovalRequired(workspace.orgId, required === true);
+  await recordAudit({ orgId: workspace.orgId, action: "org.image_approval_changed", actor: workspace.user.name, target: required === true ? "on" : "off" });
   return { ok: true };
 }

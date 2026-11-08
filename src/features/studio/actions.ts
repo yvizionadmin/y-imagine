@@ -235,6 +235,7 @@ async function save(workspace: Awaited<ReturnType<typeof getWorkspace>>, image: 
     provider: image.provider,
     model: image.model,
     createdBy: workspace.user.name,
+    createdById: workspace.user.id,
   });
   return toItem(generation);
 }

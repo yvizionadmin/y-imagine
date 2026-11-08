@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Link } from "@/i18n/navigation";
 import type { HistoryItem } from "../types";
 import { HistoryMedia, ModeBadge, StatusLabel } from "./history-items";
+import { HistoryReview } from "./history-review";
 
 const TOOL_ROUTE = { create: "/home", video: "/home", lifestyle: "/generate", recolor: "/recolor", aplus: "/aplus" } as const;
 const TEXT_SETTINGS = ["instructions", "notes"];
@@ -18,6 +19,10 @@ export function HistoryDrawer({
   onDownload,
   onPublish,
   publishing,
+  uploadBlocked,
+  canSubmit,
+  canApprove,
+  onReviewed,
   onDelete,
 }: {
   item: HistoryItem | null;
@@ -25,6 +30,10 @@ export function HistoryDrawer({
   onDownload: (item: HistoryItem) => void;
   onPublish: ((item: HistoryItem) => void) | null;
   publishing: boolean;
+  uploadBlocked: boolean;
+  canSubmit: boolean;
+  canApprove: boolean;
+  onReviewed: () => Promise<void>;
   onDelete: (item: HistoryItem) => void;
 }) {
   const t = useTranslations("History");
@@ -91,6 +100,8 @@ export function HistoryDrawer({
                 </p>
               )}
 
+              {item.mode !== "video" && <HistoryReview key={item.id} item={item} canSubmit={canSubmit} canApprove={canApprove} onChanged={onReviewed} />}
+
               {settings.length > 0 && (
                 <section className="flex flex-col gap-3 border-t pt-4">
                   <h3 className="text-[11px] font-bold uppercase">{t("settings")}</h3>
@@ -116,7 +127,8 @@ export function HistoryDrawer({
               <Button onClick={() => onDownload(item)} className="h-10 font-semibold">
                 {t(item.mode === "video" ? "downloadVideo" : "downloadImage")}
               </Button>
-              {onPublish && item.sku !== "" && item.status !== "uploaded" && (
+              {onPublish && item.sku !== "" && item.status !== "uploaded" && uploadBlocked && <p className="text-center text-[11px] font-semibold text-muted-foreground">{t("needsApproval")}</p>}
+              {onPublish && item.sku !== "" && item.status !== "uploaded" && !uploadBlocked && (
                 <Button variant="outline" disabled={publishing} onClick={() => onPublish(item)} className="h-9 border-primary text-primary">
                   {publishing ? <Loader2 className="animate-spin" aria-hidden /> : <Upload aria-hidden />}
                   {publishing ? t("uploading") : t("uploadToWebsite")}

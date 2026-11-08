@@ -1,6 +1,6 @@
-// Copy approval states, shared by the server and the Copy UI.
+// Approval states for copy and History images, shared by the server and the UI.
 // draft → in_review (editors, admins) → approved / changes_requested (admins). Editing approved copy
-// sends it back to draft, so what was approved is always what gets exported.
+// sends it back to draft, so what was approved is always what gets exported. Images can't be edited.
 
 export const REVIEW_STATUSES = ["draft", "in_review", "changes_requested", "approved"] as const;
 export type ReviewStatus = (typeof REVIEW_STATUSES)[number];

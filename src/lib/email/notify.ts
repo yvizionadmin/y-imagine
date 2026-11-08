@@ -46,6 +46,62 @@ export async function sendPasswordResetEmail(input: { to: string; token: string;
   );
 }
 
+/** Images sent for review: every active admin of the org except the person who sent them. */
+export async function notifyImagesSubmitted(input: { orgId: string; orgName: string; actorId: string; actor: string; count: number; label: string; locale: EmailLocale }) {
+  const t = emailTranslator(input.locale);
+  const url = `${await appUrl()}/${input.locale}/history`;
+  const admins = (await listMembers({ orgId: input.orgId })).filter((m) => m.role === "admin" && m.status === "active" && m.userId !== input.actorId);
+  const vars = { actor: input.actor, count: input.count, label: input.label, org: input.orgName };
+  for (const admin of admins) {
+    await sendEmail(
+      renderEmail({
+        locale: input.locale,
+        to: admin.email,
+        subject: t("imageSubmitted.subject", vars),
+        heading: t("imageSubmitted.heading", vars),
+        lines: [t("imageSubmitted.body", vars)],
+        button: { label: t("imageSubmitted.button"), url },
+        note: t("noticeNote", { org: input.orgName }),
+      }),
+    );
+  }
+  return admins.length;
+}
+
+/** Approval or a change request, to the person who made the images (not when they reviewed them themselves). */
+export async function notifyImagesReviewed(input: {
+  orgId: string;
+  orgName: string;
+  authorId: string | null;
+  actorId: string;
+  actor: string;
+  outcome: "approved" | "changes_requested";
+  label: string;
+  count: number;
+  note: string | null;
+  locale: EmailLocale;
+}) {
+  if (!input.authorId || input.authorId === input.actorId) return 0;
+  const author = (await listMembers({ orgId: input.orgId })).find((m) => m.userId === input.authorId && m.status === "active");
+  if (!author) return 0;
+  const t = emailTranslator(input.locale);
+  const key = input.outcome === "approved" ? "imageApproved" : "imageChanges";
+  const vars = { actor: input.actor, label: input.label, count: input.count, org: input.orgName };
+  await sendEmail(
+    renderEmail({
+      locale: input.locale,
+      to: author.email,
+      subject: t(`${key}.subject`, vars),
+      heading: t(`${key}.heading`, vars),
+      lines: [t(`${key}.body`, vars)],
+      quote: input.note ?? undefined,
+      button: { label: t("imageOpen"), url: `${await appUrl()}/${input.locale}/history` },
+      note: t("noticeNote", { org: input.orgName }),
+    }),
+  );
+  return 1;
+}
+
 /** Copy sent for review: every active admin of the org except the person who sent it. */
 export async function notifyCopySubmitted(input: { orgId: string; orgName: string; actorId: string; actor: string; count: number; label: string; locale: EmailLocale }) {
   const t = emailTranslator(input.locale);

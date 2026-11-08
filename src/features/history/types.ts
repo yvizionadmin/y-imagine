@@ -1,3 +1,4 @@
+import type { ReviewStatus } from "@/lib/copy/review-status";
 import type { GenerationMode, PublishStatus } from "@/lib/generations";
 
 export type { GenerationMode, PublishStatus };
@@ -11,6 +12,8 @@ export type HistoryFilters = {
   to?: string;
   mode?: GenerationMode;
   status?: PublishStatus;
+  /** Approval status of images. */
+  review?: ReviewStatus;
   sort: "newest" | "oldest";
   page: number;
   pageSize: number;
@@ -32,6 +35,10 @@ export type HistoryItem = {
   publishedTo: string | null;
   publishedAt: string | null;
   publishError: string | null;
+  reviewStatus: ReviewStatus;
+  reviewNote: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
   createdBy: string;
   createdAt: string;
 };

@@ -44,6 +44,10 @@ export type AuditAction =
   | "billing.resumed"
   | "bitly.connected"
   | "bitly.removed"
+  | "image.submitted"
+  | "image.approved"
+  | "image.changes_requested"
+  | "org.image_approval_changed"
   | "video.consent_given"
   | "video.cleaned_up";
 

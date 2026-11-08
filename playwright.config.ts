@@ -25,6 +25,7 @@ export default defineConfig({
       IMAGINE_DEMO: "1",
       ASSET_DIR: ".data/e2e-assets",
       REDIS_URL: "",
+      AUTH_LIMIT_PER_IP: "1000",
       CLERK_SECRET_KEY: "",
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "",
       STRIPE_SECRET_KEY: "",

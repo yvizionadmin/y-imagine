@@ -3,12 +3,13 @@
 import { Calendar, ChevronDown, Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { REVIEW_STATUSES, type ReviewStatus } from "@/lib/copy/review-status";
 import type { GenerationMode, HistoryFilters, PublishStatus } from "../types";
 
 const MODES: GenerationMode[] = ["create", "video", "lifestyle", "recolor", "aplus"];
 const STATUSES: PublishStatus[] = ["pending", "uploaded", "failed"];
 
-export type FilterDraft = Pick<HistoryFilters, "sku" | "from" | "to" | "mode" | "status">;
+export type FilterDraft = Pick<HistoryFilters, "sku" | "from" | "to" | "mode" | "status" | "review">;
 
 export function HistoryFilterBar({
   draft,
@@ -29,6 +30,7 @@ export function HistoryFilterBar({
   if (applied.from || applied.to) chips.push({ keys: ["from", "to"], label: t("chipDate", { from: applied.from ?? "…", to: applied.to ?? "…" }) });
   if (applied.mode) chips.push({ keys: ["mode"], label: t("chipMode", { value: t(`modes.${applied.mode}`) }) });
   if (applied.status) chips.push({ keys: ["status"], label: t("chipStatus", { value: t(`statuses.${applied.status}`) }) });
+  if (applied.review) chips.push({ keys: ["review"], label: t("chipReview", { value: t(`review.status.${applied.review}`) }) });
 
   return (
     <form
@@ -91,6 +93,15 @@ export function HistoryFilterBar({
           value={draft.status ?? ""}
           onChange={(value) => onChange({ ...draft, status: (value || undefined) as PublishStatus | undefined })}
           options={[{ value: "", label: t("all") }, ...STATUSES.map((s) => ({ value: s, label: t(`statuses.${s}`) }))]}
+        />
+      </Labeled>
+
+      <Labeled label={t("approvalLabel")} htmlFor="history-review" className="w-36">
+        <Select
+          id="history-review"
+          value={draft.review ?? ""}
+          onChange={(value) => onChange({ ...draft, review: (value || undefined) as ReviewStatus | undefined })}
+          options={[{ value: "", label: t("all") }, ...REVIEW_STATUSES.map((s) => ({ value: s, label: t(`review.status.${s}`) }))]}
         />
       </Labeled>
 

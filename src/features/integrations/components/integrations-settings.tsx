@@ -4,19 +4,21 @@ import { useCallback, useEffect, useState } from "react";
 import { CircleAlert, CircleCheck, CircleDashed, Loader2, Plus } from "lucide-react";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import type { ConnectionView } from "@/lib/catalog/connections";
 import type { CatalogProduct, ConnectorDefinition } from "@/lib/catalog/types";
 import {
   deleteCatalogConnection,
   getCatalogIntegrations,
+  setImageApproval,
   makeDefaultCatalogConnection,
   retestCatalogConnection,
 } from "../actions";
 import { AddConnectionDialog } from "./add-connection-dialog";
 import { ConnectorIcon, ProductPreview } from "./connector-visuals";
 
-type State = { connections: ConnectionView[]; definitions: ConnectorDefinition[]; canManage: boolean };
+type State = { connections: ConnectionView[]; definitions: ConnectorDefinition[]; canManage: boolean; imageApprovalRequired: boolean };
 
 export function IntegrationsSettings() {
   const t = useTranslations("Integrations");
@@ -24,6 +26,17 @@ export function IntegrationsSettings() {
   const [adding, setAdding] = useState(false);
 
   const refresh = useCallback(async () => setState(await getCatalogIntegrations()), []);
+  const [savingApproval, setSavingApproval] = useState(false);
+  const [approvalError, setApprovalError] = useState(false);
+
+  async function saveApproval(required: boolean) {
+    setSavingApproval(true);
+    setApprovalError(false);
+    const result = await setImageApproval(required);
+    if (result.ok) await refresh();
+    else setApprovalError(true);
+    setSavingApproval(false);
+  }
   useEffect(() => {
     getCatalogIntegrations().then(setState);
   }, []);
@@ -68,6 +81,32 @@ export function IntegrationsSettings() {
           </ul>
         )}
       </section>
+
+      {state && (
+        <section className="flex flex-col gap-3 rounded-2xl border bg-background p-4 md:p-6">
+          <div className="flex flex-col gap-1">
+            <h3 className="text-[15px] font-bold">{t("approvalTitle")}</h3>
+            <p className="text-xs text-muted-foreground">{t("approvalHint")}</p>
+          </div>
+          <label className="flex items-start gap-2.5 rounded-xl border p-3">
+            <Checkbox
+              checked={state.imageApprovalRequired}
+              disabled={!state.canManage || savingApproval}
+              onCheckedChange={(checked) => saveApproval(checked === true)}
+              className="mt-0.5"
+            />
+            <span className="flex flex-col gap-0.5">
+              <span className="text-[13px] font-semibold">{t("approvalToggle")}</span>
+              <span className="text-[11px] text-muted-foreground">{t("approvalDetail")}</span>
+            </span>
+          </label>
+          {approvalError && (
+            <p role="alert" className="text-xs text-danger">
+              {t("approvalError")}
+            </p>
+          )}
+        </section>
+      )}
 
       {state && (
         <AddConnectionDialog open={adding} onOpenChange={setAdding} definitions={state.definitions} onCreated={refresh} />

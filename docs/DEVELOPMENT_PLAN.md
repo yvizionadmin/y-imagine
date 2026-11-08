@@ -283,7 +283,7 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
 | B1 ✅ | More video providers | Kling adapter, same pattern as `byteplus-video.ts` (OpenAI dropped: its Videos API shut down 2026-09-24) | Each one selectable and tested with the API stubbed | 1–2 |
 | B2 ✅ | Cinema controls | Camera / lens / lighting presets → native parameters where a model has them, else labelled prompt text | Presets in the Studio, driven by the model's capabilities | 1 |
 | B3 | Agents with tools | Agent runs with catalog search, generate image, write copy; steps shown live; credits per tool call | An agent finds a product, writes copy and makes an image in one run | 3–4 |
-| B4 | Image approvals + publish gate | Review status for History images; "Upload to Website" only for approved items when the org turns it on | Same review flow as copy, for images | 1–2 |
+| B4 ✅ | Image approvals + publish gate | Review status for History images; "Upload to Website" only for approved items when the org turns it on | Same review flow as copy, for images | 1–2 |
 | B5 | Prompt helpers | "Improve with AI" for merchant text; per-team suggestions from saved results | Both available in Generate and Recolor | 1–2 |
 | B6 | Team scenes and catalog per tenant | Save uploaded scenes as team scenes; product types and scenes per org in the DB; category filters in History/board; delete look backgrounds with their look | Two orgs see different product types and scenes | 3–4 |
 | B7 | Bulk improvements | Choose which catalog image to use; Arabic titles from `nameAr` for bulk A+ | Both available in the bulk tools | 1 |
@@ -1095,3 +1095,16 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   API reference page couldn't be read); how much each model visibly follows the lens and lighting text. **Not yet:** Omni
   and Seedance might gain presets from their own prompt guides; no preview of a preset's effect.
   **Found, not fixed:** on the Studio at 390 px in Arabic, the top bar runs out of room and the user name is cut off.
+- **2026-11-08, Roadmap B4: image approvals + publish gate (local).** History images get the same review as copy: Draft → In
+  review → Approved / Changes requested (with a note); editors submit, only admins decide, viewers read. In the details drawer,
+  as bulk actions on a selection, with badges and an Approval filter. Videos have no review, and Studio images can be reviewed
+  but have no SKU to upload. **The gate:** Settings → Integrations → "Only upload approved images" (admin only, off by default,
+  audited `org.image_approval_changed`). Enforced on the server in `publishGenerations` and also in `markGenerationsUploaded`,
+  which would otherwise be a way round it. Asking for an unapproved image by id returns `not_approved` and doesn't mark it
+  failed; "upload all" leaves those out. Withdrawing an approval blocks it again; images already uploaded stay uploaded. Audit
+  `image.submitted`, `image.approved`, `image.changes_requested` (bulk entries carry the count). Emails: admins on submission,
+  makers on a decision (one email per person; not to themselves), en + ar. Migration `0016` (`generations`: review columns +
+  `created_by_id`; `organizations.require_image_approval`), applied to the local dev database only. Verified: tsc + eslint clean; 295 Vitest tests (`image-review.test.ts`, `image-review-email.test.ts`); `next build` clean; full Playwright suite (31, `image-approvals.spec.ts`); drawer screenshots en and ar 390 px.
+  **Not yet:** images saved before this have no `created_by_id`, so their makers get no email; no review of videos; no per-SKU
+  or per-tool rules; store publishing itself is still demo-tested until B8.
+  **Test setup:** the suite now signs up more than 30 times, the sign-in/up limit per address, so `templates.spec.ts` failed in full runs with "Too many attempts". `AUTH_LIMIT_PER_IP` (optional, set to 1000 in `playwright.config.ts`) raises it for the browser tests only; the default stays 30, and 0 or junk can't switch it off. **Found, not fixed:** at 390 px, History's date range is cut off and the upload banner is cramped.

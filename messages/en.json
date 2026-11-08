@@ -893,7 +893,12 @@
       "misconfigured": "The settings look wrong. Check the URL/domain (HTTPS only).",
       "invalid_input": "Check the highlighted field.",
       "forbidden": "Only admins can do this."
-    }
+    },
+    "approvalTitle": "Approvals for store uploads",
+    "approvalHint": "Decide whether images need a review before they reach your store.",
+    "approvalToggle": "Only upload approved images",
+    "approvalDetail": "Admins approve images in History. Images already uploaded stay as they are.",
+    "approvalError": "That didn't save. Try again."
   },
   "Catalog": {
     "fetch": "Fetch from catalog",
@@ -1024,12 +1029,47 @@
       "auth_failed": "the store rejected the credentials",
       "unreachable": "couldn’t reach the store",
       "bad_response": "the store returned an error",
-      "misconfigured": "the catalog connection needs attention"
+      "misconfigured": "the catalog connection needs attention",
+      "not_approved": "needs approval first"
     },
     "markedUploaded": "{count, plural, one {# image marked as uploaded.} other {# images marked as uploaded.}}",
     "deleted": "{count, plural, one {# generation deleted.} other {# generations deleted.}}",
     "dismiss": "Dismiss",
-    "downloadVideo": "Download video"
+    "downloadVideo": "Download video",
+    "approvalLabel": "Approval",
+    "review": {
+      "label": "Approval",
+      "status": {
+        "draft": "Draft",
+        "in_review": "In review",
+        "changes_requested": "Changes requested",
+        "approved": "Approved"
+      },
+      "hint": {
+        "draft": "Not reviewed yet. Submit it when it's ready.",
+        "in_review": "Waiting for an admin to approve it.",
+        "changes_requested": "Changes were requested.",
+        "approved": "Approved."
+      },
+      "approvedBy": "Approved by <b>{name}</b>, <b>{at}</b>",
+      "changesBy": "<b>{name}</b> asked for changes, <b>{at}</b>",
+      "submit": "Submit for review",
+      "approve": "Approve",
+      "requestChanges": "Request changes",
+      "noteLabel": "What should change?",
+      "notePlaceholder": "e.g. Make the room brighter and keep the sofa's legs in frame",
+      "sendNote": "Send note",
+      "cancel": "Cancel",
+      "error": "That didn't work. Reload the page and try again."
+    },
+    "needsApproval": "Needs approval before upload",
+    "awaitingBanner": "{count, plural, one {# image needs approval before it can be uploaded.} other {# images need approval before they can be uploaded.}}",
+    "showInReview": "Show images in review",
+    "chipReview": "Approval: {value}",
+    "submitSelected": "Submit for review",
+    "approveSelected": "Approve",
+    "reviewDone": "{count, plural, =0 {Nothing changed: those images can't take that step.} one {# image updated.} other {# images updated.}}",
+    "markSkipped": "{count, plural, one {# image wasn't marked because it needs approval first.} other {# images weren't marked because they need approval first.}}"
   },
   "Looks": {
     "tabs": {
@@ -1829,7 +1869,8 @@
         "updated": "updated organization",
         "suspended": "suspended organization",
         "reactivated": "reactivated organization",
-        "credits_adjusted": "adjusted credits for"
+        "credits_adjusted": "adjusted credits for",
+        "image_approval_changed": "changed the approval rule for store uploads:"
       },
       "user": {
         "created": "created user",
@@ -1863,6 +1904,11 @@
       "video": {
         "consent_given": "confirmed consent for the people and rights in the start frame of the video:",
         "cleaned_up": "removed videos past the plan's retention period:"
+      },
+      "image": {
+        "submitted": "submitted images for review:",
+        "approved": "approved images:",
+        "changes_requested": "requested changes to images:"
       }
     },
     "errors": {
@@ -2757,7 +2803,24 @@
       "heading": "Changes requested on your copy",
       "body": "{actor} asked for changes to {label} in {org}:"
     },
-    "copyOpen": "Open copy"
+    "copyOpen": "Open copy",
+    "imageSubmitted": {
+      "subject": "{actor} sent {count, plural, one {an image} other {# images}} for review",
+      "heading": "Images waiting for your review",
+      "body": "{actor} sent {count, plural, one {{label}} other {# images, starting with {label},}} for review in {org}. Approve or ask for changes in History.",
+      "button": "Review images"
+    },
+    "imageApproved": {
+      "subject": "{count, plural, one {Image approved: {label}} other {# images approved}}",
+      "heading": "Your images were approved",
+      "body": "{actor} approved {count, plural, one {{label}} other {# of your images}} in {org}."
+    },
+    "imageChanges": {
+      "subject": "{count, plural, one {Changes requested: {label}} other {Changes requested on # images}}",
+      "heading": "Changes requested on your images",
+      "body": "{actor} asked for changes to {count, plural, one {{label}} other {# of your images}} in {org}:"
+    },
+    "imageOpen": "Open History"
   },
   "Chat": {
     "title": "New chat",

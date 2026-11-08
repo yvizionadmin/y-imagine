@@ -69,6 +69,7 @@ export async function upscaleImage(input: { imageUrl: string; size: string; sku?
     provider: image.provider,
     model: image.model,
     createdBy: workspace.user.name,
+    createdById: workspace.user.id,
   });
   return { ok: true, image: { ...image, url: `/api/assets/${assetId}` }, id: saved.id };
 }

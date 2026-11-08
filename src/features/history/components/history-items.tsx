@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ReviewBadge } from "@/features/copy/components/review-bar";
 import type { GenerationMode, HistoryItem, PublishStatus } from "../types";
 
 const modeBadge: Record<GenerationMode, string> = {
@@ -71,8 +72,17 @@ export type ItemActions = {
   onToggle: (id: string) => void;
   onDownload: (item: HistoryItem) => void;
   onPublish: ((item: HistoryItem) => void) | null;
+  /** The org only uploads approved images, and this one isn't. */
+  uploadBlocked: (item: HistoryItem) => boolean;
+  /** Show the approval state on images (draft only once approvals matter). */
+  showDraftBadge: boolean;
   onDelete: (item: HistoryItem) => void;
 };
+
+function ImageReviewBadge({ item, showDraft }: { item: HistoryItem; showDraft: boolean }) {
+  if (item.mode === "video" || (item.reviewStatus === "draft" && !showDraft)) return null;
+  return <ReviewBadge status={item.reviewStatus} className="w-fit" />;
+}
 
 function ItemMenu({ item, actions, className }: { item: HistoryItem; actions: ItemActions; className?: string }) {
   const t = useTranslations("History");
@@ -87,7 +97,7 @@ function ItemMenu({ item, actions, className }: { item: HistoryItem; actions: It
       <DropdownMenuContent align="end" className="w-44 font-sans">
         <DropdownMenuItem onClick={() => actions.onOpen(item)}>{t("viewDetails")}</DropdownMenuItem>
         <DropdownMenuItem onClick={() => actions.onDownload(item)}>{t("download")}</DropdownMenuItem>
-        {actions.onPublish && item.status !== "uploaded" && (
+        {actions.onPublish && item.status !== "uploaded" && !actions.uploadBlocked(item) && (
           <DropdownMenuItem onClick={() => actions.onPublish!(item)}>{t("uploadToWebsite")}</DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
@@ -143,8 +153,10 @@ export function HistoryCard({
           {item.sku && <StatusLabel status={item.status} />}
         </div>
         {item.title && <span className="truncate text-xs text-muted-foreground">{item.title}</span>}
+        <ImageReviewBadge item={item} showDraft={actions.showDraftBadge} />
         <span className="text-[10px] text-subtle">{format.dateTime(new Date(item.createdAt), { dateStyle: "medium", timeStyle: "short", numberingSystem: "latn" })}</span>
-        {showUpload && actions.onPublish && item.sku !== "" && item.status !== "uploaded" && (
+        {showUpload && actions.onPublish && item.sku !== "" && item.status !== "uploaded" && actions.uploadBlocked(item) && <p className="mt-2 text-center text-[11px] font-semibold text-muted-foreground">{t("needsApproval")}</p>}
+        {showUpload && actions.onPublish && item.sku !== "" && item.status !== "uploaded" && !actions.uploadBlocked(item) && (
           <button
             type="button"
             disabled={publishing}
@@ -190,7 +202,12 @@ export function HistoryRow({
       <td>
         <ModeBadge mode={item.mode} />
       </td>
-      <td>{item.sku && <StatusLabel status={item.status} />}</td>
+      <td>
+        <span className="flex flex-col gap-1">
+          {item.sku && <StatusLabel status={item.status} />}
+          <ImageReviewBadge item={item} showDraft={actions.showDraftBadge} />
+        </span>
+      </td>
       <td className="text-[11px] text-muted-foreground">
         {format.dateTime(new Date(item.createdAt), { dateStyle: "medium", timeStyle: "short", numberingSystem: "latn" })}
       </td>

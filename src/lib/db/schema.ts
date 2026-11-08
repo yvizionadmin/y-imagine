@@ -39,6 +39,8 @@ export const organizations = pgTable("organizations", {
   suspendedReason: text(),
   /** Starter room backgrounds were added once; an admin who deletes them all doesn't get them back. */
   roomBackgroundsSeeded: boolean().notNull().default(false),
+  /** Only approved images can be uploaded to the store (History). */
+  requireImageApproval: boolean().notNull().default(false),
   /** Stripe billing (synced by its webhook). `plan` follows the subscription while one exists. */
   stripeCustomerId: text().unique(),
   stripeSubscriptionId: text().unique(),
@@ -224,10 +226,17 @@ export const generations = pgTable(
     publishedTo: text(),
     publishedAt: timestamp(),
     publishError: text(),
+    /** Approval state of an image (see src/lib/copy/review-status.ts). Videos stay draft. */
+    reviewStatus: text().$type<ReviewStatus>().notNull().default("draft"),
+    reviewNote: text(),
+    reviewedBy: text(),
+    reviewedAt: timestamp(),
     createdBy: text().notNull(),
+    /** Who made it, for review notices (null on rows saved before 2026-11-08). */
+    createdById: text(),
     createdAt: now(),
   },
-  (t) => [index().on(t.orgId, t.createdAt)],
+  (t) => [index().on(t.orgId, t.createdAt), index().on(t.orgId, t.reviewStatus)],
 );
 
 /**

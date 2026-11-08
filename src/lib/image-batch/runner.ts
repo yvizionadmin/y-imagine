@@ -169,6 +169,7 @@ async function makeImage(batch: ImageBatch, item: ImageBatchItem, product: Produ
     provider: made.image.provider,
     model: made.image.model,
     createdBy: batch.createdBy,
+    createdById: batch.createdById,
   });
   return generation.id;
 }

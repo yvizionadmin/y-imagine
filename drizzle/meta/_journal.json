@@ -113,6 +113,13 @@
       "when": 1794125168993,
       "tag": "0015_video_consent",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794136197654,
+      "tag": "0016_image_approvals",
+      "breakpoints": true
     }
   ]
 }

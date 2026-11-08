@@ -42,6 +42,7 @@ export async function saveVideoToHistory(job: VideoJob, video: { assetId: string
     provider: video.provider,
     model: video.model,
     createdBy: job.createdBy,
+    createdById: job.createdById,
   });
 }
 

@@ -26,7 +26,7 @@ describe("tenant isolation (db.forOrg)", () => {
     await saveProviderKey({ orgId: a.org.id, provider: "openai", key: "sk-test-aaaa1111", models: null, createdBy: "t" });
     expect(await revealProviderKey(b.org.id, "openai")).toBeNull();
 
-    const gen = await insertGeneration({ orgId: a.org.id, mode: "lifestyle", sku: "S", title: "T", assetId, mimeType: "image/png", width: 1, height: 1, settings: {}, provider: "demo", model: "m", createdBy: "t" });
+    const gen = await insertGeneration({ orgId: a.org.id, mode: "lifestyle", sku: "S", title: "T", assetId, mimeType: "image/png", width: 1, height: 1, settings: {}, provider: "demo", model: "m", createdBy: "t", createdById: null });
     expect(await removeGenerations(b.org.id, [gen.id])).toHaveLength(0);
     expect(await listGenerations(b.org.id)).toHaveLength(0);
   });
@@ -125,7 +125,7 @@ describe("generations, assets, room backgrounds", () => {
   it("updates and removes generations; deletes asset bytes", async () => {
     const { org } = await makeOrg();
     const assetId = await saveAsset(org.id, new Uint8Array([9, 9]), "image/png");
-    const gen = await insertGeneration({ orgId: org.id, mode: "lifestyle", sku: "S", title: "T", assetId, mimeType: "image/png", width: 1, height: 1, settings: {}, provider: "demo", model: "m", createdBy: "t" });
+    const gen = await insertGeneration({ orgId: org.id, mode: "lifestyle", sku: "S", title: "T", assetId, mimeType: "image/png", width: 1, height: 1, settings: {}, provider: "demo", model: "m", createdBy: "t", createdById: null });
     await updateGenerations(org.id, [gen.id], { status: "uploaded", publishedAt: new Date().toISOString() });
     expect((await listGenerations(org.id))[0].status).toBe("uploaded");
     expect(await removeGenerations(org.id, [gen.id])).toHaveLength(1);

@@ -10,7 +10,8 @@ export type Limit = { limit: number; windowMs: number };
 export const LIMITS = {
   /** Failed sign-ins per email, and sign-in/up attempts per IP. */
   signInFailures: { limit: 5, windowMs: 15 * 60_000 },
-  authPerIp: { limit: 30, windowMs: 15 * 60_000 },
+  // The browser tests sign up many times from one address, so they raise this (playwright.config.ts).
+  authPerIp: { limit: Number(process.env.AUTH_LIMIT_PER_IP) || 30, windowMs: 15 * 60_000 },
   /** Password reset emails per address (so the form can't be used to flood an inbox). */
   resetEmailsPerAddress: { limit: 3, windowMs: 60 * 60_000 },
   /** AI jobs: per user, and per org across its members. */

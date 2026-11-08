@@ -8,7 +8,7 @@ import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link } from "@/i18n/navigation";
-import { deleteGenerations, markGenerationsUploaded, publishGenerations, queryHistory } from "../actions";
+import { deleteGenerations, markGenerationsUploaded, publishGenerations, queryHistory, reviewImages } from "../actions";
 import { HISTORY_PAGE_SIZES, type HistoryFilters, type HistoryItem } from "../types";
 import { HistoryDrawer } from "./history-drawer";
 import { HistoryFilterBar, Select, type FilterDraft } from "./history-filters";
@@ -96,7 +96,15 @@ export function HistoryView() {
 
   async function markUploaded(ids: string[]) {
     const result = await markGenerationsUploaded(ids);
-    if (result.ok) setNotice({ tone: "success", text: t("markedUploaded", { count: ids.length }) });
+    if (result.ok && result.skipped > 0) setNotice({ tone: "error", text: `${result.count > 0 ? `${t("markedUploaded", { count: result.count })} ` : ""}${t("markSkipped", { count: result.skipped })}` });
+    else if (result.ok) setNotice({ tone: "success", text: t("markedUploaded", { count: result.count }) });
+    setSelected(new Set());
+    await load();
+  }
+
+  async function reviewSelected(ids: string[], action: "submit" | "approve") {
+    const result = await reviewImages(ids, action);
+    setNotice(result.ok ? { tone: result.changed > 0 ? "success" : "error", text: t("reviewDone", { count: result.changed }) } : { tone: "error", text: t("review.error") });
     setSelected(new Set());
     await load();
   }
@@ -127,6 +135,8 @@ export function HistoryView() {
       saveBlob(blob, name);
     },
     onPublish: data?.publishTarget && data.canEdit ? (item) => publish([item.id]) : null,
+    uploadBlocked: (item) => Boolean(data?.approvalRequired) && item.reviewStatus !== "approved",
+    showDraftBadge: Boolean(data?.approvalRequired),
     onDelete: (item) => remove([item.id]),
   };
 
@@ -195,6 +205,18 @@ export function HistoryView() {
         )
       )}
 
+      {data && data.awaitingApprovalCount > 0 && data.canEdit && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-background px-4 py-3">
+          <span className="flex items-center gap-2.5 text-xs text-muted-foreground">
+            <CircleAlert className="size-4 shrink-0 text-subtle" aria-hidden />
+            {t("awaitingBanner", { count: data.awaitingApprovalCount })}
+          </span>
+          <button type="button" onClick={() => apply({ ...applied, review: "in_review" })} className="shrink-0 text-xs font-semibold text-primary hover:underline">
+            {t("showInReview")}
+          </button>
+        </div>
+      )}
+
       {selected.size > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#94a3b8]/30 px-4 py-2.5">
           <span className="flex items-center gap-3 text-[13px] font-semibold">
@@ -206,6 +228,16 @@ export function HistoryView() {
               {busy === "zip" && <Loader2 className="animate-spin" aria-hidden />}
               {busy === "zip" ? t("zipping") : t("downloadZip")}
             </Button>
+            {data?.canEdit && (
+              <Button variant="secondary" className="bg-background" onClick={() => reviewSelected(selectedIds, "submit")}>
+                {t("submitSelected")}
+              </Button>
+            )}
+            {data?.canApprove && (
+              <Button variant="secondary" className="bg-background" onClick={() => reviewSelected(selectedIds, "approve")}>
+                {t("approveSelected")}
+              </Button>
+            )}
             {data?.canEdit && data.publishTarget && (
               <Button onClick={() => publish(selectedIds)} disabled={publishing !== "all" && publishing.size > 0}>
                 {t("uploadSelected")}
@@ -360,6 +392,10 @@ export function HistoryView() {
         onDownload={actions.onDownload}
         onPublish={actions.onPublish}
         publishing={openItem ? isPublishing(openItem.id) : false}
+        uploadBlocked={openItem ? actions.uploadBlocked(openItem) : false}
+        canSubmit={data?.canEdit ?? false}
+        canApprove={data?.canApprove ?? false}
+        onReviewed={load}
         onDelete={(item) => remove([item.id])}
       />
     </div>
