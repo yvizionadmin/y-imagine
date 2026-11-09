@@ -2425,6 +2425,8 @@
   "PromptHints": {
     "suggestions": "Suggestions",
     "add": "Add “{phrase}”",
+    "addTeam": "Add “{phrase}” (used by your team)",
+    "teamHint": "Your team uses this in its saved results",
     "scenes": {
       "furniture": [
         "bright living room, light oak floor",

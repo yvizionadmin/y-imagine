@@ -30,7 +30,7 @@ import { CatalogFetch } from "@/features/catalog/components/catalog-fetch";
 import { Textarea } from "@/components/ui/textarea";
 import { ScenePicker, type SceneChoice } from "@/components/app/scene-picker";
 import { SubcategoryField } from "@/components/app/subcategory-field";
-import { PromptChips, PromptTips } from "@/components/app/prompt-assist";
+import { PromptChips, PromptTips, useTeamPhrases } from "@/components/app/prompt-assist";
 import type { GeneratedImage } from "@/lib/ai/types";
 import { saveGeneration } from "@/features/history/actions";
 import { generateLifestyleImage } from "../actions";
@@ -119,6 +119,7 @@ export function GenerateWorkspace() {
   const [activeShot, setActiveShot] = useState(0);
   const [exportOpen, setExportOpen] = useState(false);
   const feed = useToolFeed("lifestyle");
+  const teamPhrases = useTeamPhrases("generate", form.category);
   // History ids of this job's saved shots, by shot index (shown in the canvas, so hidden from the feed).
   const [savedIds, setSavedIds] = useState<Record<number, string>>({});
   // Opened from History ("Open in tool"): put that result's prompt back, once, to regenerate from it.
@@ -440,7 +441,7 @@ export function GenerateWorkspace() {
                 className="field-sizing-content max-h-40 min-h-16 cursor-text resize-none rounded-xl border border-input bg-muted/40 px-3 py-2.5 text-sm leading-relaxed shadow-none placeholder:text-muted-foreground hover:border-ring/50 focus-visible:border-ring focus-visible:bg-background focus-visible:ring-3 focus-visible:ring-ring/30 md:text-sm dark:bg-input/30"
               />
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <PromptChips chips={th.raw("details") as string[]} value={form.instructions} max={2000} limit={3} onChange={(value) => set("instructions", value)} />
+                <PromptChips team={teamPhrases} chips={th.raw("details") as string[]} value={form.instructions} max={2000} limit={3} onChange={(value) => set("instructions", value)} />
                 <ImproveWithAiButton
                   value={form.instructions}
                   onChange={(value) => set("instructions", value)}

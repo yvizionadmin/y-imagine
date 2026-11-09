@@ -4,7 +4,9 @@ import { ProviderError, type ProviderErrorCode } from "@/lib/ai/errors";
 import { getTextProvider } from "@/lib/ai/registry";
 import { COPY_LANGUAGES, PROMPT_TOOLS, type CopyLanguage, type PromptTool } from "@/lib/ai/types";
 import { categoryPresets, CUSTOM_SCENE_MAX, findScene } from "@/lib/catalog-presets";
+import { listRecentGenerations } from "@/lib/generations";
 import { reportError } from "@/lib/observability/report";
+import { teamPhrases } from "@/lib/prompt-team";
 import { getWorkspace } from "@/lib/workspace";
 
 /** Same cap as the instruction boxes in Generate and Recolor. */
@@ -43,4 +45,30 @@ export async function improvePrompt(input: { tool: PromptTool; text: string; cat
     reportError("improvePrompt failed", error, { orgId: workspace.orgId, provider: provider.id });
     return { ok: false, error: "generation_failed" };
   }
+}
+
+/** How many of the org's newest results of a tool the team suggestions look at. */
+const TEAM_PHRASE_ROWS = 400;
+
+/**
+ * "From your team" chips: phrases this org keeps using in the instructions (Generate) or notes
+ * (Recolor) of its saved results, same category first. Reads only, within the org; no model, no credit.
+ */
+export async function listTeamPhrases(input: { tool: PromptTool; category: string }): Promise<string[]> {
+  const workspace = await getWorkspace({ read: true });
+  if (!(PROMPT_TOOLS as readonly unknown[]).includes(input?.tool)) return [];
+  // Before a category is chosen, every category counts the same.
+  const category = categoryPresets.find((c) => c.key === input.category)?.key ?? "";
+  const field = input.tool === "recolor" ? "notes" : "instructions";
+  const rows = await listRecentGenerations(workspace.orgId, input.tool === "recolor" ? "recolor" : "lifestyle", TEAM_PHRASE_ROWS);
+  return teamPhrases(
+    rows.map((row) => ({
+      text: row.settings[field] ?? null,
+      category: row.settings.category ?? null,
+      createdAt: row.createdAt,
+      uploaded: row.status === "uploaded",
+      approved: row.reviewStatus === "approved",
+    })),
+    { category },
+  );
 }

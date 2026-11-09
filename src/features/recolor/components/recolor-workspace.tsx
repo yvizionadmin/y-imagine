@@ -22,7 +22,7 @@ import {
   revealField,
 } from "@/components/app/config-panel";
 import { ProductDropzone, useObjectUrl } from "@/components/app/upload-inputs";
-import { PromptChips, PromptTips } from "@/components/app/prompt-assist";
+import { PromptChips, PromptTips, useTeamPhrases } from "@/components/app/prompt-assist";
 import { Input } from "@/components/ui/input";
 import { CatalogFetch } from "@/features/catalog/components/catalog-fetch";
 import { Textarea } from "@/components/ui/textarea";
@@ -84,6 +84,7 @@ export function RecolorWorkspace() {
   }));
   const chooseCategory = useCategorySync(form.category, (category) => setForm((f) => ({ ...f, category })));
   const [subcategory, chooseSubcategory] = useSubcategorySync(form.category);
+  const teamPhrases = useTeamPhrases("recolor", form.category);
   // Before a category is chosen, labels follow the first preset (a fabric recolor).
   const preset = categoryPresets.find((c) => c.key === form.category) ?? categoryPresets[0];
   const kind = preset.recolorKind;
@@ -330,7 +331,7 @@ export function RecolorWorkspace() {
                 className="field-sizing-content max-h-40 min-h-16 cursor-text resize-none rounded-xl border border-input bg-muted/40 px-3 py-2.5 text-sm leading-relaxed shadow-none placeholder:text-muted-foreground hover:border-ring/50 focus-visible:border-ring focus-visible:bg-background focus-visible:ring-3 focus-visible:ring-ring/30 md:text-sm dark:bg-input/30"
               />
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <PromptChips chips={th.raw(`recolor.${kind}`) as string[]} value={form.notes} max={2000} limit={3} onChange={(value) => set("notes", value)} />
+                <PromptChips team={teamPhrases} chips={th.raw(`recolor.${kind}`) as string[]} value={form.notes} max={2000} limit={3} onChange={(value) => set("notes", value)} />
                 <ImproveWithAiButton value={form.notes} onChange={(value) => set("notes", value)} request={{ tool: "recolor", category: form.category }} />
               </div>
               <PromptTips text={form.notes} />
