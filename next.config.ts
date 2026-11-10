@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
   experimental: {
     // Product PNGs up to 10 MB plus multipart overhead
     serverActions: { bodySizeLimit: "11mb" },
+    // The proxy buffers request bodies up to this size: video editor clip uploads (50 MB) + multipart overhead.
+    proxyClientMaxBodySize: "52mb",
   },
   turbopack: {
     root: import.meta.dirname,

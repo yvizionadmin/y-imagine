@@ -289,7 +289,7 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
 | B7 ✅ | Bulk improvements | Choose which catalog image to use; Arabic titles from `nameAr` for bulk A+ | Both available in the bulk tools | 1 |
 | B8 | Store publishing | Real Shopify and Magento image upload through the catalog connectors | An approved image appears on a test store | 3–5 |
 | B9 | Impersonation (done 2026-11-09, see Progress) | Super-admin "view as org admin", read-only, audited, time-limited | Console can open an org view and every visit is in the audit log | 1–2 |
-| B10 | Video editor (FFmpeg in the worker) | Trim, merge clips, subtitles, music / voice-over, export sizes (9:16, 1:1, 16:9) | A user cuts two clips together with subtitles and downloads the MP4 | 4–6 |
+| B10 ✅ | Video editor (FFmpeg in the worker) | Trim, merge clips, subtitles, music / voice-over, export sizes (9:16, 1:1, 16:9) | A user cuts two clips together with subtitles and downloads the MP4 | 4–6 |
 | B11 | AI Director | Idea → script → scenes → storyboard images → a video per scene → assembled MP4 (uses B10) | One prompt gives a finished multi-scene video | 3–5 |
 | B12 | Audio | Voice-over (TTS) and music generation, plan-gated and priced in Admin → Credits | Audio can be generated and added to an editor project | 2–3 |
 | B13 | Characters + motion | Saved characters reused across scenes, motion control where providers support it, consent kept | The same character appears across AI Director scenes | 3–5 |
@@ -1182,3 +1182,36 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   own product types have no Templates card (no picture) and aren't in the Copy tool's category list beyond hiding; a team scene
   from Generate can't be renamed by the editor who saved it; no screenshot pass of the new settings page in Arabic or on phones
   (not in the phone or axe scans); the starter backfill only matches unrenamed starters.
+- **2026-11-10, Roadmap B10: video editor (local).** New page **Video Editor** (`/editor`, rail item after Studio; paid plans
+  like Studio video; members edit, viewers and a super admin's view only look). A **project** (`video_edits`, migration `0019`)
+  holds a timeline (`src/lib/editor/timeline.ts`, zod-checked on every save and render): up to 12 clips (each a cut of a file,
+  0.5 s minimum, 3 min in total), up to 60 subtitles on the output timeline, one music / voice-over track (looped when
+  shorter, cut at the end) with its volume, the clips' own volume, and the export: 9:16 / 1:1 / 16:9, 720p / 1080p, fill
+  (crop) or fit (black bars). Clips are the org's Studio videos (History) or files uploaded into the project
+  (`POST /api/editor/uploads`: MP4 / WebM / MOV up to 50 MB, MP3 / M4A / WAV up to 20 MB, each opened with ffmpeg first so only
+  real video or sound is stored; asset kind `editor-media`, owned by the project). Saves accept only the org's own Studio videos
+  and the project's own uploads. Changes save as you go; the page previews the cut in the browser (clips back to back, the
+  subtitles over them, the track under them). **Export** queues a render (`video-edit` BullMQ queue, worker concurrency
+  `VIDEO_EDIT_CONCURRENCY`, default 1; in-process without Redis); `runEditRender` claims it once, copies the media to a temp
+  folder, probes each file, and runs **one ffmpeg command** built by `render-plan.ts` (pure, unit-tested): cut + scale/crop or
+  pad each clip to 30 fps, silence for clips without sound, concat, subtitles burned in from an ASS file with **bundled fonts**
+  (`assets/fonts`: Noto Sans + Noto Sans Arabic, SIL OFL; Cairo lacked the Arabic presentation forms this libass uses), the
+  track mixed under the clips; H.264 + AAC MP4 with faststart (asset kind `edit-render`; the previous export is replaced).
+  Download from the Export panel, named after the project. Not an AI job: no credits; uploads and exports count toward the
+  plan's **video storage**, projects left unchanged past the plan's video retention are removed by `cleanup-videos`, stuck
+  renders are failed by `close-stale-jobs`; at most 2 renders per org at once, 100 projects per org, 30 uploads per project,
+  30 uploads / min / user. Studio video cards have **Edit in the video editor** (`/editor?clip=`, a new project with that clip).
+  **ffmpeg:** `ffmpeg-static` (downloads a static ffmpeg 6.0 at `npm install`, also on Railway's Linux build) or `FFMPEG_PATH`;
+  `next.config` `proxyClientMaxBodySize` 52 MB so the proxy passes whole clip uploads. **Found on the way:** with
+  `-stream_loop -1` on the music input, ffmpeg 6.0 wrote the whole video and then hung closing that input (two clips + music);
+  the track is now read once and looped in the graph (`aloop`), with a regression case in the integration test. Verified: tsc +
+  eslint clean; 395 Vitest tests (+17: `editor-timeline` unit for limits, render args, ASS and probe parsing;
+  `video-editor` integration renders a real MP4 with ffmpeg: two clips, en + ar subtitles, a track, 9:16, sound, length; org
+  isolation, ffmpeg-checked uploads, missing media, stale renders, plan / role / read-only view, retention cleanup); `next
+  build`; full Playwright suite (42; new `video-editor.spec.ts`: upload two clips, subtitle, music, export 1:1, download and
+  check the MP4, reload, Arabic; `studio.spec.ts` opens a Studio video in the editor); screenshots en, ar, 390 px; migration
+  `0019` applied to the local dev database only. **Not yet / risks:** ffmpeg on Railway not yet run (the worker needs the
+  `ffmpeg-static` binary from `npm install`, or `FFMPEG_PATH` to a system ffmpeg); render time and memory for long 1080p edits
+  not measured (one render at a time per worker); no transitions, text styling, per-clip volume or timeline drag-and-drop;
+  voice-over is an uploaded file (generated voice is B12); exports are not in History; the browser preview is approximate
+  (it seeks between clips, so a short pause can show at each cut).

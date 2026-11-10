@@ -2,6 +2,7 @@ import {
   Activity,
   Building2,
   ChartColumn,
+  Clapperboard,
   Clock,
   Coins,
   Crop,
@@ -27,6 +28,7 @@ import {
 
 export type ToolKey =
   | "create"
+  | "editor"
   | "generate"
   | "recolor"
   | "aplus"
@@ -47,6 +49,8 @@ export type NavItem = { key: ToolKey; href: `/${string}`; icon: LucideIcon; soon
 // Copy (product descriptions) and Chat (the assistant) have no Figma rail item; they sit after the image tools.
 export const navItems: NavItem[] = [
   { key: "create", href: "/home", icon: Sparkles },
+  // Video editor (B10): next to the Studio, where the videos are made.
+  { key: "editor", href: "/editor", icon: Clapperboard },
   { key: "generate", href: "/generate", icon: WandSparkles },
   { key: "recolor", href: "/recolor", icon: Palette },
   { key: "aplus", href: "/aplus", icon: Image },

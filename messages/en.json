@@ -25,7 +25,8 @@
       "video": "Video",
       "aiImage": "AI Image",
       "upscale": "Upscale",
-      "chat": "Chat"
+      "chat": "Chat",
+      "editor": "Editor"
     },
     "tools": {
       "create": "Image & Video Studio",
@@ -40,7 +41,8 @@
       "links": "Short Links",
       "copy": "Product Copy",
       "upscale": "Image Upscale",
-      "chat": "AI Assistant"
+      "chat": "AI Assistant",
+      "editor": "Video Editor"
     },
     "userMenu": "Account menu",
     "settings": "Settings",
@@ -2798,7 +2800,8 @@
       "neon": "Neon"
     },
     "lookHint": "Lens and lighting are added to your prompt as direction. Auto adds nothing.",
-    "cameraNative": "{model} sets {move} with its own camera setting, not through your prompt."
+    "cameraNative": "{model} sets {move} with its own camera setting, not through your prompt.",
+    "editVideo": "Edit in the video editor"
   },
   "Emails": {
     "footer": "Imagine AI · You're getting this email because of your Imagine AI workspace.",
@@ -3145,6 +3148,122 @@
       "duplicate": "That product type is already in this category.",
       "lastCategory": "Keep at least one category.",
       "error": "Couldn't save. Try again."
+    }
+  },
+  "Editor": {
+    "title": "Video Editor",
+    "subtitle": "Cut your videos together, add subtitles and music, and download one MP4.",
+    "loading": "Loading the editor",
+    "projects": "Video projects",
+    "newProject": "New video",
+    "untitled": "Untitled video",
+    "name": "Video name",
+    "saving": "Saving…",
+    "saved": "All changes saved",
+    "saveError": "Couldn't save the last change",
+    "delete": "Delete",
+    "deleteConfirm": "Delete \"{name}\"? Its uploads and export are deleted too. Studio videos stay in History.",
+    "empty": "Start a video project: add clips from the Studio or upload your own, then add subtitles and music.",
+    "emptyReadOnly": "No video projects yet.",
+    "readOnly": "You can watch these projects. Members with the Editor or Admin role can change and export them.",
+    "locked": "The video editor is part of the paid plans, with Studio video.",
+    "upgrade": "See plans",
+    "preview": "Preview",
+    "previewEmpty": "Add a clip to see the preview",
+    "play": "Play",
+    "pause": "Pause",
+    "clips": {
+      "title": "Clips",
+      "add": "Add clip",
+      "empty": "Add clips from the Studio or upload one. They play in this order.",
+      "clipN": "Clip {n}",
+      "clipLabel": "Clip {n}: {name}",
+      "show": "Show {name} in the preview",
+      "start": "Start",
+      "end": "End",
+      "moveUp": "Move {name} earlier",
+      "moveDown": "Move {name} later",
+      "remove": "Remove {name}"
+    },
+    "addClip": {
+      "title": "Add a clip",
+      "description": "Your uploads and the team's Studio videos.",
+      "upload": "Upload a clip",
+      "uploading": "Uploading…",
+      "uploadHint": "MP4, WebM or MOV, up to 50 MB",
+      "none": "No videos yet. Make one in the Studio or upload a clip.",
+      "listLabel": "Videos you can add",
+      "pick": "Add {name}",
+      "untitled": "Video"
+    },
+    "subtitles": {
+      "title": "Subtitles",
+      "empty": "No subtitles. Each one shows over the video between its times (in seconds).",
+      "add": "Add subtitle at the playhead",
+      "text": "Subtitle {n}",
+      "placeholder": "Subtitle text",
+      "from": "From",
+      "to": "To",
+      "remove": "Remove subtitle {n}"
+    },
+    "sound": {
+      "title": "Sound",
+      "clipVolume": "Clip sound: {value}%",
+      "track": "Music",
+      "trackVolume": "Track volume: {value}%",
+      "removeTrack": "Remove the track",
+      "none": "No music or voice-over yet.",
+      "uploaded": "Uploaded tracks",
+      "use": "Use {name}",
+      "upload": "Upload music or voice-over",
+      "replace": "Upload another track",
+      "hint": "MP3, M4A or WAV, up to 20 MB. It plays from the start, loops if shorter, and stops at the end."
+    },
+    "export": {
+      "title": "Export",
+      "size": "Size",
+      "ratios": {
+        "9x16": "9:16 Story",
+        "1x1": "1:1 Square",
+        "16x9": "16:9 Wide"
+      },
+      "resolution": "Resolution",
+      "fit": "Framing",
+      "fits": {
+        "cover": "Fill (crop edges)",
+        "contain": "Fit (black bars)"
+      },
+      "button": "Export MP4",
+      "rendering": "Exporting…",
+      "renderingHint": "This takes a few seconds per clip. You can leave the page.",
+      "latest": "Latest export",
+      "result": "Exported video",
+      "download": "Download MP4",
+      "errors": {
+        "render_failed": "The export failed. Try again, or remove the clip that won't play.",
+        "media_missing": "A clip or the track was deleted. Remove it and export again.",
+        "render_unavailable": "Video export isn't available on this server right now.",
+        "timed_out": "The export took too long. Try fewer or shorter clips.",
+        "invalid_input": "Something in this edit can't be exported. Check the clip times."
+      }
+    },
+    "errors": {
+      "generic": "Something went wrong. Try again.",
+      "forbidden": "You can't change video projects.",
+      "not_in_plan": "The video editor is part of the paid plans.",
+      "invalid_input": "That couldn't be used. Check the file or the times.",
+      "not_found": "This project no longer exists.",
+      "too_many_projects": "Your team has the most video projects it can keep. Delete one first.",
+      "too_many_renders": "Your team already has exports running. Wait for one to finish.",
+      "storage_full": "Video storage is full. Delete old videos or projects first.",
+      "busy": "This project is exporting. Wait for it to finish.",
+      "rate_limited": "Too many uploads at once. Wait a minute and try again.",
+      "unavailable": "Uploads can't be checked on this server right now.",
+      "too_large": "That file is too large.",
+      "too_many_files": "This project has the most uploads it can hold.",
+      "too_long": "A video can be up to 3 minutes and 12 clips.",
+      "upload_failed": "The upload failed. Check your connection and try again.",
+      "save_failed": "Couldn't save the latest changes, so nothing was exported."
     }
   }
 }

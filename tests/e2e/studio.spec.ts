@@ -99,4 +99,10 @@ test("Studio video on a paid plan: queue, progress, then playback", async ({ pag
   await consent.check();
   await page.getByRole("button", { name: "Generate" }).click();
   await expect(page.locator("video")).toHaveCount(2, { timeout: 45_000 });
+
+  // A finished video opens in the video editor as a new project with that clip (B10).
+  await page.getByRole("link", { name: "Edit in the video editor" }).first().click();
+  await page.waitForURL(/\/en\/editor\?project=/);
+  await expect(page.getByRole("listitem", { name: /^Clip 1:/ })).toBeVisible();
+  await expect(page.getByRole("radio", { name: "9:16 Story" })).toHaveAttribute("aria-checked", "true");
 });

@@ -1,11 +1,12 @@
 // Background worker (Railway "worker" service: `npm run worker`). Registers the maintenance schedules
-// and processes their jobs, and runs bulk Copy items. Runs outside Next.js, so it's started with the react-server condition
+// and processes their jobs, and runs bulk Copy items, image items, Studio videos and editor exports. Runs outside Next.js, so it's started with the react-server condition
 // (server-only modules load) and reads the same environment as the web service.
 import * as Sentry from "@sentry/node";
 import { DelayedError, Queue, Worker, type Job } from "bullmq";
 import { runBatchItem } from "@/lib/copy/batch-runner";
 import { runImageItem } from "@/lib/image-batch/runner";
 import { runVideoJob } from "@/lib/video/runner";
+import { runEditRender } from "@/lib/editor/runner";
 import { cleanupOldVideos, closeStaleJobs, revalidateAllKeys } from "@/lib/jobs/maintenance";
 import {
   COPY_BATCH_QUEUE,
@@ -13,10 +14,12 @@ import {
   MAINTENANCE_QUEUE,
   queueConnection,
   SCHEDULES,
+  VIDEO_EDIT_QUEUE,
   VIDEO_QUEUE,
   type CopyItemJob,
   type ImageItemJob,
   type MaintenanceJob,
+  type VideoEditJobData,
   type VideoJobData,
 } from "@/lib/jobs/queues";
 import { sentryOptions } from "@/lib/observability/sentry-options";
@@ -88,7 +91,14 @@ const videoWorker = new Worker<VideoJobData>(
   { connection, concurrency: Number(process.env.VIDEO_CONCURRENCY) || 4, lockDuration: 12 * 60_000 },
 );
 
-for (const w of [worker, copyWorker, imageWorker, videoWorker] as Worker[]) {
+// Editor exports run FFmpeg on this machine's CPU: one at a time by default.
+const editWorker = new Worker<VideoEditJobData>(VIDEO_EDIT_QUEUE, async (job) => runEditRender(job.data.orgId, job.data.editId), {
+  connection,
+  concurrency: Number(process.env.VIDEO_EDIT_CONCURRENCY) || 1,
+  lockDuration: 12 * 60_000,
+});
+
+for (const w of [worker, copyWorker, imageWorker, videoWorker, editWorker] as Worker[]) {
   w.on("completed", (job: Job, result) => console.log(JSON.stringify({ job: job.name, ok: true, result })));
   w.on("failed", (job, error) => {
     console.error(JSON.stringify({ job: job?.name, ok: false, error: error.name }));
@@ -101,7 +111,7 @@ async function registerSchedules() {
   for (const [name, repeat] of Object.entries(SCHEDULES)) {
     await queue.upsertJobScheduler(name, repeat, { name, opts: { removeOnComplete: { count: 50 }, removeOnFail: { count: 200 } } });
   }
-  console.log(JSON.stringify({ worker: "started", queues: [MAINTENANCE_QUEUE, COPY_BATCH_QUEUE, IMAGE_BATCH_QUEUE, VIDEO_QUEUE], schedules: Object.keys(SCHEDULES) }));
+  console.log(JSON.stringify({ worker: "started", queues: [MAINTENANCE_QUEUE, COPY_BATCH_QUEUE, IMAGE_BATCH_QUEUE, VIDEO_QUEUE, VIDEO_EDIT_QUEUE], schedules: Object.keys(SCHEDULES) }));
 }
 
 registerSchedules().catch((error) => {
@@ -112,7 +122,7 @@ registerSchedules().catch((error) => {
 // Railway sends SIGTERM on deploy: finish the current job, then exit.
 for (const signal of ["SIGTERM", "SIGINT"] as const) {
   process.once(signal, async () => {
-    await Promise.all([worker.close(), copyWorker.close(), imageWorker.close(), videoWorker.close()]);
+    await Promise.all([worker.close(), copyWorker.close(), imageWorker.close(), videoWorker.close(), editWorker.close()]);
     await queue.close();
     await Sentry.flush(2_000);
     process.exit(0);

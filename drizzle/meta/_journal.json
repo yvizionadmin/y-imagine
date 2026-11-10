@@ -134,6 +134,13 @@
       "when": 1794239146483,
       "tag": "0018_product_types",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794290573210,
+      "tag": "0019_video_edits",
+      "breakpoints": true
     }
   ]
 }

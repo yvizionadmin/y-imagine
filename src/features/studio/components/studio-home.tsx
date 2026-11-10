@@ -569,6 +569,13 @@ function VideoCard({ item }: { item: StudioItem }) {
           {item.aspectRatio} · {item.seconds}s
         </span>
       </p>
+      {/* Opens the clip as a new video editor project (paid plans, like video itself). */}
+      {item.status === "ok" && item.url && (
+        <Link href={`/editor?clip=${item.url.split("/").pop()}`} className="flex items-center gap-1.5 border-t px-2 py-1.5 text-[11px] font-semibold text-primary hover:bg-muted">
+          <Clapperboard className="size-3.5" aria-hidden />
+          {t("editVideo")}
+        </Link>
+      )}
     </li>
   );
 }

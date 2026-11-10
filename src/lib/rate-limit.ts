@@ -19,6 +19,8 @@ export const LIMITS = {
   jobsPerOrg: { limit: 60, windowMs: 60_000 },
   /** "Improve with AI" prompt rewrites per user (free, so not counted as jobs). */
   promptRewritesPerUser: { limit: 10, windowMs: 60_000 },
+  /** Video editor uploads per user (each one is stored and opened with ffmpeg). */
+  editorUploadsPerUser: { limit: 30, windowMs: 60_000 },
   /** Key saves/checks per org (each one calls the provider). */
   keyChecksPerOrg: { limit: 10, windowMs: 60_000 },
 } satisfies Record<string, Limit>;

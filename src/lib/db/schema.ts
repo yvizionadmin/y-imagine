@@ -1,4 +1,4 @@
-import { boolean, customType, index, integer, jsonb, pgTable, primaryKey, text, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, customType, index, integer, jsonb, pgTable, primaryKey, real, text, uniqueIndex } from "drizzle-orm/pg-core";
 import type { AiProviderId, KeyError, KeyStatus } from "@/lib/ai/providers-info";
 import type { ModelFeature } from "@/lib/ai/models";
 import type { CopyLanguage, Feature, ProductCopy, ProviderId } from "@/lib/ai/types";
@@ -9,6 +9,8 @@ import type { BatchItemStatus, BatchStatus, BatchDefaults } from "@/lib/copy/bat
 import type { CatalogErrorCode, ConnectorType } from "@/lib/catalog/types";
 import type { EncryptedSecret } from "@/lib/crypto/secrets";
 import type { LookItem } from "@/features/looks/config";
+import type { EditTimeline } from "@/lib/editor/timeline";
+import type { EditorMedia } from "@/lib/editor/media";
 import type { BillingStatus, PlanId } from "@/lib/plans";
 
 // Postgres schema (Drizzle, snake_case columns). Every tenant table has `org_id` and is queried
@@ -202,7 +204,7 @@ export const assets = pgTable(
     id: text().primaryKey(),
     orgId: orgId(),
     mimeType: text().notNull(),
-    kind: text().$type<"generation" | "look-product" | "room-background" | "look-background" | "look" | "swatch" | "video" | "video-frame">().notNull(),
+    kind: text().$type<"generation" | "look-product" | "room-background" | "look-background" | "look" | "swatch" | "video" | "video-frame" | "editor-media" | "edit-render">().notNull(),
     byteSize: integer(),
     createdAt: now(),
   },
@@ -273,6 +275,33 @@ export const videoJobs = pgTable(
     finishedAt: timestamp(),
   },
   (t) => [index().on(t.orgId, t.createdAt), index().on(t.status, t.updatedAt)],
+);
+
+/**
+ * Video editor projects (B10). `timeline` is the edit (src/lib/editor/timeline.ts); `media` lists the
+ * files uploaded into this project (asset kind editor-media), removed with it. Exporting renders the
+ * timeline in the worker (FFmpeg): status pending → running → ok | failed, with the MP4 in `outputAssetId`.
+ */
+export const videoEdits = pgTable(
+  "video_edits",
+  {
+    id: text().primaryKey(),
+    orgId: orgId(),
+    name: text().notNull(),
+    timeline: jsonb().$type<EditTimeline>().notNull(),
+    media: jsonb().$type<EditorMedia[]>().notNull().default([]),
+    status: text().$type<"draft" | "pending" | "running" | "ok" | "failed">().notNull().default("draft"),
+    outputAssetId: text(),
+    outputMime: text(),
+    outputSeconds: real(),
+    error: text(),
+    createdBy: text().notNull(),
+    createdById: text().notNull(),
+    createdAt: now(),
+    updatedAt: now(),
+    renderedAt: timestamp(),
+  },
+  (t) => [index().on(t.orgId, t.updatedAt), index().on(t.status, t.updatedAt)],
 );
 
 export const looks = pgTable(

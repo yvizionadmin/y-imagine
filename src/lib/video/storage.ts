@@ -5,13 +5,15 @@ import { db, schema } from "@/lib/db";
 import { reportError } from "@/lib/observability/report";
 import { PLANS, type PlanId } from "@/lib/plans";
 import { deleteAsset } from "@/lib/storage/assets";
+import { listIdleEdits, removeEdits } from "@/lib/editor/edits";
 
-// Studio video storage: each plan has room for clips (and their start frames), and clips older than
-// the plan's retention are removed by the `cleanup-videos` schedule. Usage is read from the `assets`
+// Studio video storage: each plan has room for clips (and their start frames, and the video editor's
+// uploads and exports), and clips older than the plan's retention are removed by the `cleanup-videos`
+// schedule, as are editor projects left unchanged for that long. Usage is read from the `assets`
 // index (byte sizes recorded at save time), so it costs one query and no bucket listing.
 
 const { assets, generations, organizations, videoJobs } = schema;
-const VIDEO_KINDS = ["video", "video-frame"] as const;
+const VIDEO_KINDS = ["video", "video-frame", "editor-media", "edit-render"] as const;
 const DAY_MS = 24 * 60 * 60_000;
 /** Jobs removed per org per run, so one big org can't hold the sweep; the rest go on the next run. */
 const CLEANUP_BATCH = 200;
@@ -68,13 +70,15 @@ export async function cleanupOldVideos(now = Date.now()) {
       const withJob = old.length ? await scoped.select(videoJobs, inArray(videoJobs.assetId, old.map((g) => g.assetId))) : [];
       const known = new Set(withJob.map((j) => j.assetId));
       const orphans = old.filter((g) => !known.has(g.assetId));
-      if (!jobs.length && !orphans.length) continue;
+      const edits = await listIdleEdits(org.id, cutoff, CLEANUP_BATCH);
+      if (!jobs.length && !orphans.length && !edits.length) continue;
       await removeVideoJobs(org.id, jobs);
+      await removeEdits(org.id, edits);
       if (orphans.length) {
         await scoped.delete(generations, inArray(generations.id, orphans.map((g) => g.id)));
         await Promise.all(orphans.map((g) => deleteAsset(org.id, g.assetId, g.mimeType)));
       }
-      const count = jobs.length + orphans.length;
+      const count = jobs.length + orphans.length + edits.length;
       summary.orgs++;
       summary.removed += count;
       await recordAudit({

@@ -7,6 +7,7 @@ import { releaseStaleItems } from "@/lib/copy/batches";
 import { releaseStaleImageItems } from "@/lib/image-batch/batches";
 import { releaseStaleJobs } from "@/lib/usage";
 import { releaseStaleVideoJobs } from "@/lib/video/jobs";
+import { releaseStaleRenders } from "@/lib/editor/edits";
 
 export { cleanupOldVideos } from "@/lib/video/storage";
 
@@ -59,5 +60,6 @@ export async function closeStaleJobs() {
     batchItems: await releaseStaleItems(),
     imageItems: await releaseStaleImageItems(),
     videoJobs: await releaseStaleVideoJobs(),
+    editRenders: await releaseStaleRenders(),
   };
 }
