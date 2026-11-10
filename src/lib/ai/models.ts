@@ -105,21 +105,50 @@ export function videoModelsFor(provider: VideoProviderId, available: readonly st
   return listed.length ? listed : [...preferred];
 }
 
+// ── Audio ────────────────────────────────────────────────────────────────────────────────────
+
+export const AUDIO_FEATURES = ["voice", "music"] as const satisfies readonly Feature[];
+export type AudioFeature = (typeof AUDIO_FEATURES)[number];
+export const isAudioFeature = (value: unknown): value is AudioFeature => (AUDIO_FEATURES as readonly unknown[]).includes(value);
+
+/** Providers with speech (voice-over) through the AI SDK; music is Gemini's Lyria only. */
+export const AUDIO_PROVIDERS: Record<AudioFeature, readonly ("openai" | "gemini")[]> = { voice: ["openai", "gemini"], music: ["gemini"] };
+export type AudioProviderId = "openai" | "gemini";
+
+/** Audio models, best first; the preferred list when the key reports none of them. */
+const AUDIO_MODELS: Record<AudioFeature, Partial<Record<AudioProviderId, { preferred: readonly string[]; pattern: RegExp }>>> = {
+  voice: {
+    openai: { preferred: ["gpt-4o-mini-tts", "tts-1-hd", "tts-1"], pattern: /^(gpt-4o-mini-tts|tts-1(-hd)?)$/ },
+    gemini: { preferred: ["gemini-2.5-flash-preview-tts", "gemini-2.5-pro-preview-tts"], pattern: /^gemini-[\d.]+-(flash|pro)(-lite)?(-preview)?-tts(-preview)?$/ },
+  },
+  music: {
+    gemini: { preferred: ["lyria-3-clip-preview", "lyria-3-pro-preview"], pattern: /^lyria-\d+(-clip|-pro)?(-preview)?$/ },
+  },
+};
+
+export function audioModelsFor(feature: AudioFeature, provider: AiProviderId, available: readonly string[] | null): string[] {
+  const entry = AUDIO_MODELS[feature][provider as AudioProviderId];
+  if (!entry) return [];
+  const listed = available?.filter((id) => entry.pattern.test(id)).sort((a, b) => rank(entry.preferred, a) - rank(entry.preferred, b) || a.localeCompare(b)) ?? [];
+  return listed.length ? listed : [...entry.preferred];
+}
+
 // ── Per-tool choice ──────────────────────────────────────────────────────────────────────────
 
 /** Tools with a model picker in Settings → API Keys. */
-export const MODEL_FEATURES = [...IMAGE_FEATURES, ...TEXT_FEATURES, ...VIDEO_FEATURES] as const;
+export const MODEL_FEATURES = [...IMAGE_FEATURES, ...TEXT_FEATURES, ...VIDEO_FEATURES, ...AUDIO_FEATURES] as const;
 export type ModelFeature = (typeof MODEL_FEATURES)[number];
 export const isModelFeature = (value: unknown): value is ModelFeature => (MODEL_FEATURES as readonly unknown[]).includes(value);
 
 /** Providers that can serve a tool, in "Automatic" order. */
 export const providersFor = (feature: ModelFeature): readonly AiProviderId[] =>
-  isImageFeature(feature) ? IMAGE_PROVIDERS : isVideoFeature(feature) ? VIDEO_PROVIDERS : TEXT_PROVIDERS;
+  isImageFeature(feature) ? IMAGE_PROVIDERS : isVideoFeature(feature) ? VIDEO_PROVIDERS : isAudioFeature(feature) ? AUDIO_PROVIDERS[feature] : TEXT_PROVIDERS;
 
 /** Models of one provider that can serve a tool, best first. */
 export function modelsFor(feature: ModelFeature, provider: AiProviderId, available: readonly string[] | null): string[] {
   if (isImageFeature(feature)) return isImageProvider(provider) ? imageModelsFor(provider, available) : [];
   if (isVideoFeature(feature)) return isVideoProvider(provider) ? videoModelsFor(provider, available) : [];
+  if (isAudioFeature(feature)) return audioModelsFor(feature, provider, available);
   return textModelsFor(provider, available);
 }
 

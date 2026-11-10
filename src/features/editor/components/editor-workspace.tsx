@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Clapperboard, Loader2, Lock, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/app/page-header";
@@ -12,11 +12,13 @@ import {
   createEditorProject,
   deleteEditorProject,
   exportEditorProject,
+  generateEditorAudio,
   getEditorProject,
   getEditorSetup,
   listEditorProjects,
   listEditorSources,
   saveEditorProject,
+  type AudioRequest,
 } from "../actions";
 import type { EditorError, EditorMediaView, EditorProject, EditorProjectSummary, EditorSetup, EditorSource } from "../types";
 import { AddClipDialog, ClipList, type ClipPick } from "./clip-list";
@@ -50,6 +52,7 @@ function setProjectParam(id: string | null) {
 export function EditorWorkspace() {
   const t = useTranslations("Editor");
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [setup, setSetup] = useState<EditorSetup | null>(null);
   const [projects, setProjects] = useState<EditorProjectSummary[] | null>(null);
   const [project, setProject] = useState<EditorProject | null>(null);
@@ -201,7 +204,7 @@ export function EditorWorkspace() {
     setAdding(false);
   }
 
-  async function upload(file: File, kind: "clip" | "audio") {
+  async function upload(file: File, kind: "clip" | "audio", track: "music" | "voice" = "music") {
     if (!project) return false;
     setError(null);
     const form = new FormData();
@@ -217,7 +220,33 @@ export function EditorWorkspace() {
     const media = body.media;
     setProject((current) => (current ? { ...current, media: [...current.media, media] } : current));
     if (kind === "clip") addClip({ assetId: media.assetId, name: media.name, seconds: media.seconds }, media.seconds);
-    else change({ audio: { assetId: media.assetId, name: media.name, volume: 0.6 } });
+    else putOnTrack(media, track);
+    return true;
+  }
+
+  /** Puts a project sound on the music track (under the whole video) or as the voice-over (from the playhead). */
+  function putOnTrack(media: EditorMediaView, track: "music" | "voice") {
+    if (!timeline) return;
+    if (track === "music") change({ audio: { assetId: media.assetId, name: media.name, volume: 0.5 } });
+    else {
+      const total = timelineDuration(timeline);
+      change({ voice: { assetId: media.assetId, name: media.name, volume: 1, start: Math.round(Math.min(playhead, Math.max(0, total - 0.5)) * 10) / 10 } });
+    }
+  }
+
+  /** Generates a voice-over or music track (one job, charged) and uses it right away. */
+  async function generate(request: AudioRequest) {
+    if (!project) return false;
+    setError(null);
+    const result = await generateEditorAudio(project.id, request);
+    if (!result.ok) {
+      setError(result.error);
+      return false;
+    }
+    const media = result.media;
+    setProject((current) => (current ? { ...current, media: [...current.media, media] } : current));
+    putOnTrack(media, request.kind === "voice" ? "voice" : "music");
+    router.refresh(); // the credit badge
     return true;
   }
 
@@ -345,6 +374,7 @@ export function EditorWorkspace() {
                   timeline={timeline}
                   urlFor={urlFor}
                   audioUrl={timeline.audio ? urlFor(timeline.audio.assetId) : null}
+                  voiceUrl={timeline.voice ? urlFor(timeline.voice.assetId) : null}
                   seek={seek}
                   onTime={setPlayhead}
                 />
@@ -363,8 +393,11 @@ export function EditorWorkspace() {
                   <SoundPanel
                     timeline={timeline}
                     audioMedia={project.media.filter((m) => m.kind === "audio")}
+                    playhead={playhead}
+                    problems={setup.audio}
                     onChange={change}
-                    onUpload={(file) => upload(file, "audio")}
+                    onUpload={(file, track) => upload(file, "audio", track)}
+                    onGenerate={generate}
                   />
                 </fieldset>
                 <ExportPanel project={project} name={name} timeline={timeline} canEdit={canEdit} exporting={exporting} onChange={change} onExport={() => void exportVideo()} />

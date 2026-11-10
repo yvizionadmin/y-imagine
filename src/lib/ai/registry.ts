@@ -10,6 +10,9 @@ import { finishJob, startJob } from "@/lib/usage";
 import { ProviderError, type ProviderErrorCode } from "./errors";
 import { getModelPreference } from "./model-preferences";
 import {
+  AUDIO_PROVIDERS,
+  audioModelsFor,
+  type AudioFeature,
   IMAGE_PROVIDERS,
   imageModelsFor,
   isImageFeature,
@@ -28,7 +31,9 @@ import {
 } from "./models";
 import { loadProviderKey, recordKeyCheck } from "./provider-keys";
 import { createAiImageProvider } from "./providers/ai-sdk";
+import { createAiAudioProvider } from "./providers/ai-sdk-audio";
 import { createAiTextProvider } from "./providers/ai-sdk-text";
+import { demoAudioProvider } from "./providers/demo-audio";
 import { createAiVideoProvider } from "./providers/ai-sdk-video";
 import { createByteplusVideoProvider } from "./providers/byteplus-video";
 import { demoVideoProvider } from "./providers/demo-video";
@@ -36,7 +41,7 @@ import { createKlingVideoProvider } from "./providers/kling-video";
 import { demoProvider } from "./providers/demo";
 import { demoTextProvider } from "./providers/demo-text";
 import type { AiProviderId } from "./providers-info";
-import type { Feature, GeneratedImage, ImageProvider, ProviderId, TextProvider, VideoProvider } from "./types";
+import type { AudioProvider, Feature, GeneratedImage, ImageProvider, ProviderId, TextProvider, VideoProvider } from "./types";
 import { measureSwatch } from "@/lib/image/swatch";
 
 /**
@@ -113,6 +118,47 @@ export async function getVideoProvider(actor: JobActor, credits: number): Promis
     model: provider.model,
     generateVideo: (request) => runJob(actor, "video", provider.id, () => provider.generateVideo(request), (r) => r.model, credits),
   };
+}
+
+/**
+ * The org's voice-over or music provider. Each speak / compose call is one job of that feature
+ * (its cost from Admin → Credits; paid plans only, like the video editor that uses it).
+ */
+export async function getAudioProvider(actor: JobActor, feature: AudioFeature): Promise<AudioProvider> {
+  const resolved = await resolveAudioProvider(actor.orgId, feature);
+  if (!resolved.ok) {
+    const refuse = async (): Promise<never> => {
+      throw new ProviderError(resolved.code);
+    };
+    return { id: "demo", model: "", speak: refuse, compose: refuse };
+  }
+  const provider = resolved.provider;
+  return {
+    id: provider.id,
+    model: provider.model,
+    speak: (request) => runJob(actor, feature, provider.id, () => provider.speak(request), (r) => r.model),
+    compose: (request) => runJob(actor, feature, provider.id, () => provider.compose(request), (r) => r.model),
+  };
+}
+
+/** Why no provider can make this audio now, or null when one can (the editor shows it before asking). */
+export async function audioProviderProblem(orgId: string, feature: AudioFeature): Promise<ProviderErrorCode | null> {
+  const resolved = await resolveAudioProvider(orgId, feature);
+  return resolved.ok ? null : resolved.code;
+}
+
+async function resolveAudioProvider(orgId: string, feature: AudioFeature): Promise<Resolved<AudioProvider>> {
+  const { preference, order } = await providerOrder(orgId, feature, AUDIO_PROVIDERS[feature]);
+  for (const provider of order) {
+    const stored = await loadProviderKey(orgId, provider);
+    if (!stored || stored.status !== "valid") continue;
+    if (demoMode() && stored.key.startsWith("demo-")) return { ok: true, provider: demoAudioProvider };
+    const models = audioModelsFor(feature, provider, stored.models);
+    const model = preference?.provider === provider && models.includes(preference.model) ? preference.model : models[0];
+    if (!model) continue;
+    return { ok: true, provider: createAiAudioProvider({ provider, apiKey: stored.key, model, onKeyRejected: keyRejected(orgId, provider) }) };
+  }
+  return demoMode() ? { ok: true, provider: demoAudioProvider } : { ok: false, code: "no_provider" };
 }
 
 /** The video model the org would use now (for the Studio's options), or why there is none. */

@@ -1,21 +1,28 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
-import { Captions, Download, Loader2, Music, Plus, Trash2, Upload, Video } from "lucide-react";
+import { Captions, Download, Loader2, Mic, Music, Plus, Sparkles, Trash2, Upload, Video } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
+import { blockedReason } from "@/components/app/job-errors";
+import { useJobCost } from "@/features/credits/use-job-cost";
+import { VOICE_STYLES, type VoiceStyle } from "@/lib/ai/types";
 import {
   EDIT_ASPECT_RATIOS,
   EDIT_FITS,
   EDIT_RESOLUTIONS,
   EDITOR_AUDIO_TYPES,
   MAX_SUBTITLES,
+  MUSIC_PROMPT_MAX,
   SUBTITLE_TEXT_MAX,
+  VOICE_DIRECTION_MAX,
+  VOICE_SCRIPT_MAX,
   timelineDuration,
   type EditSubtitle,
   type EditTimeline,
 } from "@/lib/editor/timeline";
+import type { AudioRequest } from "../actions";
 import type { EditorMediaView, EditorProject } from "../types";
 
 function Panel({ id, icon, title, children }: { id: string; icon: ReactNode; title: string; children: ReactNode }) {
@@ -131,86 +138,257 @@ export function SubtitlesPanel({ timeline, playhead, onChange }: { timeline: Edi
   );
 }
 
-/** The clips' own sound, and one music or voice-over track under the whole video. */
+type Track = "music" | "voice";
+type AudioProblem = string | null;
+
+/** A project file's name as shown: generated ones say what they are. */
+function useMediaLabel() {
+  const t = useTranslations("Editor");
+  return (m: Pick<EditorMediaView, "name" | "source">) => (m.source ? t(`sound.made.${m.source}`, { name: m.name }) : m.name);
+}
+
+/**
+ * The clips' own sound, a music track under the whole video (looped) and a voice-over played once
+ * from a set time. Each track can be uploaded, picked from the project's files, or generated (B12).
+ */
 export function SoundPanel({
   timeline,
   audioMedia,
+  playhead,
+  problems,
   onChange,
   onUpload,
+  onGenerate,
 }: {
   timeline: EditTimeline;
   audioMedia: EditorMediaView[];
-  onChange: (patch: Partial<Pick<EditTimeline, "audio" | "clipVolume">>) => void;
-  onUpload: (file: File) => Promise<boolean>;
+  playhead: number;
+  /** Why voice-over / music can't be generated now (a job error code), or null. */
+  problems: { voice: AudioProblem; music: AudioProblem };
+  onChange: (patch: Partial<Pick<EditTimeline, "audio" | "voice" | "clipVolume">>) => void;
+  onUpload: (file: File, track: Track) => Promise<boolean>;
+  onGenerate: (request: AudioRequest) => Promise<boolean>;
 }) {
   const t = useTranslations("Editor");
-  const input = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const audio = timeline.audio;
-
-  async function upload(file: File | undefined) {
-    if (!file) return;
-    setUploading(true);
-    await onUpload(file);
-    setUploading(false);
-  }
-
   return (
     <Panel id="editor-sound" icon={<Music className="size-4" aria-hidden />} title={t("sound.title")}>
       <label className="flex flex-col gap-1 text-[11px] font-medium text-muted-foreground">
         {t("sound.clipVolume", { value: Math.round(timeline.clipVolume * 100) })}
         <input type="range" min={0} max={100} value={Math.round(timeline.clipVolume * 100)} onChange={(e) => onChange({ clipVolume: Number(e.target.value) / 100 })} className="accent-primary" />
       </label>
+      <TrackSection track="music" timeline={timeline} audioMedia={audioMedia} playhead={playhead} problem={problems.music} onChange={onChange} onUpload={onUpload} onGenerate={onGenerate} />
+      <TrackSection track="voice" timeline={timeline} audioMedia={audioMedia} playhead={playhead} problem={problems.voice} onChange={onChange} onUpload={onUpload} onGenerate={onGenerate} />
+    </Panel>
+  );
+}
 
-      {audio ? (
+function TrackSection({
+  track,
+  timeline,
+  audioMedia,
+  playhead,
+  problem,
+  onChange,
+  onUpload,
+  onGenerate,
+}: {
+  track: Track;
+  timeline: EditTimeline;
+  audioMedia: EditorMediaView[];
+  playhead: number;
+  problem: AudioProblem;
+  onChange: (patch: Partial<Pick<EditTimeline, "audio" | "voice">>) => void;
+  onUpload: (file: File, track: Track) => Promise<boolean>;
+  onGenerate: (request: AudioRequest) => Promise<boolean>;
+}) {
+  const t = useTranslations("Editor");
+  const label = useMediaLabel();
+  const input = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [making, setMaking] = useState(false);
+  const total = timelineDuration(timeline);
+  const current = track === "music" ? timeline.audio : timeline.voice;
+  const currentMedia = current ? audioMedia.find((m) => m.assetId === current.assetId) : undefined;
+  const id = `editor-${track}`;
+
+  async function upload(file: File | undefined) {
+    if (!file) return;
+    setUploading(true);
+    await onUpload(file, track);
+    setUploading(false);
+  }
+
+  function use(m: EditorMediaView) {
+    if (track === "music") onChange({ audio: { assetId: m.assetId, name: m.name, volume: 0.5 } });
+    else onChange({ voice: { assetId: m.assetId, name: m.name, volume: 1, start: round(Math.min(playhead, Math.max(0, total - 0.5))) } });
+  }
+
+  return (
+    <section aria-labelledby={id} className="flex flex-col gap-2 border-t pt-3">
+      <h3 id={id} className="flex items-center gap-1.5 text-xs font-bold">
+        {track === "music" ? <Music className="size-3.5" aria-hidden /> : <Mic className="size-3.5" aria-hidden />}
+        {t(`sound.${track}.title`)}
+      </h3>
+
+      {current ? (
         <div className="flex flex-col gap-2 rounded-xl bg-muted/60 p-2">
           <div className="flex items-center gap-2">
-            <Music className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
             <span className="min-w-0 flex-1 truncate text-xs" dir="auto">
-              {audio.name || t("sound.track")}
+              {currentMedia ? label(currentMedia) : current.name || t(`sound.${track}.title`)}
             </span>
-            <Button type="button" size="icon-sm" variant="ghost" aria-label={t("sound.removeTrack")} onClick={() => onChange({ audio: null })}>
+            <Button type="button" size="icon-sm" variant="ghost" aria-label={t(`sound.${track}.remove`)} onClick={() => onChange(track === "music" ? { audio: null } : { voice: null })}>
               <Trash2 className="size-3.5" aria-hidden />
             </Button>
           </div>
           <label className="flex flex-col gap-1 text-[11px] font-medium text-muted-foreground">
-            {t("sound.trackVolume", { value: Math.round(audio.volume * 100) })}
-            <input type="range" min={0} max={100} value={Math.round(audio.volume * 100)} onChange={(e) => onChange({ audio: { ...audio, volume: Number(e.target.value) / 100 } })} className="accent-primary" />
+            {t(`sound.${track}.volume`, { value: Math.round(current.volume * 100) })}
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(current.volume * 100)}
+              onChange={(e) => {
+                const volume = Number(e.target.value) / 100;
+                if (track === "music" && timeline.audio) onChange({ audio: { ...timeline.audio, volume } });
+                if (track === "voice" && timeline.voice) onChange({ voice: { ...timeline.voice, volume } });
+              }}
+              className="accent-primary"
+            />
           </label>
+          {track === "voice" && timeline.voice && (
+            <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              {t("sound.voice.start")}
+              <input
+                type="number"
+                min={0}
+                step={0.1}
+                value={timeline.voice.start}
+                dir="ltr"
+                onChange={(e) => {
+                  const start = round(Math.max(0, Number(e.target.value)));
+                  if (Number.isFinite(start) && timeline.voice) onChange({ voice: { ...timeline.voice, start } });
+                }}
+                className="h-7 w-16 rounded-md border bg-background px-1.5 text-xs text-foreground tabular-nums"
+              />
+            </label>
+          )}
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">{t("sound.none")}</p>
+        <p className="text-xs text-muted-foreground">{t(`sound.${track}.none`)}</p>
       )}
 
-      {!audio && audioMedia.length > 0 && (
-        <ul className="flex flex-col gap-1" aria-label={t("sound.uploaded")}>
+      {!current && audioMedia.length > 0 && (
+        <ul className="flex flex-col gap-1" aria-label={t(`sound.${track}.files`)}>
           {audioMedia.map((m) => (
             <li key={m.assetId}>
-              <button type="button" onClick={() => onChange({ audio: { assetId: m.assetId, name: m.name, volume: 0.6 } })} className="w-full truncate rounded-lg border px-2 py-1.5 text-start text-xs hover:bg-muted" dir="auto">
-                {t("sound.use", { name: m.name })}
+              <button type="button" onClick={() => use(m)} className="w-full truncate rounded-lg border px-2 py-1.5 text-start text-xs hover:bg-muted" dir="auto">
+                {t("sound.use", { name: label(m) })}
               </button>
             </li>
           ))}
         </ul>
       )}
 
-      <input
-        ref={input}
-        type="file"
-        accept={[...EDITOR_AUDIO_TYPES, "audio/x-m4a", "audio/x-wav", ".mp3,.m4a,.wav"].join(",")}
-        className="sr-only"
-        aria-label={t("sound.upload")}
-        onChange={(e) => {
-          void upload(e.target.files?.[0]);
-          e.target.value = "";
-        }}
+      {making ? (
+        <GenerateForm track={track} problem={problem} onCancel={() => setMaking(false)} onGenerate={async (request) => (await onGenerate(request)) && (setMaking(false), true)} />
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          <Button type="button" size="sm" variant="outline" onClick={() => setMaking(true)}>
+            <Sparkles className="size-3.5" aria-hidden />
+            {t(`sound.${track}.generate`)}
+          </Button>
+          <input
+            ref={input}
+            type="file"
+            accept={[...EDITOR_AUDIO_TYPES, "audio/x-m4a", "audio/x-wav", ".mp3,.m4a,.wav"].join(",")}
+            className="sr-only"
+            aria-label={t(`sound.${track}.upload`)}
+            onChange={(e) => {
+              void upload(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+          <Button type="button" size="sm" variant="ghost" disabled={uploading} onClick={() => input.current?.click()}>
+            {uploading ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : <Upload className="size-3.5" aria-hidden />}
+            {t("sound.uploadShort")}
+          </Button>
+        </div>
+      )}
+      <p className="text-[11px] text-muted-foreground">{t(`sound.${track}.hint`)}</p>
+    </section>
+  );
+}
+
+/** Writes the request for a generated voice-over (script, voice, direction) or music (a description). */
+function GenerateForm({ track, problem, onCancel, onGenerate }: { track: Track; problem: AudioProblem; onCancel: () => void; onGenerate: (request: AudioRequest) => Promise<boolean> }) {
+  const t = useTranslations("Editor");
+  const tw = useTranslations("Workspace");
+  const cost = useJobCost(track);
+  const [text, setText] = useState("");
+  const [voice, setVoice] = useState<VoiceStyle>("warm");
+  const [direction, setDirection] = useState("");
+  const [busy, setBusy] = useState(false);
+  const max = track === "voice" ? VOICE_SCRIPT_MAX : MUSIC_PROMPT_MAX;
+  const blocked = problem ? blockedReason(problem) : null;
+
+  async function submit() {
+    if (!text.trim() || busy || problem) return;
+    setBusy(true);
+    const ok = await onGenerate(track === "voice" ? { kind: "voice", text, voice, direction } : { kind: "music", prompt: text });
+    setBusy(false);
+    if (ok) setText("");
+  }
+
+  return (
+    <form
+      aria-label={t(`sound.${track}.generate`)}
+      className="flex flex-col gap-2 rounded-xl border p-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void submit();
+      }}
+    >
+      {problem && (
+        <p role="note" className="rounded-lg bg-muted px-2 py-1.5 text-[11px]">
+          {blocked ? tw(`blocked.${blocked}.title`) : t.has(`errors.${problem}`) ? t(`errors.${problem}`) : t("errors.generic")}
+        </p>
+      )}
+      <textarea
+        value={text}
+        maxLength={max}
+        rows={track === "voice" ? 4 : 2}
+        dir="auto"
+        autoFocus
+        aria-label={t(`sound.${track}.prompt`)}
+        placeholder={t(`sound.${track}.placeholder`)}
+        onChange={(e) => setText(e.target.value)}
+        className="w-full resize-none rounded-lg border bg-background px-2 py-1.5 text-xs"
       />
-      <Button type="button" size="sm" variant="outline" disabled={uploading} onClick={() => input.current?.click()}>
-        {uploading ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : <Upload className="size-3.5" aria-hidden />}
-        {audio ? t("sound.replace") : t("sound.upload")}
-      </Button>
-      <p className="text-[11px] text-muted-foreground">{t("sound.hint")}</p>
-    </Panel>
+      {track === "voice" && (
+        <>
+          <Choice label={t("sound.voice.style")} value={voice} options={VOICE_STYLES} labelFor={(v) => t(`sound.voice.styles.${v}`)} onChange={setVoice} />
+          <input
+            value={direction}
+            maxLength={VOICE_DIRECTION_MAX}
+            dir="auto"
+            aria-label={t("sound.voice.direction")}
+            placeholder={t("sound.voice.directionPlaceholder")}
+            onChange={(e) => setDirection(e.target.value)}
+            className="h-8 w-full rounded-lg border bg-background px-2 text-xs"
+          />
+        </>
+      )}
+      <div className="flex items-center gap-1.5">
+        <Button type="submit" size="sm" disabled={busy || !text.trim() || problem !== null}>
+          {busy ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : <Sparkles className="size-3.5" aria-hidden />}
+          {busy ? t("sound.generating") : t("sound.make")}
+        </Button>
+        <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={onCancel}>
+          {t("sound.cancel")}
+        </Button>
+        <span className="ms-auto text-[11px] text-muted-foreground">{t("sound.cost", { count: cost })}</span>
+      </div>
+    </form>
   );
 }
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // The video editor's project document (B10): clips cut from the org's videos, subtitles on the output
-// timeline, one music / voice-over track, and the export size. Shared by the editor UI and the server
+// timeline, and the export size. Shared by the editor UI and the server
 // (which re-checks it on every save and render), so the limits live here.
 
 export const EDIT_ASPECT_RATIOS = ["9:16", "1:1", "16:9"] as const;
@@ -25,6 +25,11 @@ export const EDITOR_CLIP_MAX_BYTES = 50 * 1024 * 1024;
 export const EDITOR_AUDIO_MAX_BYTES = 20 * 1024 * 1024;
 export const EDITOR_CLIP_TYPES = ["video/mp4", "video/webm", "video/quicktime"] as const;
 export const EDITOR_AUDIO_TYPES = ["audio/mpeg", "audio/mp4", "audio/wav"] as const;
+
+/** Generated audio (B12): the voice-over script, how to read it, and the music description. */
+export const VOICE_SCRIPT_MAX = 1000;
+export const VOICE_DIRECTION_MAX = 200;
+export const MUSIC_PROMPT_MAX = 300;
 
 /** Browsers name some audio types differently; these are stored under the canonical type. */
 export function canonicalAudioType(type: string) {
@@ -61,8 +66,10 @@ export const timelineSchema = z
     fit: z.enum(EDIT_FITS),
     clips: z.array(clipSchema).max(MAX_CLIPS),
     subtitles: z.array(subtitleSchema).max(MAX_SUBTITLES),
-    /** Music or a voice-over, from the start of the video; looped when shorter, cut when longer. */
+    /** Music (or any track) under the whole video, from its start; looped when shorter, cut when longer. */
     audio: z.object({ assetId: z.uuid(), name: z.string().max(120).default(""), volume: z.number().min(0).max(1) }).nullable(),
+    /** A voice-over, played once from `start` (seconds into the video), cut at the end. Absent on older projects. */
+    voice: z.object({ assetId: z.uuid(), name: z.string().max(120).default(""), volume: z.number().min(0).max(1), start: seconds }).nullable().default(null),
     /** Volume of the clips' own sound (0 mutes it). */
     clipVolume: z.number().min(0).max(1),
   })
@@ -72,7 +79,7 @@ export type EditTimeline = z.infer<typeof timelineSchema>;
 export type EditClip = EditTimeline["clips"][number];
 export type EditSubtitle = EditTimeline["subtitles"][number];
 
-export const EMPTY_TIMELINE: EditTimeline = { aspectRatio: "9:16", resolution: "720p", fit: "cover", clips: [], subtitles: [], audio: null, clipVolume: 1 };
+export const EMPTY_TIMELINE: EditTimeline = { aspectRatio: "9:16", resolution: "720p", fit: "cover", clips: [], subtitles: [], audio: null, voice: null, clipVolume: 1 };
 
 /** The timeline when valid (unknown fields dropped), else null. */
 export function parseTimeline(input: unknown): EditTimeline | null {

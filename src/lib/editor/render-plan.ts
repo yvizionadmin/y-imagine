@@ -2,7 +2,7 @@ import { clipLength, exportSize, visibleSubtitles, type EditTimeline } from "./t
 
 // Turns an edit into one ffmpeg command (pure, so it is unit-tested without running ffmpeg): each clip
 // is cut and scaled to the export size, the clips are joined with their sound (silence when a clip has
-// none), the music / voice-over track is mixed under them, and the subtitles are burned in from an ASS
+// none), the music track and the voice-over are mixed under them, and the subtitles are burned in from an ASS
 // file with the bundled fonts.
 
 export const OUTPUT_FPS = 30;
@@ -16,6 +16,8 @@ export type RenderPlanInput = {
   clips: PlannedClip[];
   /** The track and its length in seconds (from the probe), so the graph can loop it. */
   audio: { file: string; volume: number; duration: number } | null;
+  /** The voice-over, played once from `start` seconds. Absent or null for none. */
+  voice?: { file: string; volume: number; start: number } | null;
   /** The ASS subtitle file, or null when there are none. */
   subtitlesFile: string | null;
   fontsDir: string;
@@ -29,7 +31,7 @@ export function filterPath(file: string) {
   return file.replace(/\\/g, "/").replace(/'/g, "'\\\\\\''").replace(/:/g, "\\:");
 }
 
-export function buildRenderArgs({ timeline, clips, audio, subtitlesFile, fontsDir, output }: RenderPlanInput) {
+export function buildRenderArgs({ timeline, clips, audio, voice = null, subtitlesFile, fontsDir, output }: RenderPlanInput) {
   if (!clips.length) throw new Error("no clips");
   const { width, height } = exportSize(timeline.aspectRatio, timeline.resolution);
   const total = clips.reduce((sum, clip) => sum + clipLength(clip), 0);
@@ -60,15 +62,26 @@ export function buildRenderArgs({ timeline, clips, audio, subtitlesFile, fontsDi
     video = "vs";
   }
 
-  let sound = "ac";
+  const beds: string[] = [];
+  let input = clips.length;
   if (audio) {
-    const index = clips.length;
     // Read once and looped in the graph (aloop) so a short track lasts the whole video. Not
     // `-stream_loop`: with it ffmpeg 6 can hang closing the input after the video is written.
     args.push("-i", audio.file);
     const samples = Math.ceil(Math.max(audio.duration, 0.1) * 48000) + 1;
-    graph.push(`[${index}:a]${SAMPLE},aloop=loop=-1:size=${samples},asetpts=N/SR/TB,atrim=0:${num(total)},volume=${num(audio.volume)}[music]`);
-    graph.push(`[ac][music]amix=inputs=2:duration=first:normalize=0[am]`);
+    graph.push(`[${input++}:a]${SAMPLE},aloop=loop=-1:size=${samples},asetpts=N/SR/TB,atrim=0:${num(total)},volume=${num(audio.volume)}[music]`);
+    beds.push("[music]");
+  }
+  if (voice && voice.start < total) {
+    // Once, delayed to its start, padded with silence and cut at the video's end.
+    args.push("-i", voice.file);
+    const delay = Math.round(voice.start * 1000);
+    graph.push(`[${input++}:a]${SAMPLE},asetpts=PTS-STARTPTS,adelay=${delay}:all=1,apad,atrim=0:${num(total)},volume=${num(voice.volume)}[voice]`);
+    beds.push("[voice]");
+  }
+  let sound = "ac";
+  if (beds.length) {
+    graph.push(`[ac]${beds.join("")}amix=inputs=${beds.length + 1}:duration=first:normalize=0[am]`);
     sound = "am";
   }
 

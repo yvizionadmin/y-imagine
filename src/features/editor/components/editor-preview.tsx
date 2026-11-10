@@ -15,25 +15,29 @@ export const formatTime = (seconds: number) => {
 
 /**
  * Plays the timeline in the browser as an approximation of the export: the clips one after another
- * with their cuts, the subtitles over them and the music track under them, framed like the export
+ * with their cuts, the subtitles over them, the music track under them and the voice-over from its start, framed like the export
  * size. One <video> switches source per clip. `seek` (a clip index) jumps to that clip's start.
  */
 export function EditorPreview({
   timeline,
   urlFor,
   audioUrl,
+  voiceUrl = null,
   seek,
   onTime,
 }: {
   timeline: EditTimeline;
   urlFor: (assetId: string) => string;
   audioUrl: string | null;
+  /** The voice-over, played once from timeline.voice.start. */
+  voiceUrl?: string | null;
   seek: { clip: number; nonce: number } | null;
   onTime: (seconds: number) => void;
 }) {
   const t = useTranslations("Editor");
   const video = useRef<HTMLVideoElement>(null);
   const music = useRef<HTMLAudioElement>(null);
+  const voice = useRef<HTMLAudioElement>(null);
   const [rawIndex, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
@@ -61,7 +65,8 @@ export function EditorPreview({
   useEffect(() => {
     if (video.current) video.current.volume = timeline.clipVolume;
     if (music.current) music.current.volume = timeline.audio?.volume ?? 0;
-  }, [timeline.clipVolume, timeline.audio?.volume]);
+    if (voice.current) voice.current.volume = timeline.voice?.volume ?? 0;
+  }, [timeline.clipVolume, timeline.audio?.volume, timeline.voice?.volume]);
 
   useEffect(() => {
     const el = video.current;
@@ -76,15 +81,33 @@ export function EditorPreview({
     } else {
       el.pause();
       track?.pause();
+      voice.current?.pause();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the music only resyncs on play/pause and clip changes
   }, [playing, index]);
+
+  /** Starts the voice-over when the playhead reaches it (and keeps it in step), stops it outside it. */
+  function syncVoice(at: number) {
+    const el = voice.current;
+    const start = timeline.voice?.start ?? 0;
+    if (!el || !timeline.voice) return;
+    const position = at - start;
+    if (!playing || position < 0 || (el.duration && position >= el.duration)) {
+      if (!el.paused) el.pause();
+      return;
+    }
+    if (el.paused || Math.abs(el.currentTime - position) > 0.4) {
+      el.currentTime = position;
+      if (el.paused) void el.play().catch(() => undefined);
+    }
+  }
 
   function report(local: number) {
     if (!clip) return;
     const at = offsets[index] + Math.max(0, local - clip.start);
     setTime(at);
     onTime(at);
+    syncVoice(at);
   }
 
   function onTimeUpdate() {
@@ -146,6 +169,7 @@ export function EditorPreview({
         </div>
       </div>
       {audioUrl && <audio ref={music} src={audioUrl} loop preload="auto" />}
+      {voiceUrl && <audio ref={voice} src={voiceUrl} preload="auto" />}
       <div className="flex items-center gap-3">
         {/* Media controls keep their direction in RTL. */}
         <button

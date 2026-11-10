@@ -1501,7 +1501,9 @@
       "vision": "Vision",
       "imageGen": "Image generation",
       "imageEdit": "Image editing",
-      "videoGen": "Video generation"
+      "videoGen": "Video generation",
+      "speech": "Voice",
+      "musicGen": "Music"
     },
     "supported": "(supported)",
     "notSupported": "(not supported)",
@@ -1546,7 +1548,9 @@
       "video": "Studio (video)",
       "upscale": "Upscale",
       "chat": "Chat assistant",
-      "agent": "Agents"
+      "agent": "Agents",
+      "voice": "Voice-over",
+      "music": "Music"
     },
     "activityTitle": "Recent key activity",
     "noActivity": "No key changes yet.",
@@ -1603,7 +1607,9 @@
       "video": "Video",
       "upscale": "Upscale",
       "chat": "Chat",
-      "agent": "Agents"
+      "agent": "Agents",
+      "voice": "Voice-over",
+      "music": "Music"
     },
     "byToolTitle": "Jobs by Tool",
     "recentTitle": "Recent Activity",
@@ -3213,15 +3219,50 @@
     "sound": {
       "title": "Sound",
       "clipVolume": "Clip sound: {value}%",
-      "track": "Music",
-      "trackVolume": "Track volume: {value}%",
-      "removeTrack": "Remove the track",
-      "none": "No music or voice-over yet.",
-      "uploaded": "Uploaded tracks",
       "use": "Use {name}",
-      "upload": "Upload music or voice-over",
-      "replace": "Upload another track",
-      "hint": "MP3, M4A or WAV, up to 20 MB. It plays from the start, loops if shorter, and stops at the end."
+      "uploadShort": "Upload",
+      "generating": "Making…",
+      "make": "Generate",
+      "cancel": "Cancel",
+      "cost": "{count, plural, one {# credit} other {# credits}}",
+      "made": {
+        "voice": "Voice-over: {name}",
+        "music": "Music: {name}"
+      },
+      "music": {
+        "title": "Music",
+        "none": "No music yet.",
+        "files": "Sounds in this project",
+        "remove": "Remove the music",
+        "volume": "Music volume: {value}%",
+        "upload": "Upload music",
+        "generate": "Generate music",
+        "prompt": "Describe the music",
+        "placeholder": "Calm acoustic guitar, warm and modern, medium tempo",
+        "hint": "Plays from the start, loops if shorter and stops at the end. Uploads: MP3, M4A or WAV, up to 20 MB."
+      },
+      "voice": {
+        "title": "Voice-over",
+        "none": "No voice-over yet.",
+        "files": "Sounds in this project",
+        "remove": "Remove the voice-over",
+        "volume": "Voice volume: {value}%",
+        "start": "Starts at (s)",
+        "upload": "Upload a voice-over",
+        "generate": "Generate voice-over",
+        "prompt": "Voice-over script",
+        "placeholder": "Write what the voice says, in any language",
+        "style": "Voice",
+        "styles": {
+          "warm": "Warm",
+          "bright": "Bright",
+          "calm": "Calm",
+          "deep": "Deep"
+        },
+        "direction": "How to read it",
+        "directionPlaceholder": "Optional, e.g. friendly and upbeat",
+        "hint": "Plays once from its start time (the playhead when added)."
+      }
     },
     "export": {
       "title": "Export",
@@ -3267,7 +3308,15 @@
       "too_many_files": "This project has the most uploads it can hold.",
       "too_long": "A video can be up to 3 minutes and 12 clips.",
       "upload_failed": "The upload failed. Check your connection and try again.",
-      "save_failed": "Couldn't save the latest changes, so nothing was exported."
+      "save_failed": "Couldn't save the latest changes, so nothing was exported.",
+      "no_provider": "Connect an OpenAI or Gemini key in Settings → API Keys to generate sound. Music needs Gemini.",
+      "invalid_key": "The AI provider rejected your team's key. An admin can update it in Settings → API Keys.",
+      "no_credits": "Your team's AI provider account is out of credit.",
+      "quota_exceeded": "Your team has used this month's credits.",
+      "content_rejected": "The provider refused this request. Try different wording.",
+      "feature_disabled": "This tool is switched off right now.",
+      "generation_failed": "The sound couldn't be generated. Try again.",
+      "unsupported": "This provider can't make that kind of sound."
     }
   },
   "Agents": {

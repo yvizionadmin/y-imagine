@@ -11,7 +11,7 @@ import { getAnalytics, type Analytics, type AnalyticsDay, type RecentItem } from
 import { ANALYTICS_RANGES, type AnalyticsRange } from "../config";
 import { ActivityChart, Sparkline } from "./charts";
 
-const TOOL_HREF = { create: "/home", video: "/home?mode=video", generate: "/generate", recolor: "/recolor", aplus: "/aplus", looks: "/looks", upscale: "/history", copy: "/copy", chat: "/chat", agent: "/agents" } as const;
+const TOOL_HREF = { create: "/home", video: "/home?mode=video", generate: "/generate", recolor: "/recolor", aplus: "/aplus", looks: "/looks", upscale: "/history", copy: "/copy", chat: "/chat", agent: "/agents", voice: "/editor", music: "/editor" } as const;
 
 /** Analytics Overview (Figma analytics-dashboard 30:6, restyled to the light design). */
 export function AnalyticsDashboard() {

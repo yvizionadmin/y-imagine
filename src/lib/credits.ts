@@ -30,7 +30,8 @@ export const LIMITS = { planCredits: 1_000_000, cost: 10_000, multiplier: 100 } 
 
 export const DEFAULT_CREDIT_RULES: CreditRules = {
   planCredits: Object.fromEntries(PLAN_IDS.map((p) => [p, PLANS[p].creditsMonthly])) as Record<PlanId, number>,
-  featureCosts: Object.fromEntries(PRICED_FEATURES.map((f) => [f, 1])) as Record<PricedFeature, number>,
+  // A music track is a longer generation than a voice line or an image.
+  featureCosts: Object.fromEntries(PRICED_FEATURES.map((f) => [f, f === "music" ? 2 : 1])) as Record<PricedFeature, number>,
   video: { base: 0, perSecond: 2, resolution: { "360p": 0.5, "480p": 0.75, "720p": 1, "1080p": 2 } },
   planFeatures: Object.fromEntries(PLAN_IDS.map((p) => [p, [...PRICED_FEATURES]])) as Record<PlanId, PricedFeature[]>,
 };
@@ -129,8 +130,12 @@ export function videoCost(rules: Pick<CreditRules, "video">, input: { seconds: n
   return Math.ceil((rules.video.base + rules.video.perSecond * seconds) * rules.video.resolution[input.resolution]);
 }
 
-/** Video follows the paid-plan rule; tools without a plan setting are always allowed. */
+/** Generated voice-over and music are for the video editor, a paid-plan tool; admins can still turn them off per plan. */
+export const PAID_ONLY_FEATURES = ["voice", "music"] as const;
+
+/** Video (and editor audio) follow the paid-plan rule; tools without a plan setting are always allowed. */
 export function planAllows(rules: CreditRules, plan: PlanId, feature: string) {
   if (feature === "video") return planHasVideo(plan);
+  if ((PAID_ONLY_FEATURES as readonly string[]).includes(feature) && !planHasVideo(plan)) return false;
   return !isPriced(feature) || rules.planFeatures[plan].includes(feature);
 }

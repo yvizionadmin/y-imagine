@@ -10,9 +10,9 @@ const rules = (patch: (r: CreditRules) => void = () => {}) => {
 };
 
 describe("credit rules", () => {
-  it("defaults match the plans and charge 1 credit per tool", () => {
+  it("defaults match the plans and charge 1 credit per tool (2 for a music track)", () => {
     expect(DEFAULT_CREDIT_RULES.planCredits.pro).toBe(PLANS.pro.creditsMonthly);
-    for (const f of JOB_FEATURES) expect(jobCost(DEFAULT_CREDIT_RULES, f)).toBe(1);
+    for (const f of JOB_FEATURES) expect(jobCost(DEFAULT_CREDIT_RULES, f)).toBe(f === "music" ? 2 : 1);
   });
 
   it("parses form strings and rejects out-of-range values", () => {

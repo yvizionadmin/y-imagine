@@ -1,14 +1,12 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import { planHasVideo } from "@/lib/credits";
-import { addEditMedia, getEdit } from "@/lib/editor/edits";
-import { FfmpegError, probeMedia } from "@/lib/editor/ffmpeg";
-import { MAX_MEDIA_PER_EDIT, type EditorMedia } from "@/lib/editor/media";
+import { getEdit } from "@/lib/editor/edits";
+import { FfmpegError } from "@/lib/editor/ffmpeg";
+import { MAX_MEDIA_PER_EDIT } from "@/lib/editor/media";
+import { storeEditorMedia } from "@/lib/editor/store-media";
 import { canonicalAudioType, EDITOR_AUDIO_MAX_BYTES, EDITOR_AUDIO_TYPES, EDITOR_CLIP_MAX_BYTES, EDITOR_CLIP_TYPES } from "@/lib/editor/timeline";
 import { reportError } from "@/lib/observability/report";
 import { hit, LIMITS } from "@/lib/rate-limit";
-import { assetUrl, saveAsset } from "@/lib/storage/assets";
+import { assetUrl } from "@/lib/storage/assets";
 import { videoStorageFor } from "@/lib/video/storage";
 import { getWorkspace } from "@/lib/workspace";
 
@@ -41,25 +39,10 @@ export async function POST(request: Request) {
   if (storage.used + file.size > storage.limit) return json({ ok: false, error: "storage_full" }, 400);
 
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const dir = await mkdtemp(path.join(tmpdir(), "imagine-upload-"));
   try {
-    const local = path.join(dir, "upload");
-    await writeFile(local, bytes);
-    const probe = await probeMedia(local);
-    const usable = probe && probe.duration > 0 && (kind === "clip" ? probe.hasVideo : probe.hasAudio);
-    if (!usable) return json({ ok: false, error: "invalid_input" }, 400);
-    const assetId = await saveAsset(workspace.orgId, bytes, mimeType, "editor-media");
-    const media: EditorMedia = {
-      assetId,
-      kind,
-      mimeType,
-      name: file.name.slice(0, 120),
-      byteSize: bytes.byteLength,
-      seconds: Math.round(probe.duration * 100) / 100,
-      createdAt: new Date().toISOString(),
-    };
-    await addEditMedia(workspace.orgId, edit.id, media);
-    return json({ ok: true, media: { ...media, url: assetUrl(assetId) } });
+    const media = await storeEditorMedia(workspace.orgId, edit.id, { bytes, mimeType, kind, name: file.name });
+    if (!media) return json({ ok: false, error: "invalid_input" }, 400);
+    return json({ ok: true, media: { ...media, url: assetUrl(media.assetId) } });
   } catch (error) {
     if (error instanceof FfmpegError && error.code === "not_installed") {
       reportError("editor upload: ffmpeg missing", error, { orgId: workspace.orgId });
@@ -67,7 +50,5 @@ export async function POST(request: Request) {
     }
     reportError("editor upload failed", error, { orgId: workspace.orgId });
     return json({ ok: false, error: "invalid_input" }, 400);
-  } finally {
-    await rm(dir, { recursive: true, force: true }).catch(() => undefined);
   }
 }

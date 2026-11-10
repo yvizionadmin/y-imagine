@@ -52,8 +52,8 @@ test("Video editor: two clips, a subtitle and music, exported and downloaded as 
   await page.getByRole("button", { name: "Add subtitle at the playhead" }).click();
   await page.getByRole("textbox", { name: "Subtitle 1" }).fill("Two clips, one video");
 
-  await page.getByLabel("Upload music or voice-over").setInputFiles(music);
-  await expect(page.getByText("theme.mp3")).toBeVisible({ timeout: 15_000 });
+  await page.getByLabel("Upload music", { exact: true }).setInputFiles(music);
+  await expect(page.getByText("theme.mp3", { exact: true })).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText("All changes saved")).toBeVisible({ timeout: 10_000 });
 
   await page.getByRole("radio", { name: "1:1 Square" }).click();

@@ -6,13 +6,13 @@ export const AI_PROVIDERS = ["openai", "anthropic", "gemini", "openrouter", "byt
 export type AiProviderId = (typeof AI_PROVIDERS)[number];
 export const isAiProvider = (value: unknown): value is AiProviderId => (AI_PROVIDERS as readonly unknown[]).includes(value);
 
-export const CAPABILITIES = ["chat", "tools", "vision", "imageGen", "imageEdit", "videoGen"] as const;
+export const CAPABILITIES = ["chat", "tools", "vision", "imageGen", "imageEdit", "videoGen", "speech", "musicGen"] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 
 export const PROVIDER_INFO: Record<AiProviderId, { capabilities: readonly Capability[]; keyPrefix: string; consoleUrl: string }> = {
-  openai: { capabilities: ["chat", "tools", "vision", "imageGen", "imageEdit"], keyPrefix: "sk-", consoleUrl: "https://platform.openai.com/api-keys" },
+  openai: { capabilities: ["chat", "tools", "vision", "imageGen", "imageEdit", "speech"], keyPrefix: "sk-", consoleUrl: "https://platform.openai.com/api-keys" },
   anthropic: { capabilities: ["chat", "tools", "vision"], keyPrefix: "sk-ant-", consoleUrl: "https://console.anthropic.com/settings/keys" },
-  gemini: { capabilities: ["chat", "tools", "vision", "imageGen", "imageEdit", "videoGen"], keyPrefix: "AIza", consoleUrl: "https://aistudio.google.com/apikey" },
+  gemini: { capabilities: ["chat", "tools", "vision", "imageGen", "imageEdit", "videoGen", "speech", "musicGen"], keyPrefix: "AIza", consoleUrl: "https://aistudio.google.com/apikey" },
   openrouter: { capabilities: ["chat", "tools", "vision"], keyPrefix: "sk-or-", consoleUrl: "https://openrouter.ai/settings/keys" },
   byteplus: { capabilities: ["videoGen"], keyPrefix: "", consoleUrl: "https://console.byteplus.com/ark/region:ark+ap-southeast-1/apiKey" },
   kling: { capabilities: ["videoGen"], keyPrefix: "", consoleUrl: "https://kling.ai/dev" },
@@ -28,6 +28,8 @@ export const FEATURE_NEEDS = {
   looks: "imageGen",
   copy: "chat",
   agent: "tools",
+  voice: "speech",
+  music: "musicGen",
 } as const satisfies Record<string, Capability>;
 
 export type KeyStatus = "valid" | "invalid";

@@ -291,7 +291,7 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
 | B9 ✅ | Impersonation | Super-admin "view as org admin", read-only, audited, time-limited | Console can open an org view and every visit is in the audit log | 1–2 |
 | B10 ✅ | Video editor (FFmpeg in the worker) | Trim, merge clips, subtitles, music / voice-over, export sizes (9:16, 1:1, 16:9) | A user cuts two clips together with subtitles and downloads the MP4 | 4–6 |
 | B11 | AI Director | Idea → script → scenes → storyboard images → a video per scene → assembled MP4 (uses B10) | One prompt gives a finished multi-scene video | 3–5 |
-| B12 | Audio | Voice-over (TTS) and music generation, plan-gated and priced in Admin → Credits | Audio can be generated and added to an editor project | 2–3 |
+| B12 ✅ | Audio | Voice-over (TTS) and music generation, plan-gated and priced in Admin → Credits | Audio can be generated and added to an editor project | 2–3 |
 | B13 | Characters + motion | Saved characters reused across scenes, motion control where providers support it, consent kept | The same character appears across AI Director scenes | 3–5 |
 | B14 ✅ | Polish | Copy fixes (A+ title overlap, Arabic units), performance and accessibility pass | Known small issues closed | 1–2 |
 
@@ -1241,3 +1241,28 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   search, copy and lifestyle images only (no recolor, A+, video or publishing yet); runs are one request (a closed tab keeps
   the run going on the server, but a server restart cuts it off and the sweep marks it failed); no approval step before a
   paid tool runs.
+- **2026-11-10, Roadmap B12: audio (local).** The video editor's **Sound** panel now has two tracks: **Music** (under the
+  whole video, looped, as before) and a new **Voice-over** (`timeline.voice`: played once from `start` seconds, its own
+  volume; older projects open with none). Each track can be uploaded, picked from the project's sounds, or **generated**:
+  voice-over from a script (up to 1,000 characters, any language), a voice style (warm / bright / calm / deep, mapped to each
+  provider's voices) and optional reading directions; music from a description (up to 300 characters, instrumental). Two new
+  priced tools, **`voice`** and **`music`** (Admin → Credits cost, default 1 and 2; plan access, **paid plans only** like the
+  editor, locked on Free in the console; Analytics; kill switch; model rows in Settings → API Keys). `getAudioProvider(actor,
+  feature)` in the registry (per-tool preference, else Automatic): voice = OpenAI (`gpt-4o-mini-tts`, `tts-1-hd`, `tts-1`; MP3)
+  or Gemini TTS (`gemini-2.5-flash-preview-tts`…; PCM wrapped as WAV) through the AI SDK's `generateSpeech`; music = Gemini
+  **Lyria 3** (`lyria-3-clip-preview`, `lyria-3-pro-preview`) on the Interactions API, called directly (the AI SDK's
+  interactions model sends audio requests but drops audio blocks from responses; request/response shapes follow its
+  code). The demo provider makes real WAV files in code (speech-paced tones; a 12 s chord loop). `generateEditorAudio`
+  (editor actions) checks role, plan, project and storage, runs one job, and saves the result through `storeEditorMedia`
+  (shared with uploads: ffmpeg-checked, asset kind `editor-media`, `source: voice | music`), then the screen puts it on its
+  track. The render mixes the voice with `adelay` + `amix` (left out when it starts after the end); the preview plays it in
+  step. Verified: tsc + eslint clean; 421 Vitest tests (+11: `editor-audio` unit for the voice mix, older timelines, demo
+  WAVs, model lists, paid-plan rule and costs; `editor-audio` integration: demo voice + music charged 1 + 2, used as tracks
+  and rendered with sound, input / role / plan / kill-switch / plan-access checks, no key, OpenAI speech request, Gemini TTS
+  + Lyria requests with the key header, Lyria key and safety errors and an answer without audio); `next build`; full
+  Playwright suite (44; new `editor-audio.spec.ts`: generate a voice-over and music, export with sound, Arabic;
+  `video-editor.spec.ts` updated for the two tracks); screenshots en, ar, 390 px. No migration (the timeline is jsonb).
+  **Not yet / risks:** not run with live keys. Lyria via the Interactions API is a preview: its exact response (field names,
+  MP3 vs WAV, track length) and safety-refusal wording are taken from the AI SDK's code, not from a live call. Music is one
+  clip per request (no length setting); no voice cloning or ElevenLabs; generated audio isn't listed in History; a long
+  music request runs inside the server action (up to 3 minutes).

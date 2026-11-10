@@ -5,7 +5,7 @@ import { Loader2, Lock } from "lucide-react";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { parseCreditRules, planHasVideo, PRICED_FEATURES, VIDEO_RESOLUTIONS, videoCost, type CreditRules, type PricedFeature } from "@/lib/credits";
+import { PAID_ONLY_FEATURES, parseCreditRules, planHasVideo, PRICED_FEATURES, VIDEO_RESOLUTIONS, videoCost, type CreditRules, type PricedFeature } from "@/lib/credits";
 import { LATN } from "@/lib/format";
 import { PLAN_IDS, type PlanId } from "@/lib/plans";
 import { getAdminCredits, saveAdminCredits } from "../actions";
@@ -186,18 +186,35 @@ export function AdminCredits() {
         >
             {PRICED_FEATURES.map((f) => (
               <tr key={f}>
-                <td className={td}>{tTools(f)}</td>
-                {PLAN_IDS.map((p) => (
-                  <td key={p} className={td}>
-                    <input
-                      type="checkbox"
-                      className="size-4 accent-primary"
-                      aria-label={`${tTools(f)} · ${t(`plans.${p}`)}`}
-                      checked={draft.planFeatures[p].includes(f)}
-                      onChange={() => toggleTool(p, f)}
-                    />
-                  </td>
-                ))}
+                <td className={td}>
+                  {(PAID_ONLY_FEATURES as readonly string[]).includes(f) ? (
+                    <span className="flex flex-col">
+                      <span>{tTools(f)}</span>
+                      <span className="text-[11px] text-muted-foreground">{t("credits.paidOnly")}</span>
+                    </span>
+                  ) : (
+                    tTools(f)
+                  )}
+                </td>
+                {PLAN_IDS.map((p) => {
+                  // Editor sound follows the video editor: never on a plan without video.
+                  const locked = (PAID_ONLY_FEATURES as readonly string[]).includes(f) && !planHasVideo(p);
+                  return (
+                    <td key={p} className={td}>
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          className="size-4 accent-primary"
+                          aria-label={`${tTools(f)} · ${t(`plans.${p}`)}`}
+                          checked={!locked && draft.planFeatures[p].includes(f)}
+                          disabled={locked}
+                          onChange={() => toggleTool(p, f)}
+                        />
+                        {locked && <Lock className="size-3.5" aria-hidden />}
+                      </span>
+                    </td>
+                  );
+                })}
               </tr>
             ))}
             <tr>

@@ -59,6 +59,8 @@ export async function runEditRender(orgId: string, id: string): Promise<RenderOu
     }
     const track = timeline.audio ? await fetch(timeline.audio.assetId, (mime, kind) => isAudioMime(mime) && kind === "editor-media") : null;
     const audio = track && timeline.audio ? { file: track.file, volume: timeline.audio.volume, duration: track.duration } : null;
+    const spoken = timeline.voice ? await fetch(timeline.voice.assetId, (mime, kind) => isAudioMime(mime) && kind === "editor-media") : null;
+    const voice = spoken && timeline.voice ? { file: spoken.file, volume: timeline.voice.volume, start: timeline.voice.start } : null;
 
     // Subtitle times follow the clips as rendered (a cut end can shorten the video slightly).
     const ass = buildAss({ ...timeline, clips });
@@ -66,7 +68,7 @@ export async function runEditRender(orgId: string, id: string): Promise<RenderOu
     if (ass && subtitlesFile) await writeFile(subtitlesFile, ass, "utf8");
 
     const output = path.join(dir, "export.mp4");
-    await runFfmpeg(buildRenderArgs({ timeline, clips, audio, subtitlesFile, fontsDir: fontsDir(), output }), { timeoutMs: 10 * 60_000 });
+    await runFfmpeg(buildRenderArgs({ timeline, clips, audio, voice, subtitlesFile, fontsDir: fontsDir(), output }), { timeoutMs: 10 * 60_000 });
     const bytes = new Uint8Array(await readFile(output));
     const assetId = await saveAsset(orgId, bytes, "video/mp4", "edit-render");
     const seconds = clips.reduce((sum, c) => sum + (c.end - c.start), 0);

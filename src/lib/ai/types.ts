@@ -5,7 +5,7 @@ import type { VideoResolution } from "@/lib/credits";
 
 export type ProviderId = "demo" | "openai" | "anthropic" | "gemini" | "openrouter" | "byteplus" | "kling" | "openai-compatible";
 
-export type Feature = "create" | "video" | "generate" | "recolor" | "aplus" | "looks" | "upscale" | "copy" | "chat" | "agent";
+export type Feature = "create" | "video" | "generate" | "recolor" | "aplus" | "looks" | "upscale" | "copy" | "chat" | "agent" | "voice" | "music";
 
 export type LifestyleRequest = {
   sku: string;
@@ -298,3 +298,38 @@ export interface TextProvider {
   /** Runs an agent: the model calls the given tools until it answers. One job for the run; the tools charge their own. */
   runAgent(request: AgentRequest): AsyncIterable<AgentEvent>;
 }
+
+// ── Audio (voice-over, music) ────────────────────────────────────────────────────────────────
+
+/** Voice styles offered in the editor; each provider maps them to one of its own voices. */
+export const VOICE_STYLES = ["warm", "bright", "calm", "deep"] as const;
+export type VoiceStyle = (typeof VOICE_STYLES)[number];
+
+export type SpeechRequest = {
+  /** The script, read as written (any language the model speaks). */
+  text: string;
+  voice: VoiceStyle;
+  /** How to read it (tone, pace), for models that take directions; "" for none. */
+  direction: string;
+};
+
+export type MusicRequest = {
+  /** The music in words: mood, genre, instruments, tempo. Instrumental. */
+  prompt: string;
+};
+
+export type GeneratedAudio = {
+  bytes: Uint8Array;
+  mimeType: "audio/mpeg" | "audio/wav";
+  provider: ProviderId;
+  model: string;
+};
+
+/** Voice-over and music for one org, resolved by the registry. Each call is one job of its feature. */
+export interface AudioProvider {
+  id: ProviderId;
+  model: string;
+  speak(request: SpeechRequest): Promise<GeneratedAudio>;
+  compose(request: MusicRequest): Promise<GeneratedAudio>;
+}
+
