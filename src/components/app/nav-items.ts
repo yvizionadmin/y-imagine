@@ -1,5 +1,6 @@
 import {
   Activity,
+  Bot,
   Building2,
   ChartColumn,
   Clapperboard,
@@ -35,6 +36,7 @@ export type ToolKey =
   | "looks"
   | "copy"
   | "chat"
+  | "agents"
   | "history"
   | "analytics"
   | "resize"
@@ -57,6 +59,8 @@ export const navItems: NavItem[] = [
   { key: "looks", href: "/looks", icon: Star },
   { key: "copy", href: "/copy", icon: PenLine },
   { key: "chat", href: "/chat", icon: MessageSquare },
+  // Agents (B3): the assistant that uses the tools itself, next to Chat.
+  { key: "agents", href: "/agents", icon: Bot },
   { key: "history", href: "/history", icon: Clock },
   { key: "analytics", href: "/dashboard", icon: ChartColumn },
   { key: "resize", href: "/resize", icon: Crop },

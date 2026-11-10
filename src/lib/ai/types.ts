@@ -1,10 +1,11 @@
+import type { ZodType } from "zod";
 import type { BrandKit } from "@/lib/brand/limits";
 import type { CameraAngle } from "@/lib/camera-angles";
 import type { VideoResolution } from "@/lib/credits";
 
 export type ProviderId = "demo" | "openai" | "anthropic" | "gemini" | "openrouter" | "byteplus" | "kling" | "openai-compatible";
 
-export type Feature = "create" | "video" | "generate" | "recolor" | "aplus" | "looks" | "upscale" | "copy" | "chat";
+export type Feature = "create" | "video" | "generate" | "recolor" | "aplus" | "looks" | "upscale" | "copy" | "chat" | "agent";
 
 export type LifestyleRequest = {
   sku: string;
@@ -254,6 +255,36 @@ export type ChatRequest = {
 /** A reply as it is written: text pieces in order. Errors surface as ProviderError while iterating. */
 export type ChatStream = AsyncIterable<string>;
 
+// ── Agent (tool calling) ─────────────────────────────────────────────────────────────────────
+
+/**
+ * A tool the agent may call. `input` is a zod schema the provider sends to the model (and checks the
+ * model's arguments against); `execute` runs it on the server and returns a JSON-safe result.
+ */
+export type AgentTool = {
+  name: string;
+  description: string;
+  input: ZodType;
+  execute: (input: unknown) => Promise<unknown>;
+};
+
+export type AgentRequest = {
+  system: string;
+  /** The user's goal for this run. */
+  prompt: string;
+  tools: AgentTool[];
+  /** Most model steps (each answers or calls tools); the run ends after the last one. */
+  maxSteps: number;
+  signal?: AbortSignal;
+};
+
+/** What happens during a run, in order. A tool's call comes before its result or error. */
+export type AgentEvent =
+  | { type: "text"; text: string }
+  | { type: "tool-call"; id: string; name: string; input: unknown }
+  | { type: "tool-result"; id: string; name: string; output: unknown }
+  | { type: "tool-error"; id: string; name: string; error: unknown };
+
 /** A text-writing provider for one org and tool, resolved by the registry. */
 export interface TextProvider {
   id: ProviderId;
@@ -264,4 +295,6 @@ export interface TextProvider {
   generateCopy(request: CopyRequest): Promise<CopyResult>;
   /** Rewrites an image tool's instructions. A helper step, like swatch analysis: not a job, no credit. */
   improvePrompt(request: ImprovePromptRequest): Promise<{ text: string; model: string }>;
+  /** Runs an agent: the model calls the given tools until it answers. One job for the run; the tools charge their own. */
+  runAgent(request: AgentRequest): AsyncIterable<AgentEvent>;
 }

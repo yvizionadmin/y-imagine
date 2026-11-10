@@ -282,7 +282,7 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
 |---|------|-------|-----------|------|
 | B1 ✅ | More video providers | Kling adapter, same pattern as `byteplus-video.ts` (OpenAI dropped: its Videos API shut down 2026-09-24) | Each one selectable and tested with the API stubbed | 1–2 |
 | B2 ✅ | Cinema controls | Camera / lens / lighting presets → native parameters where a model has them, else labelled prompt text | Presets in the Studio, driven by the model's capabilities | 1 |
-| B3 | Agents with tools | Agent runs with catalog search, generate image, write copy; steps shown live; credits per tool call | An agent finds a product, writes copy and makes an image in one run | 3–4 |
+| B3 ✅ | Agents with tools | Agent runs with catalog search, generate image, write copy; steps shown live; credits per tool call | An agent finds a product, writes copy and makes an image in one run | 3–4 |
 | B4 ✅ | Image approvals + publish gate | Review status for History images; "Upload to Website" only for approved items when the org turns it on | Same review flow as copy, for images | 1–2 |
 | B5 ✅ | Prompt helpers | "Improve with AI" for merchant text; per-team suggestions from saved results | Both available in Generate and Recolor | 1–2 |
 | B6 ✅ | Team scenes and catalog per tenant | Save uploaded scenes as team scenes; product types and scenes per org in the DB; category filters in History/board; delete look backgrounds with their look | Two orgs see different product types and scenes | 3–4 |
@@ -1215,3 +1215,29 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   not measured (one render at a time per worker); no transitions, text styling, per-clip volume or timeline drag-and-drop;
   voice-over is an uploaded file (generated voice is B12); exports are not in History; the browser preview is approximate
   (it seeks between clips, so a short pause can show at each cut).
+- **2026-11-10, Roadmap B3: agents with tools (local).** New page **Agents** (`/agents`, rail item after Chat; top bar "AI
+  Agents"). The user gives a goal; the org's text provider (`getTextProvider(actor, "agent")`, new `agent` text feature with
+  its own model row in Settings → API Keys, Admin → Credits cost and plan access, Analytics, kill switch) works through three
+  tools until it answers: **`search_catalog`** (the org's store connection, `runSearch`; free), **`write_copy`** (`writeCopy`
+  in the brand voice, saved to Copy; one `copy` job) and **`generate_image`** (`generateLifestyle` from the product's first
+  catalog photo, saved to History with `settings.agentRunId`; one `generate` job). **Credits:** one `agent` job per run (the
+  model's thinking, reserved before the first call like a chat reply) plus each tool's own cost. Products are always looked up
+  again by SKU, so the model can only work on catalog products; per run at most 8 model steps, 5 searches, 3 copies and 3
+  images (`AGENT_TOOL_CALLS`); 5 runs / min / user. `TextProvider.runAgent` streams events (text, tool call, result, error):
+  AI SDK `streamText` with `tools` + `stopWhen: isStepCount(8)`; the offline demo provider runs a fixed plan (search → copy →
+  image → summary). `runAgent` (`src/lib/agent/run.ts`) saves each step to **`agent_runs`** (migration `0020`; private to the
+  user, like chat threads) and streams NDJSON from `POST /api/agent`. A run that fails before any tool is removed (the goal
+  goes back in the box); one that did something is kept as failed; Stop keeps what was made; stuck runs are closed by
+  `close-stale-jobs` after 15 min. Screen: run list (delete), goal bubble, live step cards (products found, copy title +
+  "Open in Copy", image thumbnail → `ImageViewer` + "View in History"), the agent's own words, failure messages per tool
+  (`no_connection`, `sku_not_found`, quota…); viewers and the read-only org view read only. The icon rail's item spacing was
+  tightened so the extra item keeps "More" on a 720 px screen. Verified: tsc + eslint clean; 410 Vitest tests (+15: `agent`
+  unit for goal cleaning, category guess, step joining, prompt, demo search terms; `agents` integration for the done-when run
+  with its three jobs and saved copy/image, no provider, quota, no store, Stop, SKU and per-run limits, a real AI SDK tool
+  loop with Gemini stubbed, stale runs, route and privacy / viewer / read-only view); `next build`; full Playwright suite (43;
+  new `agents.spec.ts`: run from a suggestion, live steps, viewer, reload, Copy link, Arabic); screenshots en, ar, 390 px;
+  migration `0020` applied to the local dev database only. **Not yet / risks:** not run with a live model (tool-calling
+  quality and cost per run vary by model; OpenRouter models without tool support will fail the run); tools are catalog
+  search, copy and lifestyle images only (no recolor, A+, video or publishing yet); runs are one request (a closed tab keeps
+  the run going on the server, but a server restart cuts it off and the sweep marks it failed); no approval step before a
+  paid tool runs.

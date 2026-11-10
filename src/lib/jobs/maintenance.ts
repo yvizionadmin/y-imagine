@@ -1,4 +1,5 @@
 import "server-only";
+import { releaseStaleRuns } from "@/lib/agent/runs";
 import { listAllKeyRefs, recordKeyCheck, revealProviderKey } from "@/lib/ai/provider-keys";
 import { checkProviderKey } from "@/lib/ai/validate-key";
 import { recordAudit } from "@/lib/audit";
@@ -61,5 +62,6 @@ export async function closeStaleJobs() {
     imageItems: await releaseStaleImageItems(),
     videoJobs: await releaseStaleVideoJobs(),
     editRenders: await releaseStaleRenders(),
+    agentRuns: await releaseStaleRuns(),
   };
 }

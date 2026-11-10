@@ -41,7 +41,7 @@ function Rail({ activeKey, isSuperAdmin }: { activeKey: string | null } & RailPr
   return (
     <nav
       className={cn(
-        "flex shrink-0 flex-col items-center gap-1 overflow-y-auto border-e bg-background pt-3 font-ui transition-[width] [scrollbar-width:none]",
+        "flex shrink-0 flex-col items-center gap-0.5 overflow-y-auto border-e bg-background pt-3 font-ui transition-[width] [scrollbar-width:none]",
         compact ? "w-14" : "w-rail",
       )}
     >
@@ -75,7 +75,7 @@ function Rail({ activeKey, isSuperAdmin }: { activeKey: string | null } & RailPr
               key={key}
               aria-disabled
               title={t("soonHint", { tool: t(`nav.${key}`) })}
-              className={cn("flex w-16 shrink-0 cursor-default flex-col items-center gap-1 rounded-xl py-1.5 text-subtle", compact && "w-12")}
+              className={cn("flex w-16 shrink-0 cursor-default flex-col items-center gap-1 rounded-xl py-1 text-subtle", compact && "w-12")}
             >
               <Icon className="size-5" strokeWidth={1.75} aria-hidden />
               {!compact && (
@@ -95,7 +95,7 @@ function Rail({ activeKey, isSuperAdmin }: { activeKey: string | null } & RailPr
             aria-current={isActive ? "page" : undefined}
             aria-label={compact ? t(`nav.${key}`) : undefined}
             className={cn(
-              "flex w-16 shrink-0 flex-col items-center gap-1 rounded-xl py-1.5 text-rail-foreground transition-colors hover:bg-muted",
+              "flex w-16 shrink-0 flex-col items-center gap-1 rounded-xl py-1 text-rail-foreground transition-colors hover:bg-muted",
               compact && "w-12",
               isActive && "bg-accent text-primary hover:bg-accent",
             )}
@@ -124,7 +124,7 @@ function MoreMenu({ compact, isSuperAdmin }: { compact: boolean } & RailProps) {
       <DropdownMenuTrigger
         aria-label={compact ? t("nav.more") : undefined}
         className={cn(
-          "mt-auto mb-2 flex w-16 shrink-0 flex-col items-center gap-1 rounded-xl py-1.5 text-rail-foreground transition-colors hover:bg-muted data-popup-open:bg-muted",
+          "mt-auto mb-2 flex w-16 shrink-0 flex-col items-center gap-1 rounded-xl py-1 text-rail-foreground transition-colors hover:bg-muted data-popup-open:bg-muted",
           compact && "w-12",
         )}
       >

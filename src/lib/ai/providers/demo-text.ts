@@ -1,6 +1,6 @@
 import "server-only";
 import { ProviderError } from "../errors";
-import type { ChatRequest, CopyRequest, ImprovePromptRequest, ProductCopy, TextProvider } from "../types";
+import type { AgentEvent, AgentRequest, ChatRequest, CopyRequest, ImprovePromptRequest, ProductCopy, TextProvider } from "../types";
 
 // Offline stand-in for a writing model: assembles plausible copy from the merchant's own details so
 // the Copy tool works without keys. Include "FAIL" in the SKU to exercise the failure state.
@@ -105,6 +105,69 @@ function demoReply(request: ChatRequest) {
     : `This is a demo reply from the assistant (offline mode).\n\nYou asked: "${topic}"\n\n- Connect an OpenAI, Anthropic, Gemini or OpenRouter key in Settings → API Keys for real answers.\n- I can help with product descriptions, titles and campaign ideas.`;
 }
 
+const STOP_WORDS = new Set(
+  "the a an and or for with our your this that from into find write make create generate image images photo picture lifestyle copy product products description title arabic english then also please some new one two for its".split(" "),
+);
+
+/** Catalog searches the offline agent tries, best first: SKU-like tokens, then the goal's longer words. */
+export function demoSearchTerms(goal: string): string[] {
+  const tokens = goal.split(/[\s,.;:!?"'()«»،]+/).filter(Boolean);
+  const skus = tokens.filter((w) => /\d/.test(w) && /^[A-Za-z0-9-]{4,}$/.test(w));
+  const words = tokens.map((w) => w.toLowerCase()).filter((w) => w.length >= 3 && !STOP_WORDS.has(w) && !/\d/.test(w));
+  const singular = words.map((w) => (w.length > 4 && w.endsWith("s") ? w.slice(0, -1) : w));
+  return [...new Set([...skus, ...singular])].slice(0, 3);
+}
+
+/**
+ * Offline agent: the same tools a real model would call, in a fixed order (search the catalog, write
+ * copy for the first product, make an image of it), then a short summary. Exercises the run screen,
+ * the tools and their credits without keys. "FAIL" in the goal fails the run before any tool.
+ */
+async function* demoAgent(request: AgentRequest): AsyncGenerator<AgentEvent> {
+  const arabic = ARABIC.test(request.prompt);
+  const say = (en: string, ar: string): AgentEvent => ({ type: "text", text: arabic ? ar : en });
+  await wait(LATENCY_MS / 4);
+  if (request.prompt.toUpperCase().includes("FAIL")) throw new ProviderError("generation_failed");
+  const byName = new Map(request.tools.map((t) => [t.name, t]));
+  let calls = 0;
+
+  async function* call(name: string, input: Record<string, unknown>): AsyncGenerator<AgentEvent, unknown> {
+    const tool = byName.get(name);
+    if (!tool || request.signal?.aborted) return undefined;
+    const id = `demo-call-${++calls}`;
+    yield { type: "tool-call", id, name, input };
+    try {
+      const output = await tool.execute(tool.input.parse(input));
+      yield { type: "tool-result", id, name, output };
+      return output;
+    } catch (error) {
+      yield { type: "tool-error", id, name, error };
+      return undefined;
+    }
+  }
+
+  yield say("I'll look for the product in your catalog first.\n", "سأبحث عن المنتج في الكتالوج أولًا.\n");
+  let product: { sku: string; name: string } | undefined;
+  for (const query of demoSearchTerms(request.prompt)) {
+    if (calls >= request.maxSteps - 1) break;
+    const found = (yield* call("search_catalog", { query })) as { products?: { sku: string; name: string }[] } | undefined;
+    product = found?.products?.[0];
+    if (product) break;
+  }
+  if (!product) {
+    yield say("I couldn't find a matching product. Try its SKU or a word from its name.", "لم أجد منتجًا مطابقًا. جرّب رمز المنتج أو كلمة من اسمه.");
+    return;
+  }
+  const wantsArabic = arabic || /arabic|عرب/i.test(request.prompt);
+  const copy = (yield* call("write_copy", { sku: product.sku, languages: wantsArabic ? ["en", "ar"] : ["en"], tone: "professional", channel: "website", details: "" })) as { title?: string } | undefined;
+  const image = yield* call("generate_image", { sku: product.sku, scene: "", aspectRatio: "1:1" });
+  if (request.signal?.aborted) return;
+  yield say(
+    `Done. I found "${product.name}" (${product.sku})${copy ? `, wrote its copy ("${copy.title}")` : ""}${image ? " and made a lifestyle image, saved to History" : ""}.`,
+    `تم. وجدت «${product.name}» (${product.sku})${copy ? "، وكتبت وصفه" : ""}${image ? "، وأنشأت صورة له محفوظة في السجل" : ""}.`,
+  );
+}
+
 export const demoTextProvider: TextProvider = {
   id: "demo",
   model: "demo-chat-v1",
@@ -129,6 +192,7 @@ export const demoTextProvider: TextProvider = {
       yield piece;
     }
   },
+  runAgent: demoAgent,
   async improvePrompt(request) {
     await wait(LATENCY_MS / 2);
     if (request.text.toUpperCase().includes("FAIL")) throw new ProviderError("generation_failed");

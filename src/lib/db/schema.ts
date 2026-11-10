@@ -9,6 +9,7 @@ import type { BatchItemStatus, BatchStatus, BatchDefaults } from "@/lib/copy/bat
 import type { CatalogErrorCode, ConnectorType } from "@/lib/catalog/types";
 import type { EncryptedSecret } from "@/lib/crypto/secrets";
 import type { LookItem } from "@/features/looks/config";
+import type { AgentRunStatus, AgentStep } from "@/lib/agent/limits";
 import type { EditTimeline } from "@/lib/editor/timeline";
 import type { EditorMedia } from "@/lib/editor/media";
 import type { BillingStatus, PlanId } from "@/lib/plans";
@@ -603,4 +604,34 @@ export const chatMessages = pgTable(
     createdAt: now(),
   },
   (t) => [index().on(t.threadId, t.createdAt)],
+);
+
+// ── Agents ───────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * One agent run: the user's goal and what the agent did (its words and tool calls, in order).
+ * Private to the user who started it, like chat threads; what the tools made (copy, images) is saved
+ * to the team's Copy and History as usual.
+ */
+export const agentRuns = pgTable(
+  "agent_runs",
+  {
+    id: text().primaryKey(),
+    orgId: orgId(),
+    userId: text()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    goal: text().notNull(),
+    status: text().$type<AgentRunStatus>().notNull().default("running"),
+    steps: jsonb().$type<AgentStep[]>().notNull().default([]),
+    /** Why the run failed (a job or provider code). */
+    error: text(),
+    provider: text().$type<ProviderId>(),
+    model: text(),
+    createdAt: now(),
+    /** Last change: a running run not updated for a while is closed by the maintenance job. */
+    updatedAt: now(),
+    finishedAt: timestamp(),
+  },
+  (t) => [index().on(t.orgId, t.userId, t.createdAt), index().on(t.status, t.updatedAt)],
 );

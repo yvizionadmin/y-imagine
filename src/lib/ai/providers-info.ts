@@ -27,6 +27,7 @@ export const FEATURE_NEEDS = {
   aplus: "imageGen",
   looks: "imageGen",
   copy: "chat",
+  agent: "tools",
 } as const satisfies Record<string, Capability>;
 
 export type KeyStatus = "valid" | "invalid";

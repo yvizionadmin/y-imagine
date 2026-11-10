@@ -26,7 +26,8 @@
       "aiImage": "AI Image",
       "upscale": "Upscale",
       "chat": "Chat",
-      "editor": "Editor"
+      "editor": "Editor",
+      "agents": "Agents"
     },
     "tools": {
       "create": "Image & Video Studio",
@@ -42,7 +43,8 @@
       "copy": "Product Copy",
       "upscale": "Image Upscale",
       "chat": "AI Assistant",
-      "editor": "Video Editor"
+      "editor": "Video Editor",
+      "agents": "AI Agents"
     },
     "userMenu": "Account menu",
     "settings": "Settings",
@@ -1543,7 +1545,8 @@
       "copy": "Product copy",
       "video": "Studio (video)",
       "upscale": "Upscale",
-      "chat": "Chat assistant"
+      "chat": "Chat assistant",
+      "agent": "Agents"
     },
     "activityTitle": "Recent key activity",
     "noActivity": "No key changes yet.",
@@ -1599,7 +1602,8 @@
       "copy": "Product Copy",
       "video": "Video",
       "upscale": "Upscale",
-      "chat": "Chat"
+      "chat": "Chat",
+      "agent": "Agents"
     },
     "byToolTitle": "Jobs by Tool",
     "recentTitle": "Recent Activity",
@@ -3264,6 +3268,98 @@
       "too_long": "A video can be up to 3 minutes and 12 clips.",
       "upload_failed": "The upload failed. Check your connection and try again.",
       "save_failed": "Couldn't save the latest changes, so nothing was exported."
+    }
+  },
+  "Agents": {
+    "title": "AI Agents",
+    "runs": "Runs",
+    "newRun": "New run",
+    "noRuns": "Your runs will appear here.",
+    "closeList": "Close the run list",
+    "steps": "What the agent did",
+    "starting": "Starting…",
+    "thinking": "Working…",
+    "stopped": "You stopped this run. What was already made is saved.",
+    "placeholder": "Tell the agent what to do, e.g. find the grey sofa, write its copy and make an image",
+    "run": "Run agent",
+    "stop": "Stop",
+    "dismiss": "Dismiss",
+    "viewerHint": "Viewers can see their runs but can't start one.",
+    "costHint": "A run uses {run, plural, one {# credit} other {# credits}}, plus {copy, plural, one {# credit} other {# credits}} for each copy and {image, plural, one {# credit} other {# credits}} for each image it makes.",
+    "deleteConfirm": "Delete this run? The copy and images it made stay in Copy and History.",
+    "delete": "Delete run: {goal}",
+    "emptyTitle": "Give the agent a goal",
+    "emptyBody": "It searches your catalog, writes product copy and makes images on its own, and shows each step as it goes. Everything it makes is saved to Copy and History.",
+    "suggestions": {
+      "copyAndImage": "Find the grey sofa in our catalog, write website copy for it and make a lifestyle image in a bright living room.",
+      "arabic": "Write English and Arabic copy for the oak lounge chair.",
+      "image": "Make a lifestyle image of the bouclé armchair in a calm, minimal room."
+    },
+    "status": {
+      "running": "Running",
+      "ok": "Done",
+      "failed": "Failed",
+      "stopped": "Stopped"
+    },
+    "tools": {
+      "search_catalog": {
+        "running": "Searching the catalog for “{label}”",
+        "done": "Searched the catalog for “{label}”",
+        "failed": "Couldn't search the catalog for “{label}”"
+      },
+      "write_copy": {
+        "running": "Writing copy for {label}",
+        "done": "Wrote copy for {label}",
+        "failed": "Couldn't write copy for {label}"
+      },
+      "generate_image": {
+        "running": "Making an image of {label}",
+        "done": "Made an image of {label}",
+        "failed": "Couldn't make an image of {label}"
+      }
+    },
+    "found": "Products found",
+    "noProducts": "No products matched.",
+    "copyLanguages": "Languages: {languages}",
+    "languages": {
+      "en": "English",
+      "ar": "Arabic"
+    },
+    "openCopy": "Open in Copy",
+    "openImage": "Open the image of {name}",
+    "openHistory": "View in History",
+    "toolErrors": {
+      "no_connection": "No store is connected. An admin can connect one in Settings → Integrations.",
+      "catalog_error": "The store didn't answer. Check the connection in Settings → Integrations.",
+      "sku_not_found": "That SKU isn't in the catalog.",
+      "no_image": "This product has no catalog photo to work from.",
+      "limit": "This run already used this tool as many times as it can.",
+      "invalid_input": "The agent asked for something this tool can't do.",
+      "stopped": "Stopped before it finished.",
+      "rate_limited": "Too many jobs at once. Try again in a minute.",
+      "failed": "Something went wrong with this step."
+    },
+    "errors": {
+      "failed": {
+        "title": "The agent couldn't finish",
+        "body": "Nothing was charged for the steps that didn't run. Try again."
+      },
+      "rateLimited": {
+        "title": "Too many runs",
+        "body": "Wait a minute before starting another run."
+      },
+      "forbidden": {
+        "title": "You can't start runs",
+        "body": "Ask an admin for editor access."
+      },
+      "input": {
+        "title": "Check your goal",
+        "body": "Write a goal of up to 1,000 characters."
+      },
+      "timedOut": {
+        "title": "This run took too long",
+        "body": "It was stopped. What it made is saved."
+      }
     }
   }
 }

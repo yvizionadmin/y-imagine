@@ -71,6 +71,9 @@ export async function getTextProvider(actor: JobActor, feature: TextFeature): Pr
       streamChat: async function* () {
         throw new ProviderError(resolved.code);
       },
+      runAgent: async function* () {
+        throw new ProviderError(resolved.code);
+      },
     };
   }
   const provider = resolved.provider;
@@ -79,6 +82,8 @@ export async function getTextProvider(actor: JobActor, feature: TextFeature): Pr
     model: provider.model,
     generateCopy: (request) => runJob(actor, feature, provider.id, () => provider.generateCopy(request), (r) => r.model),
     streamChat: (request) => runStreamJob(actor, feature, provider.id, () => provider.streamChat(request), provider.model ?? null),
+    // The run is one job (the model's thinking); each tool it calls is charged as that tool's own job.
+    runAgent: (request) => runStreamJob(actor, feature, provider.id, () => provider.runAgent(request), provider.model ?? null),
     // A helper step (no credit, no usage event), so it gets its own per-user limit instead of the job limits.
     improvePrompt: async (request) => {
       if (!(await hit("prompt-rewrites", actor.user.id, LIMITS.promptRewritesPerUser)).ok) throw new ProviderError("rate_limited");
@@ -270,7 +275,7 @@ async function runJob<T>(actor: JobActor, feature: Feature, provider: ProviderId
  * reply writes nothing), the job is finished once the stream ends. A reply the user stopped keeps
  * its credit when something was written (the provider was paid for it), and is free otherwise.
  */
-async function* runStreamJob(actor: JobActor, feature: Feature, provider: ProviderId, call: () => AsyncIterable<string>, model: string | null) {
+async function* runStreamJob<T>(actor: JobActor, feature: Feature, provider: ProviderId, call: () => AsyncIterable<T>, model: string | null) {
   const jobId = await reserveJob(actor, feature, provider);
   const started = performance.now();
   let wrote = false;
