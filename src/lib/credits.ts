@@ -130,8 +130,8 @@ export function videoCost(rules: Pick<CreditRules, "video">, input: { seconds: n
   return Math.ceil((rules.video.base + rules.video.perSecond * seconds) * rules.video.resolution[input.resolution]);
 }
 
-/** Generated voice-over and music are for the video editor, a paid-plan tool; admins can still turn them off per plan. */
-export const PAID_ONLY_FEATURES = ["voice", "music"] as const;
+/** Editor sound and the AI Director build on the video editor, a paid-plan tool; admins can still turn them off per plan. */
+export const PAID_ONLY_FEATURES = ["voice", "music", "director"] as const;
 
 /** Video (and editor audio) follow the paid-plan rule; tools without a plan setting are always allowed. */
 export function planAllows(rules: CreditRules, plan: PlanId, feature: string) {

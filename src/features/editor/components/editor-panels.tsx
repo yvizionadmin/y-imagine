@@ -37,7 +37,7 @@ function Panel({ id, icon, title, children }: { id: string; icon: ReactNode; tit
   );
 }
 
-function Choice<T extends string>({ label, value, options, labelFor, onChange }: { label: string; value: T; options: readonly T[]; labelFor: (v: T) => string; onChange: (v: T) => void }) {
+export function Choice<T extends string>({ label, value, options, labelFor, onChange }: { label: string; value: T; options: readonly T[]; labelFor: (v: T) => string; onChange: (v: T) => void }) {
   return (
     <div role="radiogroup" aria-label={label} className="flex flex-col gap-1.5">
       <span className="text-[11px] font-medium text-muted-foreground">{label}</span>

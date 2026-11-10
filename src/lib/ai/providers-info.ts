@@ -30,6 +30,7 @@ export const FEATURE_NEEDS = {
   agent: "tools",
   voice: "speech",
   music: "musicGen",
+  director: "videoGen",
 } as const satisfies Record<string, Capability>;
 
 export type KeyStatus = "valid" | "invalid";

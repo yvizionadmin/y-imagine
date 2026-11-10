@@ -27,6 +27,8 @@ frames (file `n2sZrjuN0QtS3mYXaPXiSz`), in English LTR and Arabic RTL.
 | SaaS billing | Stripe subscriptions (plan limits on seats/projects, not on tokens) |
 | Design system | **Light + 72px icon rail** (Figma Sections 1/3/4/5, master 98:32). Rebrand to Imagine AI. Dark screens are only a reference for analytics, team settings and lookbook content, restyled to light |
 | Credits | **Plan job quota**: each plan includes N jobs/month, the badge shows jobs remaining, and estimated provider cost is shown separately. We never bill tokens |
+| Video storage + retention | Confirmed 2026-11-10 (A6 defaults kept, `src/lib/plans.ts`): storage Free 0 / Starter 5 GB / Pro 25 GB / Enterprise 100 GB; clips kept 30 / 30 / 90 / 365 days. **To build:** warn 7 days before removal (email to org admins + Studio banner) |
+| Team prompt suggestions | Confirmed 2026-11-10 (B5 defaults kept): a phrase is suggested once it appears in 2+ prompts, from the last 400 saved results |
 
 ## Architecture
 ```

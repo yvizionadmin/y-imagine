@@ -5,7 +5,7 @@ import type { VideoResolution } from "@/lib/credits";
 
 export type ProviderId = "demo" | "openai" | "anthropic" | "gemini" | "openrouter" | "byteplus" | "kling" | "openai-compatible";
 
-export type Feature = "create" | "video" | "generate" | "recolor" | "aplus" | "looks" | "upscale" | "copy" | "chat" | "agent" | "voice" | "music";
+export type Feature = "create" | "video" | "generate" | "recolor" | "aplus" | "looks" | "upscale" | "copy" | "chat" | "agent" | "voice" | "music" | "director";
 
 export type LifestyleRequest = {
   sku: string;
@@ -285,6 +285,30 @@ export type AgentEvent =
   | { type: "tool-result"; id: string; name: string; output: unknown }
   | { type: "tool-error"; id: string; name: string; error: unknown };
 
+// ── AI Director (plan a multi-scene video) ───────────────────────────────────────────────────
+
+export type DirectorPlanRequest = {
+  /** The user's idea, as typed. */
+  idea: string;
+  /** How many scenes, and how long each one is. */
+  scenes: number;
+  secondsPerScene: number;
+  aspectRatio: string;
+  /** Language of the narration (the scene pictures are always described in English). */
+  language: CopyLanguage;
+  brand?: BrandKit | null;
+};
+
+export type DirectorScenePlan = {
+  /** What the scene shows, for the storyboard image and the video model (English). */
+  visual: string;
+  /** What the voice-over says over this scene (in the request's language); fits the scene's length. */
+  narration: string;
+  camera: CameraMove;
+};
+
+export type DirectorPlan = { title: string; scenes: DirectorScenePlan[] };
+
 /** A text-writing provider for one org and tool, resolved by the registry. */
 export interface TextProvider {
   id: ProviderId;
@@ -295,6 +319,8 @@ export interface TextProvider {
   generateCopy(request: CopyRequest): Promise<CopyResult>;
   /** Rewrites an image tool's instructions. A helper step, like swatch analysis: not a job, no credit. */
   improvePrompt(request: ImprovePromptRequest): Promise<{ text: string; model: string }>;
+  /** Plans a multi-scene video (AI Director): one job. */
+  planVideo(request: DirectorPlanRequest): Promise<{ plan: DirectorPlan; model: string }>;
   /** Runs an agent: the model calls the given tools until it answers. One job for the run; the tools charge their own. */
   runAgent(request: AgentRequest): AsyncIterable<AgentEvent>;
 }

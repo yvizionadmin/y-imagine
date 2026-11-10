@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Clapperboard, Loader2, Lock, Plus, Trash2 } from "lucide-react";
+import { Clapperboard, Loader2, Lock, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
@@ -111,6 +111,25 @@ export function EditorWorkspace() {
       }
     })();
   }, [searchParams, open, refreshList, t]);
+
+  // Coming back to this page with a different ?project= (e.g. "Open in the video editor" from the AI
+  // Director): Next keeps this screen mounted between visits, so the first-load effect doesn't run again.
+  const wantedProject = searchParams.get("project");
+  const currentId = project?.id;
+  useEffect(() => {
+    if (!started.current || !wantedProject || wantedProject === currentId) return;
+    let cancelled = false;
+    void (async () => {
+      const [list, loaded] = await Promise.all([listEditorProjects(), getEditorProject(wantedProject)]);
+      if (cancelled) return;
+      setProjects(list);
+      if (loaded) open(loaded);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only a new ?project= opens another project
+  }, [wantedProject]);
 
   // Save as you go: a moment after the last change. Only the latest save's answer counts.
   useEffect(() => {
@@ -286,6 +305,10 @@ export function EditorWorkspace() {
           actions={
             setup.allowed && (
               <div className="flex flex-wrap items-center gap-2">
+                <Link href="/editor/director" className="inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium hover:bg-muted">
+                  <Sparkles className="size-3.5" aria-hidden />
+                  {t("director")}
+                </Link>
                 {projects.length > 0 && (
                   <select
                     aria-label={t("projects")}

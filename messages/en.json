@@ -1550,7 +1550,8 @@
       "chat": "Chat assistant",
       "agent": "Agents",
       "voice": "Voice-over",
-      "music": "Music"
+      "music": "Music",
+      "director": "AI Director"
     },
     "activityTitle": "Recent key activity",
     "noActivity": "No key changes yet.",
@@ -1609,7 +1610,8 @@
       "chat": "Chat",
       "agent": "Agents",
       "voice": "Voice-over",
-      "music": "Music"
+      "music": "Music",
+      "director": "AI Director"
     },
     "byToolTitle": "Jobs by Tool",
     "recentTitle": "Recent Activity",
@@ -3317,7 +3319,8 @@
       "feature_disabled": "This tool is switched off right now.",
       "generation_failed": "The sound couldn't be generated. Try again.",
       "unsupported": "This provider can't make that kind of sound."
-    }
+    },
+    "director": "AI Director"
   },
   "Agents": {
     "title": "AI Agents",
@@ -3409,6 +3412,113 @@
         "title": "This run took too long",
         "body": "It was stopped. What it made is saved."
       }
+    }
+  },
+  "Director": {
+    "title": "AI Director",
+    "subtitle": "Describe an idea; get a finished video with several scenes, narration and subtitles.",
+    "loading": "Loading the AI Director",
+    "editor": "Video editor",
+    "locked": "The AI Director is part of the paid plans, like the video editor.",
+    "upgrade": "See plans",
+    "readOnly": "You can watch your team's videos here but can't start one.",
+    "recent": "Your team's videos",
+    "none": "Nothing yet. Your first video will appear here.",
+    "back": "All videos",
+    "untitled": "Untitled video",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this project? Its scene videos stay in History and its video stays in the editor.",
+    "retry": "Try again",
+    "failed": "Stopped at {step}.",
+    "progress": "Progress",
+    "result": "Finished video",
+    "download": "Download MP4",
+    "openEditor": "Open in the video editor",
+    "scenes": "Scenes",
+    "scene": "Scene {n}",
+    "sceneShort": "Scene {n}",
+    "sceneVideo": "Video of scene {n}",
+    "sceneImage": "Storyboard image of scene {n}",
+    "sceneFailed": "This scene failed.",
+    "sceneStatus": {
+      "noImage": "Storyboard next",
+      "waiting": "Waiting to be filmed",
+      "pending": "Queued for filming",
+      "running": "Filming…",
+      "ok": "Filmed",
+      "failed": "Failed"
+    },
+    "steps": {
+      "planning": "Script",
+      "storyboard": "Storyboard",
+      "filming": "Scenes",
+      "assembling": "Final video"
+    },
+    "working": {
+      "planning": "Writing the script…",
+      "storyboard": "Drawing a storyboard image for each scene…",
+      "filming": "Filming each scene. A few at a time, so this can take several minutes.",
+      "assembling": "Adding the voice-over and putting the scenes together…"
+    },
+    "status": {
+      "planning": "Writing script",
+      "storyboard": "Storyboard",
+      "filming": "Filming",
+      "assembling": "Putting together",
+      "done": "Done",
+      "failed": "Failed"
+    },
+    "form": {
+      "title": "New video",
+      "body": "Each scene gets a storyboard image, a short video and a line of narration.",
+      "model": "Each scene gets a storyboard image, a short video ({model}) and a line of narration.",
+      "idea": "Your idea",
+      "ideaPlaceholder": "e.g. Our new oak lounge chair for slow Sunday mornings, warm and calm",
+      "scenes": "Scenes",
+      "seconds": "Each scene",
+      "secondsValue": "{n} s",
+      "size": "Size",
+      "ratios": {
+        "9x16": "9:16 Story",
+        "1x1": "1:1 Square",
+        "16x9": "16:9 Wide"
+      },
+      "resolution": "Resolution",
+      "language": "Narration",
+      "languages": {
+        "en": "English",
+        "ar": "Arabic"
+      },
+      "subtitles": "Show narration as subtitles",
+      "voiceOver": "Read the narration as a voice-over",
+      "noVoice": "Voice-over needs an OpenAI or Gemini key that can speak.",
+      "voice": "Voice",
+      "voices": {
+        "warm": "Warm",
+        "bright": "Bright",
+        "calm": "Calm",
+        "deep": "Deep"
+      },
+      "estimate": "About {count, plural, one {# credit} other {# credits}}",
+      "breakdown": "Script {script} · images {images} · videos {videos} · voice {voice}",
+      "tooDear": "Your team has {count} credits left this month.",
+      "submit": "Make the video"
+    },
+    "errors": {
+      "generic": "Something went wrong. Try again.",
+      "forbidden": "You can't start videos.",
+      "invalid_input": "Check the idea and the settings.",
+      "not_found": "This project no longer exists.",
+      "not_enough_credits": "Your team doesn't have enough credits left for this video.",
+      "storage_full": "Video storage is full. Delete old videos first.",
+      "too_many_projects": "Your team has the most AI Director projects it can keep. Delete one first.",
+      "busy": "This project is still working.",
+      "generation_failed": "The AI couldn't make this part.",
+      "unsupported": "Your team's video model can't start from an image, which the Director needs.",
+      "timed_out": "It took too long.",
+      "render_failed": "The final video couldn't be put together.",
+      "media_missing": "A scene's video is missing.",
+      "render_unavailable": "Videos can't be put together on this server right now."
     }
   }
 }

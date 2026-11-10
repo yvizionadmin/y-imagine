@@ -1,6 +1,6 @@
 import "server-only";
 import { ProviderError } from "../errors";
-import type { AgentEvent, AgentRequest, ChatRequest, CopyRequest, ImprovePromptRequest, ProductCopy, TextProvider } from "../types";
+import type { AgentEvent, AgentRequest, CameraMove, ChatRequest, DirectorPlanRequest, CopyRequest, ImprovePromptRequest, ProductCopy, TextProvider } from "../types";
 
 // Offline stand-in for a writing model: assembles plausible copy from the merchant's own details so
 // the Copy tool works without keys. Include "FAIL" in the SKU to exercise the failure state.
@@ -168,6 +168,34 @@ async function* demoAgent(request: AgentRequest): AsyncGenerator<AgentEvent> {
   );
 }
 
+const DEMO_CAMERAS: CameraMove[] = ["pushIn", "orbit", "tracking", "pullOut", "pan", "static"];
+const DEMO_BEATS = {
+  en: ["Here it is.", "Made for everyday life.", "Every detail matters.", "Built to last.", "Feel the difference.", "Find yours today."],
+  ar: ["ها هو.", "صُمّم لحياتك اليومية.", "كل تفصيل مهم.", "صُنع ليدوم.", "اشعر بالفرق.", "اكتشفه اليوم."],
+};
+const DEMO_SHOTS = [
+  "Opening wide shot of the product in a bright, modern room, soft morning light",
+  "Close-up of the product's texture and finish, shallow depth of field",
+  "The product in use by a relaxed person at home, warm natural light",
+  "Detail shot of the craftsmanship, slow camera move, gentle shadows",
+  "The product styled with matching decor, calm and uncluttered",
+  "Closing hero shot of the product, centred, clean background",
+];
+
+/** Offline script: scenes built from the idea, narration in the requested language. "FAIL" fails. */
+function demoPlan(request: DirectorPlanRequest) {
+  const idea = request.idea.replace(/\s+/g, " ").trim();
+  const title = idea.length > 60 ? `${idea.slice(0, 59).trimEnd()}…` : idea;
+  return {
+    title,
+    scenes: Array.from({ length: request.scenes }, (_, i) => ({
+      visual: `${DEMO_SHOTS[i % DEMO_SHOTS.length]}. Subject: ${idea.slice(0, 120)}.`,
+      narration: DEMO_BEATS[request.language][i % DEMO_BEATS.en.length],
+      camera: DEMO_CAMERAS[i % DEMO_CAMERAS.length],
+    })),
+  };
+}
+
 export const demoTextProvider: TextProvider = {
   id: "demo",
   model: "demo-chat-v1",
@@ -193,6 +221,11 @@ export const demoTextProvider: TextProvider = {
     }
   },
   runAgent: demoAgent,
+  async planVideo(request) {
+    await wait(LATENCY_MS / 2);
+    if (request.idea.toUpperCase().includes("FAIL")) throw new ProviderError("generation_failed");
+    return { plan: demoPlan(request), model: "demo-director-v1" };
+  },
   async improvePrompt(request) {
     await wait(LATENCY_MS / 2);
     if (request.text.toUpperCase().includes("FAIL")) throw new ProviderError("generation_failed");

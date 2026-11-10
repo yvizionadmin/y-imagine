@@ -48,7 +48,7 @@ export function pickModel(preferred: readonly string[], available: readonly stri
 
 // ── Text (copy, chat) ──────────────────────────────────────────────────────────────────────────────
 
-export const TEXT_FEATURES = ["copy", "chat", "agent"] as const satisfies readonly Feature[];
+export const TEXT_FEATURES = ["copy", "chat", "agent", "director"] as const satisfies readonly Feature[];
 export type TextFeature = (typeof TEXT_FEATURES)[number];
 export const isTextFeature = (value: unknown): value is TextFeature => (TEXT_FEATURES as readonly unknown[]).includes(value);
 

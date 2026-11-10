@@ -26,6 +26,13 @@ class RenderFailure extends Error {
 }
 
 export async function runEditRender(orgId: string, id: string): Promise<RenderOutcome> {
+  const outcome = await render(orgId, id);
+  // The finished video of an AI Director project: the project is done (or failed) with it.
+  if (outcome !== "skipped") await (await import("@/lib/director/notify")).editRenderFinished(orgId, id);
+  return outcome;
+}
+
+async function render(orgId: string, id: string): Promise<RenderOutcome> {
   const edit = await claimRender(orgId, id);
   if (!edit) return "skipped";
   const dir = await mkdtemp(path.join(tmpdir(), "imagine-edit-"));

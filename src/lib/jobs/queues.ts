@@ -24,6 +24,11 @@ export const VIDEO_EDIT_QUEUE = "video-edit";
 
 export type VideoEditJobData = { orgId: string; editId: string };
 
+/** AI Director: one job moves a project as far as it can go (it is queued again when a scene or the render ends). */
+export const DIRECTOR_QUEUE = "director";
+
+export type DirectorJobData = { orgId: string; directorId: string };
+
 export const SCHEDULES = {
   /** Daily at 03:00 UTC. */
   "revalidate-keys": { pattern: "0 3 * * *", tz: "UTC" },

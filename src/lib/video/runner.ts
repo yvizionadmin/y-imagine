@@ -5,7 +5,7 @@ import type { CameraMove, LensPreset, LightingPreset, MotionLevel } from "@/lib/
 import { reportError } from "@/lib/observability/report";
 import { readAsset, saveAsset } from "@/lib/storage/assets";
 import { saveVideoToHistory } from "./history";
-import { claimVideoJob, finishVideoJob } from "./jobs";
+import { claimVideoJob, finishVideoJob, type VideoJob } from "./jobs";
 
 // Runs one Studio video job, from the worker (BullMQ) or in-process when there is no Redis. Only a
 // `pending` job is claimed, so a retry or a second worker never runs it twice. The job's credits
@@ -16,6 +16,13 @@ export type VideoJobOutcome = "done" | "failed" | "retry" | "skipped";
 export async function runVideoJob(orgId: string, id: string): Promise<VideoJobOutcome> {
   const job = await claimVideoJob(orgId, id);
   if (!job) return "skipped";
+  const outcome = await generate(orgId, id, job);
+  // An AI Director scene: its project moves on (or stops) when the clip is done or failed.
+  if (outcome !== "retry" && job.settings.directorId) await (await import("@/lib/director/notify")).sceneVideoFinished(orgId, job.settings.directorId);
+  return outcome;
+}
+
+async function generate(orgId: string, id: string, job: VideoJob): Promise<VideoJobOutcome> {
   try {
     const startFrame =
       job.startFrameAssetId && job.startFrameMime

@@ -10,6 +10,7 @@ import type { CatalogErrorCode, ConnectorType } from "@/lib/catalog/types";
 import type { EncryptedSecret } from "@/lib/crypto/secrets";
 import type { LookItem } from "@/features/looks/config";
 import type { AgentRunStatus, AgentStep } from "@/lib/agent/limits";
+import type { DirectorScene, DirectorSettings, DirectorStatus, DirectorStep } from "@/lib/director/limits";
 import type { EditTimeline } from "@/lib/editor/timeline";
 import type { EditorMedia } from "@/lib/editor/media";
 import type { BillingStatus, PlanId } from "@/lib/plans";
@@ -604,6 +605,39 @@ export const chatMessages = pgTable(
     createdAt: now(),
   },
   (t) => [index().on(t.threadId, t.createdAt)],
+);
+
+// ── AI Director ──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * One AI Director project: the idea and settings, the script (scenes), and where it is. Scene
+ * images are video-frame assets, scene videos are Studio video jobs (also in History), and the
+ * finished video is a video editor project (`editId`) the team can keep editing.
+ */
+export const directorProjects = pgTable(
+  "director_projects",
+  {
+    id: text().primaryKey(),
+    orgId: orgId(),
+    idea: text().notNull(),
+    title: text().notNull().default(""),
+    settings: jsonb().$type<DirectorSettings>().notNull(),
+    scenes: jsonb().$type<DirectorScene[]>().notNull().default([]),
+    status: text().$type<DirectorStatus>().notNull().default("planning"),
+    /** The step a failed project stopped in (retry resumes there). */
+    failedStep: text().$type<DirectorStep>(),
+    error: text(),
+    /** The voice-over's editor file, once made. */
+    voiceAssetId: text(),
+    editId: text(),
+    /** While one worker advances the project, others wait (two finished scenes can arrive together). */
+    lockedUntil: timestamp(),
+    createdBy: text().notNull(),
+    createdById: text().notNull(),
+    createdAt: now(),
+    updatedAt: now(),
+  },
+  (t) => [index().on(t.orgId, t.updatedAt), index().on(t.status, t.updatedAt), index().on(t.editId)],
 );
 
 // ── Agents ───────────────────────────────────────────────────────────────────────────────────

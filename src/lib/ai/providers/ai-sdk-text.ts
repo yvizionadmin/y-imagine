@@ -5,6 +5,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { copyPrompt, copySchema, tidyCopy } from "../copy-prompt";
+import { directorPlanSchema, directorPrompt, tidyPlan } from "../director-prompt";
 import { improvePromptText, tidyPrompt } from "../prompt-improve";
 import { ProviderError } from "../errors";
 import type { TextProviderId } from "../models";
@@ -115,6 +116,25 @@ export function createAiTextProvider(config: AiTextConfig): TextProvider {
         if (!wrote && !request.signal?.aborted) throw new ProviderError("generation_failed");
       } catch (error) {
         if (request.signal?.aborted) return;
+        throw await mapError(error, config);
+      }
+    },
+
+    async planVideo(request) {
+      try {
+        const { output } = await generateText({
+          model,
+          output: Output.object({ schema: directorPlanSchema }),
+          prompt: directorPrompt(request),
+          maxOutputTokens: 8_000,
+          ...reasoning(config, "low"),
+          abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+          maxRetries: 1,
+        });
+        const plan = tidyPlan(output, request.scenes);
+        if (!plan) throw new ProviderError("generation_failed");
+        return { plan, model: config.model };
+      } catch (error) {
         throw await mapError(error, config);
       }
     },

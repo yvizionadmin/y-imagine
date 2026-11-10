@@ -7,9 +7,11 @@ import { runBatchItem } from "@/lib/copy/batch-runner";
 import { runImageItem } from "@/lib/image-batch/runner";
 import { runVideoJob } from "@/lib/video/runner";
 import { runEditRender } from "@/lib/editor/runner";
+import { advanceDirector } from "@/lib/director/advance";
 import { cleanupOldVideos, closeStaleJobs, revalidateAllKeys } from "@/lib/jobs/maintenance";
 import {
   COPY_BATCH_QUEUE,
+  DIRECTOR_QUEUE,
   IMAGE_BATCH_QUEUE,
   MAINTENANCE_QUEUE,
   queueConnection,
@@ -17,6 +19,7 @@ import {
   VIDEO_EDIT_QUEUE,
   VIDEO_QUEUE,
   type CopyItemJob,
+  type DirectorJobData,
   type ImageItemJob,
   type MaintenanceJob,
   type VideoEditJobData,
@@ -98,7 +101,19 @@ const editWorker = new Worker<VideoEditJobData>(VIDEO_EDIT_QUEUE, async (job) =>
   lockDuration: 12 * 60_000,
 });
 
-for (const w of [worker, copyWorker, imageWorker, videoWorker, editWorker] as Worker[]) {
+// AI Director: each job moves one project as far as it can. Busy (another job holds it) or rate
+// limited throws, so BullMQ tries again after its backoff; the project is never left behind.
+const directorWorker = new Worker<DirectorJobData>(
+  DIRECTOR_QUEUE,
+  async (job) => {
+    const outcome = await advanceDirector(job.data.orgId, job.data.directorId);
+    if (outcome === "busy" || outcome === "retry") throw new Error(`director ${outcome}`);
+    return outcome;
+  },
+  { connection, concurrency: Number(process.env.DIRECTOR_CONCURRENCY) || 2, lockDuration: 10 * 60_000 },
+);
+
+for (const w of [worker, copyWorker, imageWorker, videoWorker, editWorker, directorWorker] as Worker[]) {
   w.on("completed", (job: Job, result) => console.log(JSON.stringify({ job: job.name, ok: true, result })));
   w.on("failed", (job, error) => {
     console.error(JSON.stringify({ job: job?.name, ok: false, error: error.name }));
@@ -111,7 +126,7 @@ async function registerSchedules() {
   for (const [name, repeat] of Object.entries(SCHEDULES)) {
     await queue.upsertJobScheduler(name, repeat, { name, opts: { removeOnComplete: { count: 50 }, removeOnFail: { count: 200 } } });
   }
-  console.log(JSON.stringify({ worker: "started", queues: [MAINTENANCE_QUEUE, COPY_BATCH_QUEUE, IMAGE_BATCH_QUEUE, VIDEO_QUEUE, VIDEO_EDIT_QUEUE], schedules: Object.keys(SCHEDULES) }));
+  console.log(JSON.stringify({ worker: "started", queues: [MAINTENANCE_QUEUE, COPY_BATCH_QUEUE, IMAGE_BATCH_QUEUE, VIDEO_QUEUE, VIDEO_EDIT_QUEUE, DIRECTOR_QUEUE], schedules: Object.keys(SCHEDULES) }));
 }
 
 registerSchedules().catch((error) => {
@@ -122,7 +137,7 @@ registerSchedules().catch((error) => {
 // Railway sends SIGTERM on deploy: finish the current job, then exit.
 for (const signal of ["SIGTERM", "SIGINT"] as const) {
   process.once(signal, async () => {
-    await Promise.all([worker.close(), copyWorker.close(), imageWorker.close(), videoWorker.close(), editWorker.close()]);
+    await Promise.all([worker.close(), copyWorker.close(), imageWorker.close(), videoWorker.close(), editWorker.close(), directorWorker.close()]);
     await queue.close();
     await Sentry.flush(2_000);
     process.exit(0);

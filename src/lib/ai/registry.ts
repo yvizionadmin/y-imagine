@@ -79,6 +79,7 @@ export async function getTextProvider(actor: JobActor, feature: TextFeature): Pr
       runAgent: async function* () {
         throw new ProviderError(resolved.code);
       },
+      planVideo: refuse,
     };
   }
   const provider = resolved.provider;
@@ -89,6 +90,7 @@ export async function getTextProvider(actor: JobActor, feature: TextFeature): Pr
     streamChat: (request) => runStreamJob(actor, feature, provider.id, () => provider.streamChat(request), provider.model ?? null),
     // The run is one job (the model's thinking); each tool it calls is charged as that tool's own job.
     runAgent: (request) => runStreamJob(actor, feature, provider.id, () => provider.runAgent(request), provider.model ?? null),
+    planVideo: (request) => runJob(actor, feature, provider.id, () => provider.planVideo(request), (r) => r.model),
     // A helper step (no credit, no usage event), so it gets its own per-user limit instead of the job limits.
     improvePrompt: async (request) => {
       if (!(await hit("prompt-rewrites", actor.user.id, LIMITS.promptRewritesPerUser)).ok) throw new ProviderError("rate_limited");
