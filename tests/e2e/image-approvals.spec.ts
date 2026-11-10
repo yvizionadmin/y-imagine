@@ -65,7 +65,9 @@ test("an image with approvals on: blocked, reviewed, approved, then uploaded, an
   await approval.getByRole("button", { name: "Approve" }).click();
   await expect(approval.getByText(/Approved by/)).toBeVisible();
   await drawer.getByRole("button", { name: "Upload to Website" }).click();
-  await expect(drawer.getByText("Uploaded")).toBeVisible();
+  // Queued as its own job (B8): the screen follows it until the store has it.
+  await expect(page.getByText("Uploading 1 image to your store…")).toBeVisible();
+  await expect(drawer.getByText("Uploaded")).toBeVisible({ timeout: 15_000 });
 
   // Arabic: the same drawer, right to left.
   await page.goto("/ar/history");

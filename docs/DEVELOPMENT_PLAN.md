@@ -289,7 +289,7 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
 | B5 ✅ | Prompt helpers | "Improve with AI" for merchant text; per-team suggestions from saved results | Both available in Generate and Recolor | 1–2 |
 | B6 ✅ | Team scenes and catalog per tenant | Save uploaded scenes as team scenes; product types and scenes per org in the DB; category filters in History/board; delete look backgrounds with their look | Two orgs see different product types and scenes | 3–4 |
 | B7 ✅ | Bulk improvements | Choose which catalog image to use; Arabic titles from `nameAr` for bulk A+ | Both available in the bulk tools | 1 |
-| B8 | Store publishing | Real Shopify and Magento image upload through the catalog connectors | An approved image appears on a test store | 3–5 |
+| B8 (built 2026-11-10; live store check in A8) | Store publishing | Real Shopify and Magento image upload through the catalog connectors | An approved image appears on a test store | 3–5 |
 | B9 ✅ | Impersonation | Super-admin "view as org admin", read-only, audited, time-limited | Console can open an org view and every visit is in the audit log | 1–2 |
 | B10 ✅ | Video editor (FFmpeg in the worker) | Trim, merge clips, subtitles, music / voice-over, export sizes (9:16, 1:1, 16:9) | A user cuts two clips together with subtitles and downloads the MP4 | 4–6 |
 | B11 ✅ | AI Director | Idea → script → scenes → storyboard images → a video per scene → assembled MP4 (uses B10) | One prompt gives a finished multi-scene video | 3–5 |
@@ -1341,3 +1341,28 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   the local dev database only. **Not yet / risks:** not run with live keys; how closely a real image model keeps a face
   from reference photos varies by model (OpenAI and Gemini both take reference images); no character picker in the
   Studio yet; one character per video.
+- **2026-11-10, Roadmap B8: store publishing (local, store APIs stubbed).** History → **Upload to Website** reworked
+  against Shopify's and Magento's documented APIs. **Shopify:** staged upload (`stagedUploadsCreate` with `fileSize`,
+  `userErrors` checked) → the file POSTed to the signed target as a multipart form (new `postForm`: the storage answers
+  201 with XML or 204, which the old JSON read treated as a failure) → attached with **`productUpdate(product, media)`**
+  (replacing the deprecated `productCreateMedia`; `userErrors` checked) → the new media's processing is followed
+  (`node(id)` status, up to ~15 s): `FAILED` fails the upload, still processing counts as uploaded. GraphQL `THROTTLED`
+  → `rate_limited`, `ACCESS_DENIED` → `auth_failed`. **Magento:** the media gallery endpoint as before, now keeping the
+  entry id it returns; 429 → `rate_limited`. Every connector's `publishImage` returns the store's id for the image.
+  **One queued job per image** (`src/lib/catalog/publish.ts`, queue `store-publish`, worker `PUBLISH_CONCURRENCY`,
+  `after()` without Redis): the click claims pending / failed images (new status **`publishing`**), each job re-checks
+  the approval gate and the store connection, sends a store-friendly file (JPEG q90, PNG only with transparency, at most
+  4096 px) and records `publishRef` (the store's media id), so a job that runs again after the upload went through never
+  uploads twice; a throttled store puts the job back (no attempt used); uploads stuck in `publishing` for 30 min are
+  failed by `close-stale-jobs`. History shows "Uploading…" (pulsing) on those images, a notice "Uploading N images to
+  your store…" / "N need approval first", and follows them until each has its result; new error texts for
+  `rate_limited`, `media_rejected` and `no_target` (also in Integrations and the catalog fetch). Migration `0024`
+  (`publish_ref`, `publish_started_at`). Verified: tsc + eslint clean; 450 Vitest tests (+10 `store-publish`, the first
+  Shopify / Magento connector tests, through the real SSRF guard with DNS and fetch stubbed: the whole Shopify flow and
+  its requests, each failure code, still-processing, Magento's request and errors; queued uploads: claim once, upload a
+  JPEG and keep the media id, a re-run sends nothing, throttled waits, refused / missing store / approval withdrawn fail
+  with their reason, stale sweep, viewers; `image-review` updated to the queued flow); `next build`; full Playwright suite
+  (46; `image-approvals.spec.ts` follows the queued upload). **Done-when still open:** "an approved image appears on a test
+  store" needs a real Shopify development store and a Magento instance (A8). **Check then:** the Shopify custom app needs
+  the `write_products` and `write_files` scopes; Magento's PHP upload size limit; variant images and image order are not
+  set (the image is added last).
