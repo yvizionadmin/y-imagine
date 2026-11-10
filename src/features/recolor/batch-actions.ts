@@ -1,12 +1,13 @@
 "use server";
 
 import { RECOLOR_SCOPES, type RecolorScope } from "@/lib/ai/types";
-import { findCategory, findSubcategory, PRODUCT_SIZE_MAX } from "@/lib/catalog-presets";
+import { findCategory, PRODUCT_SIZE_MAX } from "@/lib/catalog-presets";
 import { parseCatalogImage, parseImageRows } from "@/lib/image-batch/rows";
 import { beginImageBatch, imageBatchProblem, type ImageBatchFailure, type ImageBatchView } from "@/lib/image-batch/start";
 import { isAspectRatio, isResolution } from "@/lib/image-formats";
 import { saveAsset } from "@/lib/storage/assets";
 import { getWorkspace } from "@/lib/workspace";
+import { resolveProductType } from "@/lib/catalog/org-catalog";
 
 const MAX_SWATCH_BYTES = 5 * 1024 * 1024;
 const SWATCH_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -34,12 +35,13 @@ export async function startRecolorBatch(form: FormData): Promise<{ ok: true; bat
   const resolution = text(form, "resolution", 4);
   const swatch = form.get("swatch");
   const catalogImage = parseCatalogImage(form.get("catalogImage"));
+  const productType = category ? await resolveProductType(workspace.orgId, category.key, subcategory) : undefined;
   if (
     catalogImage === null ||
     typeof rowsText !== "string" ||
     rowsText.length > 100_000 ||
     !category ||
-    (subcategory !== null && findSubcategory(category.key, subcategory) === null) ||
+    productType === undefined ||
     !HEX.test(hex) ||
     !RECOLOR_SCOPES.includes(scope) ||
     !isAspectRatio(aspectRatio) ||
@@ -61,7 +63,7 @@ export async function startRecolorBatch(form: FormData): Promise<{ ok: true; bat
     name: text(form, "name", 120),
     settings: {
       category: category.key,
-      subcategory,
+      subcategory: productType,
       swatchAssetId,
       swatchMime: swatch.type,
       swatchName: swatch.name.slice(0, 120),

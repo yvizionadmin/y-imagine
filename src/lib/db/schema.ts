@@ -41,6 +41,8 @@ export const organizations = pgTable("organizations", {
   roomBackgroundsSeeded: boolean().notNull().default(false),
   /** Only approved images can be uploaded to the store (History). */
   requireImageApproval: boolean().notNull().default(false),
+  /** Product categories the org doesn't sell: hidden in its pickers (still valid on the server). */
+  hiddenCategories: jsonb().$type<string[]>().notNull().default([]),
   /** Stripe billing (synced by its webhook). `plan` follows the subscription while one exists. */
   stripeCustomerId: text().unique(),
   stripeSubscriptionId: text().unique(),
@@ -309,9 +311,25 @@ export const roomBackgrounds = pgTable(
     assetId: text().notNull(),
     mimeType: text().notNull(),
     active: boolean().notNull().default(true),
+    /** One of the starter set every org gets (copies of the built-in scenes), so not a team scene in Generate. */
+    starter: boolean().notNull().default(false),
     createdAt: now(),
   },
   (t) => [index().on(t.orgId)],
+);
+
+/** The org's own product types inside a category (next to the built-in ones), named by an admin. */
+export const productTypes = pgTable(
+  "product_types",
+  {
+    id: text().primaryKey(),
+    orgId: orgId(),
+    category: text().notNull(),
+    name: text().notNull(),
+    createdBy: text().notNull(),
+    createdAt: now(),
+  },
+  (t) => [index().on(t.orgId, t.category)],
 );
 
 export const providerCredentials = pgTable(

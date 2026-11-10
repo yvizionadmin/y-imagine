@@ -3,9 +3,12 @@
 import { ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Field } from "@/components/app/config-panel";
-import { findCategory } from "@/lib/catalog-presets";
+import { useOrgCatalog } from "@/components/app/org-catalog";
 
-/** Optional product type inside the category (Sofas, Beds…), so the prompt names the exact product. */
+/**
+ * Optional product type inside the category (Sofas, Beds…, then the org's own types), so the
+ * prompt names the exact product.
+ */
 export function SubcategoryField({
   id,
   category,
@@ -18,8 +21,8 @@ export function SubcategoryField({
   onChange: (value: string | null) => void;
 }) {
   const tp = useTranslations("Presets");
-  const subcategories = findCategory(category)?.subcategories ?? [];
-  if (subcategories.length === 0) return null;
+  const types = useOrgCatalog().typesFor(category);
+  if (types.length === 0) return null;
   return (
     <Field label={tp("subcategoryLabel")} htmlFor={id}>
       <div className="relative">
@@ -30,9 +33,9 @@ export function SubcategoryField({
           className="w-full appearance-none rounded-lg border bg-transparent py-2 ps-3 pe-8 text-[13px] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           <option value="">{tp("subcategoryAny", { category: tp(`categories.${category}`) })}</option>
-          {subcategories.map((s) => (
-            <option key={s} value={s}>
-              {tp(`subcategories.${s}`)}
+          {types.map((type) => (
+            <option key={type.value} value={type.value}>
+              {type.label}
             </option>
           ))}
         </select>

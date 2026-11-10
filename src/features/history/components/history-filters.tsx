@@ -2,6 +2,7 @@
 
 import { Calendar, ChevronDown, Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useOrgCatalog } from "@/components/app/org-catalog";
 import { Button } from "@/components/ui/button";
 import { REVIEW_STATUSES, type ReviewStatus } from "@/lib/copy/review-status";
 import type { GenerationMode, HistoryFilters, PublishStatus } from "../types";
@@ -9,7 +10,7 @@ import type { GenerationMode, HistoryFilters, PublishStatus } from "../types";
 const MODES: GenerationMode[] = ["create", "video", "lifestyle", "recolor", "aplus"];
 const STATUSES: PublishStatus[] = ["pending", "uploaded", "failed"];
 
-export type FilterDraft = Pick<HistoryFilters, "sku" | "from" | "to" | "mode" | "status" | "review">;
+export type FilterDraft = Pick<HistoryFilters, "sku" | "from" | "to" | "mode" | "status" | "review" | "category">;
 
 export function HistoryFilterBar({
   draft,
@@ -25,11 +26,14 @@ export function HistoryFilterBar({
   onRemove: (keys: (keyof FilterDraft)[]) => void;
 }) {
   const t = useTranslations("History");
+  const tp = useTranslations("Presets");
+  const { categories } = useOrgCatalog();
   const chips: { keys: (keyof FilterDraft)[]; label: string }[] = [];
   if (applied.sku) chips.push({ keys: ["sku"], label: t("chipSku", { value: applied.sku }) });
   if (applied.from || applied.to) chips.push({ keys: ["from", "to"], label: t("chipDate", { from: applied.from ?? "…", to: applied.to ?? "…" }) });
   if (applied.mode) chips.push({ keys: ["mode"], label: t("chipMode", { value: t(`modes.${applied.mode}`) }) });
   if (applied.status) chips.push({ keys: ["status"], label: t("chipStatus", { value: t(`statuses.${applied.status}`) }) });
+  if (applied.category) chips.push({ keys: ["category"], label: t("chipCategory", { value: tp(`categories.${applied.category}`) }) });
   if (applied.review) chips.push({ keys: ["review"], label: t("chipReview", { value: t(`review.status.${applied.review}`) }) });
 
   return (
@@ -84,6 +88,15 @@ export function HistoryFilterBar({
           value={draft.mode ?? ""}
           onChange={(value) => onChange({ ...draft, mode: (value || undefined) as GenerationMode | undefined })}
           options={[{ value: "", label: t("all") }, ...MODES.map((m) => ({ value: m, label: t(`modes.${m}`) }))]}
+        />
+      </Labeled>
+
+      <Labeled label={t("categoryLabel")} htmlFor="history-category" className="min-w-0 md:w-40">
+        <Select
+          id="history-category"
+          value={draft.category ?? ""}
+          onChange={(value) => onChange({ ...draft, category: value || undefined })}
+          options={[{ value: "", label: t("all") }, ...categories(draft.category).map((c) => ({ value: c.key, label: tp(`categories.${c.key}`) }))]}
         />
       </Labeled>
 

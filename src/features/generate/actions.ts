@@ -4,11 +4,13 @@ import { ProviderError, type ProviderErrorCode } from "@/lib/ai/errors";
 import { getImageProvider } from "@/lib/ai/registry";
 import type { GeneratedImage } from "@/lib/ai/types";
 import { getWorkspace } from "@/lib/workspace";
-import { categoryPresets, CUSTOM_SCENE_MAX, findScene, findSubcategory, PRODUCT_SIZE_MAX } from "@/lib/catalog-presets";
+import { categoryPresets, CUSTOM_SCENE_MAX, findScene, PRODUCT_SIZE_MAX } from "@/lib/catalog-presets";
 import { isCameraAngle } from "@/lib/camera-angles";
 import { aspectRatios, PRODUCT_IMAGE_TYPES } from "@/lib/image-formats";
-import { isAssetMime } from "@/lib/storage/assets";
+import { getRoomBackground } from "@/lib/looks/room-backgrounds";
+import { getAsset, isAssetMime } from "@/lib/storage/assets";
 import { reportError } from "@/lib/observability/report";
+import { resolveProductType } from "@/lib/catalog/org-catalog";
 
 const MAX_PRODUCT_BYTES = 10 * 1024 * 1024;
 const SCENE_UPLOAD_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -36,6 +38,8 @@ export async function generateLifestyleImage(formData: FormData): Promise<Genera
   const customScene = text(formData, "customScene") || null;
   const sceneFile = formData.get("sceneImage");
   const sceneUpload = sceneFile instanceof File && sceneFile.size > 0 ? sceneFile : null;
+  // A team scene (the org's Room Backgrounds), loaded here by id, never from a path the client sends.
+  const teamSceneId = text(formData, "teamScene") || null;
   const style = text(formData, "style") || null;
   const productSize = text(formData, "productSize");
   const aspectRatio = text(formData, "aspectRatio");
@@ -46,6 +50,8 @@ export async function generateLifestyleImage(formData: FormData): Promise<Genera
   const matchFile = formData.get("matchShot");
   const matchShot = matchFile instanceof File && matchFile.size > 0 ? matchFile : null;
 
+  // The org's own types (custom:<id>) become their name; undefined when it isn't this category's.
+  const productType = category ? await resolveProductType(workspace.orgId, category.key, subcategory) : undefined;
   const valid =
     sku.length > 0 &&
     sku.length <= 64 &&
@@ -53,11 +59,12 @@ export async function generateLifestyleImage(formData: FormData): Promise<Genera
     PRODUCT_IMAGE_TYPES.includes(product.type) &&
     product.size <= MAX_PRODUCT_BYTES &&
     category !== undefined &&
-    (subcategory === null || findSubcategory(category.key, subcategory) !== null) &&
+    productType !== undefined &&
     // Any library scene is allowed, not just the category's recommendations; one scene source at most.
     (scene === null || findScene(scene) !== undefined) &&
     (customScene === null || (scene === null && customScene.length <= CUSTOM_SCENE_MAX)) &&
     (sceneUpload === null || (scene === null && customScene === null && SCENE_UPLOAD_TYPES.includes(sceneUpload.type) && sceneUpload.size <= MAX_PRODUCT_BYTES)) &&
+    (teamSceneId === null || (scene === null && customScene === null && sceneUpload === null && teamSceneId.length <= 64)) &&
     (style === null || category.styles.includes(style)) &&
     productSize.length <= PRODUCT_SIZE_MAX &&
     aspectRatios.some((r) => r.key === aspectRatio) &&
@@ -65,6 +72,8 @@ export async function generateLifestyleImage(formData: FormData): Promise<Genera
     angle !== null &&
     (matchShot === null || (SCENE_UPLOAD_TYPES.includes(matchShot.type) && matchShot.size <= MAX_PRODUCT_BYTES));
   if (!valid) return { ok: false, error: "invalid_input" };
+  const teamScene = teamSceneId ? await loadTeamScene(workspace.orgId, teamSceneId) : null;
+  if (teamSceneId && !teamScene) return { ok: false, error: "invalid_input" };
 
   const provider = await getImageProvider(workspace, "generate");
   try {
@@ -73,10 +82,11 @@ export async function generateLifestyleImage(formData: FormData): Promise<Genera
       product: await imageInput(product),
       reference: reference instanceof File && reference.size > 0 && reference.size <= MAX_PRODUCT_BYTES && isAssetMime(reference.type) ? await imageInput(reference) : null,
       category: category.key,
-      subcategory,
+      subcategory: productType,
       scene,
       customScene,
-      sceneUpload: sceneUpload ? await imageInput(sceneUpload) : null,
+      // The model keeps a team scene's room as it is, exactly like an uploaded one.
+      sceneUpload: sceneUpload ? await imageInput(sceneUpload) : teamScene,
       style,
       productSize,
       angle,
@@ -92,4 +102,12 @@ export async function generateLifestyleImage(formData: FormData): Promise<Genera
     reportError("generateLifestyleImage failed", error, { orgId: workspace.orgId, provider: provider.id });
     return { ok: false, error: "generation_failed" };
   }
+}
+
+/** An active team scene of the org as an image input; null when it is missing, hidden or another org's. */
+async function loadTeamScene(orgId: string, id: string) {
+  const background = await getRoomBackground(orgId, id);
+  if (!background?.active) return null;
+  const asset = await getAsset(orgId, background.assetId);
+  return asset ? { bytes: new Uint8Array(asset.bytes), mimeType: asset.mimeType, name: background.name } : null;
 }

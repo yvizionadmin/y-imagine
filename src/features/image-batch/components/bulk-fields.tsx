@@ -7,6 +7,7 @@ import { Field, Section } from "@/components/app/config-panel";
 import { SubcategoryField } from "@/components/app/subcategory-field";
 import { categoryPresets, findCategory } from "@/lib/catalog-presets";
 import { CATALOG_IMAGE_POSITIONS } from "@/lib/image-batch/rows";
+import { useOrgCatalog } from "@/components/app/org-catalog";
 
 // Panel fields the bulk image tools share with their single-product panels.
 
@@ -26,6 +27,7 @@ export function CategoryFields({
 }) {
   const tw = useTranslations("Workspace");
   const tp = useTranslations("Presets");
+  const { categories: orgCategories } = useOrgCatalog();
   return (
     <>
       <Field label={label} htmlFor="bulk-category">
@@ -41,7 +43,7 @@ export function CategoryFields({
                 {tw("chooseCategory")}
               </option>
             )}
-            {categoryPresets.map((c) => (
+            {orgCategories(category).map((c) => (
               <option key={c.key} value={c.key}>
                 {tp(`categories.${c.key}`)}
               </option>

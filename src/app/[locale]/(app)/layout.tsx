@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import { IconRail } from "@/components/app/icon-rail";
 import { NewJobScope } from "@/components/app/new-job";
+import { OrgCatalogInit, OrgCatalogProvider } from "@/components/app/org-catalog";
 import { TopBar } from "@/components/app/top-bar";
 import { ViewAsBanner } from "@/features/admin/components/view-as-banner";
+import { getOrgCatalog } from "@/lib/catalog/org-catalog";
 import { getWorkspace } from "@/lib/workspace";
 
 // The session is read at request time, so the shell chrome streams in behind Suspense while the
@@ -30,7 +32,12 @@ export default function AppLayout({ children }: LayoutProps<"/[locale]">) {
             "[&:has([data-feed])_[data-empty-state]]:hidden [&:has([data-feed])>section:has(>div>[data-empty-state])]:hidden",
           ].join(" ")}
         >
-          <NewJobScope>{children}</NewJobScope>
+          <OrgCatalogProvider>
+            <Suspense>
+              <SignedInCatalog />
+            </Suspense>
+            <NewJobScope>{children}</NewJobScope>
+          </OrgCatalogProvider>
         </main>
       </div>
     </div>
@@ -49,4 +56,9 @@ async function SignedInTopBar() {
 async function SignedInRail() {
   const { isSuperAdmin } = await getWorkspace();
   return <IconRail isSuperAdmin={isSuperAdmin} />;
+}
+
+async function SignedInCatalog() {
+  const { orgId } = await getWorkspace();
+  return <OrgCatalogInit catalog={await getOrgCatalog(orgId)} />;
 }

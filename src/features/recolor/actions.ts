@@ -2,11 +2,12 @@
 
 import { ProviderError, type ProviderErrorCode } from "@/lib/ai/errors";
 import { getImageProvider } from "@/lib/ai/registry";
-import { findCategory, findSubcategory } from "@/lib/catalog-presets";
+import { findCategory } from "@/lib/catalog-presets";
 import { RECOLOR_SCOPES, type ImageInput, type RecolorResult, type RecolorScope, type SwatchAnalysis } from "@/lib/ai/types";
 import { isAspectRatio, isResolution, PRODUCT_IMAGE_TYPES } from "@/lib/image-formats";
 import { getWorkspace } from "@/lib/workspace";
 import { reportError } from "@/lib/observability/report";
+import { resolveProductType } from "@/lib/catalog/org-catalog";
 
 const MAX_PRODUCT_BYTES = 10 * 1024 * 1024;
 const MAX_SWATCH_BYTES = 5 * 1024 * 1024;
@@ -54,11 +55,12 @@ export async function recolorProduct(formData: FormData): Promise<({ ok: true } 
     toImageInput(formData.get("swatch"), MAX_SWATCH_BYTES, SWATCH_TYPES),
   ]);
 
+  const productType = category ? await resolveProductType(workspace.orgId, category.key, subcategory) : undefined;
   if (
     !sku ||
     sku.length > 64 ||
     !category ||
-    (subcategory !== null && findSubcategory(category.key, subcategory) === null) ||
+    productType === undefined ||
     !product ||
     !swatch ||
     !HEX.test(hex) ||
@@ -74,7 +76,7 @@ export async function recolorProduct(formData: FormData): Promise<({ ok: true } 
     const result = await provider.recolor({
       sku,
       category: category.key,
-      subcategory,
+      subcategory: productType,
       product,
       swatch,
       hex,

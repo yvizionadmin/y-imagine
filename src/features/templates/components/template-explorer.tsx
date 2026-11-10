@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { findCategory, subcategoryImage } from "@/lib/catalog-presets";
 import { useCategoryParam } from "@/lib/use-category-param";
+import { useOrgCatalog } from "@/components/app/org-catalog";
 import { templateCategories, type TemplateCategory } from "../categories";
 
 const card = "flex items-center gap-3 rounded-2xl border bg-background p-3 shadow-xs";
@@ -29,11 +30,14 @@ export function TemplateExplorer() {
   const needle = query.trim().toLocaleLowerCase();
   const matches = (label: string) => !needle || label.toLocaleLowerCase().includes(needle);
 
+  // Categories the org doesn't sell (Settings → Product Types) are left out; a link to one still opens it.
+  const { hiddenCategories } = useOrgCatalog().catalog;
+  const sold = templateCategories.filter((c) => !hiddenCategories.includes(c.key));
   const selectedCategory = selected ? templateCategories.find((c) => c.key === selected) : undefined;
-  const categories = templateCategories.filter((c) => matches(t(`categories.${c.key}`)));
+  const categories = sold.filter((c) => matches(t(`categories.${c.key}`)));
   // While searching, product types match too ("sofa" finds Furniture › Sofas).
   const types = needle
-    ? templateCategories.flatMap((c) =>
+    ? sold.flatMap((c) =>
         (findCategory(c.key)?.subcategories ?? [])
           .filter((s) => matches(tp(`subcategories.${s}`)))
           .map((s) => ({ category: c, key: s })),

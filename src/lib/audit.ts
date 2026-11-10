@@ -50,6 +50,10 @@ export type AuditAction =
   | "image.approved"
   | "image.changes_requested"
   | "org.image_approval_changed"
+  | "catalog.category_hidden"
+  | "catalog.category_shown"
+  | "catalog.type_added"
+  | "catalog.type_removed"
   | "video.consent_given"
   | "video.cleaned_up";
 

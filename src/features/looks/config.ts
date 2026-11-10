@@ -1,4 +1,4 @@
-import { findCategory } from "@/lib/catalog-presets";
+import { categoryPresets, findCategory } from "@/lib/catalog-presets";
 
 export const MAX_LOOK_PRODUCTS = 20;
 
@@ -55,3 +55,7 @@ export type LookItem = {
   locked: boolean;
   hidden: boolean;
 };
+
+/** The categories some of these looks were made for, in preset order (for the category filters). */
+export const lookCategories = (looks: readonly { category: string }[]): string[] =>
+  categoryPresets.filter((c) => looks.some((l) => l.category === c.key)).map((c) => c.key);

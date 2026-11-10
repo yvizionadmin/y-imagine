@@ -3,12 +3,13 @@
 import { ProviderError, type ProviderErrorCode } from "@/lib/ai/errors";
 import { getImageProvider } from "@/lib/ai/registry";
 import type { AplusFeature, AplusRequest, GeneratedImage, ImageInput } from "@/lib/ai/types";
-import { findCategory, findSubcategory } from "@/lib/catalog-presets";
+import { findCategory } from "@/lib/catalog-presets";
 import { fetchRemoteImage } from "@/lib/fetch-image";
 import { isAspectRatio, isResolution } from "@/lib/image-formats";
 import { getWorkspace } from "@/lib/workspace";
 import { FEATURE_RANGE, layoutPresets, TEXT_LIMITS } from "./config";
 import { reportError } from "@/lib/observability/report";
+import { resolveProductType } from "@/lib/catalog/org-catalog";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const IMAGE_TYPES = ["image/png", "image/jpeg"];
@@ -61,6 +62,7 @@ export async function generateAplusImage(formData: FormData): Promise<AplusResul
   // Resolve the scene from the preset list, never from a client-supplied path.
   const scene = category?.scenes.find((s) => s.key === sceneKey)?.image ?? null;
 
+  const productType = category ? await resolveProductType(workspace.orgId, category.key, subcategory) : undefined;
   if (
     !sku ||
     sku.length > 64 ||
@@ -69,7 +71,7 @@ export async function generateAplusImage(formData: FormData): Promise<AplusResul
     subtitle.length > TEXT_LIMITS.subtitle ||
     !features ||
     !category ||
-    (subcategory !== null && findSubcategory(category.key, subcategory) === null) ||
+    productType === undefined ||
     (sceneKey && !scene) ||
     (style !== null && !category.styles.includes(style)) ||
     !isAspectRatio(aspectRatio) ||
@@ -106,7 +108,7 @@ export async function generateAplusImage(formData: FormData): Promise<AplusResul
       product,
       reference,
       category: category.key,
-      subcategory,
+      subcategory: productType,
       scene,
       style,
       title,

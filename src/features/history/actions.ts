@@ -149,6 +149,7 @@ export async function queryHistory(filters: HistoryFilters): Promise<{
     .filter((g) => !filters.mode || g.mode === filters.mode)
     .filter((g) => !filters.status || g.status === filters.status)
     .filter((g) => !filters.review || (g.mode !== "video" && g.reviewStatus === filters.review))
+    .filter((g) => !filters.category || g.settings.category === filters.category)
     .filter((g) => (from === null || Date.parse(g.createdAt) >= from) && (to === null || Date.parse(g.createdAt) <= to))
     .sort((a, b) => (filters.sort === "oldest" ? 1 : -1) * a.createdAt.localeCompare(b.createdAt));
 

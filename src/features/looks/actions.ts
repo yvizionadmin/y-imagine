@@ -4,17 +4,18 @@ import sharp from "sharp";
 import { ProviderError, type ProviderErrorCode } from "@/lib/ai/errors";
 import { getImageProvider } from "@/lib/ai/registry";
 import type { GeneratedImage } from "@/lib/ai/types";
-import { findCategory, findSubcategory } from "@/lib/catalog-presets";
+import { findCategory } from "@/lib/catalog-presets";
 import { loadConnection } from "@/lib/catalog/connections";
 import { importProductPng, runSearch } from "@/lib/catalog/lookup";
 import type { CatalogErrorCode, CatalogProduct } from "@/lib/catalog/types";
 import { cutOutProduct } from "@/lib/image/cutout";
-import { getLook, insertLook, listLooks, removeLook, updateLook, type Look, type LookMode } from "@/lib/looks/looks";
+import { backgroundInUse, getLook, insertLook, listLooks, removeLook, updateLook, type Look, type LookMode } from "@/lib/looks/looks";
 import {
   insertRoomBackground,
   listRoomBackgrounds,
   removeRoomBackground,
   resolveLookBackground,
+  storeBackgroundImage,
   toBackgroundView,
   updateRoomBackground,
   type RoomBackgroundView,
@@ -24,6 +25,7 @@ import { assetUrl, deleteAsset, getAsset, saveAsset } from "@/lib/storage/assets
 import { getWorkspace, type Workspace } from "@/lib/workspace";
 import { LOOK_RATIOS, MAX_LOOK_PRODUCTS, ROOM_TYPES, lookStyles, uploadBackgroundId, uploadedAssetId, type LookItem } from "./config";
 import { reportError } from "@/lib/observability/report";
+import { resolveProductType } from "@/lib/catalog/org-catalog";
 
 type SearchError = "no_connection" | CatalogErrorCode;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -83,12 +85,13 @@ type LookInput = {
 
 const clamp = (n: unknown, min: number, max: number) => (typeof n === "number" && Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : null);
 
-function validateLook(input: LookInput) {
+async function validateLook(orgId: string, input: LookInput) {
   const ratio = LOOK_RATIOS.find((r) => r.key === input.aspectRatio);
   const category = findCategory(String(input.category))?.key;
   if (!category) return null;
   const style = input.style && lookStyles(category).includes(input.style) ? input.style : null;
-  const subcategory = findSubcategory(category, typeof input.subcategory === "string" ? input.subcategory : null);
+  // An unknown product type is dropped rather than refused; the org's own become their name.
+  const subcategory = (await resolveProductType(orgId, category, typeof input.subcategory === "string" ? input.subcategory : null)) ?? null;
   if (!ratio || !Array.isArray(input.items) || input.items.length === 0 || input.items.length > MAX_LOOK_PRODUCTS) return null;
   const items: LookItem[] = [];
   for (const item of input.items) {
@@ -158,7 +161,7 @@ async function renderLook(
 
 export async function generateLook(input: LookInput): Promise<{ ok: true; image: GeneratedImage } | { ok: false; error: RenderError }> {
   const workspace = await getWorkspace();
-  const look = validateLook(input);
+  const look = await validateLook(workspace.orgId, input);
   if (!look) return { ok: false, error: "invalid_input" };
   return renderLook(workspace, { ...look, width: look.ratio.w, height: look.ratio.h, backgroundId: input.backgroundId });
 }
@@ -193,7 +196,7 @@ export async function saveLook(
 ): Promise<{ ok: true; look: LookView } | { ok: false; error: "invalid_input" | "forbidden" | "not_found" }> {
   const workspace = await getWorkspace();
   if (workspace.role === "viewer") return { ok: false, error: "forbidden" };
-  const look = validateLook(input);
+  const look = await validateLook(workspace.orgId, input);
   const data = typeof input.image === "string" ? DATA_URL.exec(input.image) : null;
   if (!look || !data) return { ok: false, error: "invalid_input" };
 
@@ -329,12 +332,20 @@ export async function setLookBoard(id: string, isBoard: boolean): Promise<{ ok: 
   return { ok: true };
 }
 
-/** Delete a look and its result image. Product cut-outs are kept: duplicates may share them. */
+/**
+ * Delete a look, its result image and the background the merchant uploaded for it, unless a
+ * duplicate still uses that background. Library backgrounds and product cut-outs are kept
+ * (duplicates may share cut-outs).
+ */
 export async function deleteLook(id: string): Promise<{ ok: true } | { ok: false; error: "forbidden" | "not_found" }> {
   const found = await editableLook(id);
   if (!found.ok) return found;
-  await removeLook(found.workspace.orgId, found.look.id);
-  await dropAsset(found.workspace.orgId, found.look.resultAssetId);
+  const { orgId } = found.workspace;
+  const { look } = found;
+  await removeLook(orgId, look.id);
+  await dropAsset(orgId, look.resultAssetId);
+  const uploaded = uploadedAssetId(look.backgroundId);
+  if (uploaded && look.backgroundId && !(await backgroundInUse(orgId, look.backgroundId, look.id))) await dropAsset(orgId, uploaded);
   return { ok: true };
 }
 
@@ -344,16 +355,8 @@ export async function uploadLookBackground(
 ): Promise<{ ok: true; background: { id: string; imageUrl: string } } | { ok: false; error: "forbidden" | "invalid_input" }> {
   const workspace = await getWorkspace();
   if (workspace.role === "viewer") return { ok: false, error: "forbidden" };
-  const file = formData.get("image");
-  if (!(file instanceof File) || !IMAGE_TYPES.includes(file.type) || file.size > MAX_IMAGE_BYTES) return { ok: false, error: "invalid_input" };
-  let webp: Buffer;
-  try {
-    webp = await sharp(new Uint8Array(await file.arrayBuffer())).resize({ width: 2048, height: 2048, fit: "inside", withoutEnlargement: true }).webp({ quality: 88 }).toBuffer();
-  } catch {
-    // Not a readable image, whatever its declared type.
-    return { ok: false, error: "invalid_input" };
-  }
-  const assetId = await saveAsset(workspace.orgId, webp, "image/webp", "look-background");
+  const assetId = await storeBackgroundImage(workspace.orgId, formData.get("image"), "look-background");
+  if (!assetId) return { ok: false, error: "invalid_input" };
   return { ok: true, background: { id: uploadBackgroundId(assetId), imageUrl: assetUrl(assetId) } };
 }
 
@@ -376,14 +379,9 @@ export async function uploadRoomBackground(formData: FormData): Promise<{ ok: tr
   const roomType = text(formData.get("roomType"), 40);
   const category = text(formData.get("category"), 40);
   const style = text(formData.get("style"), 40);
-  if (
-    !(file instanceof File) || !IMAGE_TYPES.includes(file.type) || file.size > MAX_IMAGE_BYTES || !name ||
-    !isRoomType(roomType) || !isCategory(category) || !lookStyles(category).includes(style)
-  ) {
-    return { ok: false, error: "invalid_input" };
-  }
-  const webp = await sharp(new Uint8Array(await file.arrayBuffer())).resize({ width: 2048, height: 2048, fit: "inside", withoutEnlargement: true }).webp({ quality: 88 }).toBuffer();
-  const assetId = await saveAsset(workspace.orgId, webp, "image/webp", "room-background");
+  if (!name || !isRoomType(roomType) || !isCategory(category) || !lookStyles(category).includes(style)) return { ok: false, error: "invalid_input" };
+  const assetId = await storeBackgroundImage(workspace.orgId, file, "room-background");
+  if (!assetId) return { ok: false, error: "invalid_input" };
   await insertRoomBackground({ orgId: workspace.orgId, name, roomType, category, style, assetId, mimeType: "image/webp", active: true });
   return { ok: true };
 }

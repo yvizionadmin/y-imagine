@@ -411,7 +411,16 @@
     "upload": "Upload your own",
     "uploadHint": "JPG, PNG or WebP, up to 10 MB",
     "uploadError": "Use a JPG, PNG or WebP image up to 10 MB.",
-    "uploaded": "Your background"
+    "uploaded": "Your background",
+    "team": "Team",
+    "teamScene": "Team scene: {name}",
+    "saveForTeam": "Save for the team",
+    "saveForTeamHint": "Your team can then pick this background for this product type. Admins manage it in Inspirational → Room Backgrounds.",
+    "teamSceneName": "Scene name",
+    "roomType": "Room type",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saveError": "Couldn't save the scene. Try again with a JPG, PNG or WebP up to 10 MB."
   },
   "Generate": {
     "panelTitle": "New Campaign",
@@ -716,6 +725,7 @@
       "roles": "Roles & Permissions",
       "apiKeys": "API Keys",
       "brandKit": "Brand Kit",
+      "productTypes": "Product Types",
       "billing": "Billing",
       "integrations": "Integrations"
     }
@@ -1003,7 +1013,8 @@
     "openInTool": "Open in {tool}",
     "publishFailed": "Last upload failed: {error}",
     "settingLabels": {
-      "category": "Product Type",
+      "category": "Product Category",
+      "subcategory": "Product Type",
       "scene": "Background Scene",
       "style": "Style Theme",
       "aspectRatio": "Aspect Ratio",
@@ -1016,6 +1027,7 @@
       "features": "Feature Blocks",
       "customScene": "Custom Scene",
       "sceneUpload": "Uploaded background",
+      "teamScene": "Team scene",
       "catalogImage": "Catalog image"
     },
     "featureCount": "{count, plural, one {# block} other {# blocks}}",
@@ -1067,6 +1079,8 @@
     "awaitingBanner": "{count, plural, one {# image needs approval before it can be uploaded.} other {# images need approval before they can be uploaded.}}",
     "showInReview": "Show images in review",
     "chipReview": "Approval: {value}",
+    "categoryLabel": "Product category",
+    "chipCategory": "Category: {value}",
     "submitSelected": "Submit for review",
     "approveSelected": "Approve",
     "reviewDone": "{count, plural, =0 {Nothing changed: those images can't take that step.} one {# image updated.} other {# images updated.}}",
@@ -1247,6 +1261,7 @@
     "exportJson": "Export JSON",
     "searchHistory": "Search by SKU or look title...",
     "modeFilter": "Mode",
+    "categoryFilter": "Category",
     "dateFilter": "Date",
     "allTime": "All Time",
     "last7": "Last 7 Days",
@@ -1913,6 +1928,12 @@
         "submitted": "submitted images for review:",
         "approved": "approved images:",
         "changes_requested": "requested changes to images:"
+      },
+      "catalog": {
+        "category_hidden": "hid the product category",
+        "category_shown": "showed the product category",
+        "type_added": "added the product type",
+        "type_removed": "removed the product type"
       }
     },
     "errors": {
@@ -3108,5 +3129,22 @@
     "banner": "Viewing {org} as an admin. Read-only. Ends at {time}.",
     "exit": "Exit view",
     "refused": "That wasn't saved: nothing can be changed in this view."
+  },
+  "ProductTypes": {
+    "title": "Product Types",
+    "description": "Choose the product categories your team sells; the others are hidden in the tools. Add your own product types inside a category, next to the built-in ones: they appear in every tool's Product Type list, and the AI is told the name.",
+    "readOnly": "Only admins can change product types. You can see them here.",
+    "hidden": "Hidden",
+    "typesOf": "Product types in {category}",
+    "remove": "Remove {name}",
+    "addLabel": "Add a product type to {category}",
+    "addPlaceholder": "e.g. Rattan daybeds",
+    "add": "Add",
+    "limit": "Up to {max} of your own types per category.",
+    "errors": {
+      "duplicate": "That product type is already in this category.",
+      "lastCategory": "Keep at least one category.",
+      "error": "Couldn't save. Try again."
+    }
   }
 }

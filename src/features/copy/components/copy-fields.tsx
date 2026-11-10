@@ -7,7 +7,7 @@ import { DockToolbar, Field, MODE_SWITCH, modeSwitchItem } from "@/components/ap
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link } from "@/i18n/navigation";
 import { COPY_CHANNELS, COPY_LANGUAGES, COPY_LENGTHS, COPY_TONES, type CopyChannel, type CopyLanguage, type CopyLength, type CopyTone } from "@/lib/ai/types";
-import { categoryPresets } from "@/lib/catalog-presets";
+import { useOrgCatalog } from "@/components/app/org-catalog";
 
 // Panel fields shared by single-product and bulk Copy.
 
@@ -43,11 +43,12 @@ export function CopyModeTabs({ mode }: { mode: "single" | "bulk" }) {
 
 export function CategorySelect({ id, label, value, onChange }: { id: string; label: string; value: string; onChange: (value: string) => void }) {
   const tp = useTranslations("Presets");
+  const { categories: orgCategories } = useOrgCatalog();
   return (
     <Field label={label} htmlFor={id}>
       <div className="relative">
         <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className={select}>
-          {categoryPresets.map((c) => (
+          {orgCategories(value).map((c) => (
             <option key={c.key} value={c.key}>
               {tp(`categories.${c.key}`)}
             </option>

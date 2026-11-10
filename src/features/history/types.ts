@@ -14,6 +14,8 @@ export type HistoryFilters = {
   status?: PublishStatus;
   /** Approval status of images. */
   review?: ReviewStatus;
+  /** Product category (category preset key) the result was made for. */
+  category?: string;
   sort: "newest" | "oldest";
   page: number;
   pageSize: number;

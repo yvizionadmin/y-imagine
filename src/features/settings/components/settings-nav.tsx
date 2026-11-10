@@ -12,6 +12,7 @@ const items = [
   { key: "roles", href: null },
   { key: "apiKeys", href: "/settings/api-keys" },
   { key: "brandKit", href: "/settings/brand" },
+  { key: "productTypes", href: "/settings/product-types" },
   { key: "billing", href: "/settings/billing" },
   { key: "integrations", href: "/settings/integrations" },
 ] as const;

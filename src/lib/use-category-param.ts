@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { categoryPresets, findSubcategory } from "@/lib/catalog-presets";
+import { useOrgCatalog } from "@/components/app/org-catalog";
+import { categoryPresets } from "@/lib/catalog-presets";
 
 /** The preset key in `?category=`, or null when it is missing or unknown. */
 export function useCategoryParam() {
@@ -16,7 +17,6 @@ export function useCategoryParam() {
  * picked category and writes it to the address so reloads and shared links open the same one.
  */
 export function useCategorySync(current: string, apply: (category: string) => void) {
-  const searchParams = useSearchParams();
   const param = useCategoryParam();
   const [synced, setSynced] = useState(param);
   // Adjusting state during render (not in an effect) avoids painting the stale category first.
@@ -27,7 +27,8 @@ export function useCategorySync(current: string, apply: (category: string) => vo
   return (category: string) => {
     apply(category);
     setSynced(category);
-    const params = new URLSearchParams(searchParams.toString());
+    // The live address, not the render-time snapshot: the other hook may have just written to it.
+    const params = new URLSearchParams(window.location.search);
     params.set("category", category);
     // A product type (?sub=) belongs to the old category.
     params.delete("sub");
@@ -43,16 +44,21 @@ export function useCategorySync(current: string, apply: (category: string) => vo
 export function useSubcategorySync(category: string) {
   const searchParams = useSearchParams();
   const param = searchParams.get("sub");
-  const [state, setState] = useState(() => ({ category, param, value: findSubcategory(category, param) }));
+  const { typesFor } = useOrgCatalog();
+  const [state, setState] = useState(() => ({ category, param, value: param }));
   if (state.category !== category || state.param !== param) {
-    setState({ category, param, value: findSubcategory(category, param) });
+    setState({ category, param, value: param });
   }
-  const choose = (value: string | null) => {
-    setState({ category, param: value, value });
-    const params = new URLSearchParams(searchParams.toString());
-    if (value) params.set("sub", value);
+  // Checked on every render: the org's own types load after the page, so a shared link to one
+  // becomes valid once they arrive; anything not of this category is ignored.
+  const value = state.value && typesFor(category).some((type) => type.value === state.value) ? state.value : null;
+  const choose = (next: string | null) => {
+    setState({ category, param: next, value: next });
+    // The live address, not the render-time snapshot: the other hook may have just written to it.
+    const params = new URLSearchParams(window.location.search);
+    if (next) params.set("sub", next);
     else params.delete("sub");
     window.history.replaceState(null, "", `?${params}`);
   };
-  return [state.value, choose] as const;
+  return [value, choose] as const;
 }

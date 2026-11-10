@@ -2,6 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import sharp from "sharp";
 import { categoryBackgrounds, sceneBackgroundId, uploadedAssetId } from "@/features/looks/config";
 import type { ImageInput } from "@/lib/ai/types";
 import { assetUrl, deleteAsset, getAsset, saveAsset } from "@/lib/storage/assets";
@@ -22,10 +23,12 @@ export type RoomBackground = {
   assetId: string;
   mimeType: string;
   active: boolean;
+  /** From the starter set (copies of built-in scenes), not uploaded by the team. */
+  starter: boolean;
   createdAt: string;
 };
 
-export type RoomBackgroundView = Omit<RoomBackground, "orgId" | "mimeType"> & { imageUrl: string };
+export type RoomBackgroundView = Omit<RoomBackground, "orgId" | "mimeType" | "starter"> & { imageUrl: string };
 
 const { roomBackgrounds, organizations } = schema;
 const SEED = [
@@ -61,12 +64,36 @@ export async function listRoomBackgrounds(orgId: string, { seed = true }: { seed
   for (const seed of SEED) {
     const bytes = await readFile(path.join(process.cwd(), "public", "scenes", seed.file));
     const assetId = await saveAsset(orgId, bytes, "image/png", "room-background");
-    seeded.push({ id: randomUUID(), name: seed.name, roomType: seed.roomType, category: "furniture", style: seed.style, assetId, mimeType: "image/png", active: true });
+    seeded.push({ id: randomUUID(), name: seed.name, roomType: seed.roomType, category: "furniture", style: seed.style, assetId, mimeType: "image/png", active: true, starter: true });
   }
   return org.insert(roomBackgrounds, seeded);
 }
 
-export async function insertRoomBackground(input: Omit<RoomBackground, "id" | "createdAt">): Promise<RoomBackground> {
+/** Background photos people can upload (Room Backgrounds, a Look's own background, a team scene). */
+export const BACKGROUND_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+export const BACKGROUND_MAX_BYTES = 10 * 1024 * 1024;
+
+/**
+ * Stores an uploaded background as WebP, at most 2048 px on a side; returns its asset id, or null
+ * for a file of the wrong type, too large, or that isn't a readable image whatever its declared type.
+ */
+export async function storeBackgroundImage(orgId: string, file: unknown, kind: "room-background" | "look-background"): Promise<string | null> {
+  if (!(file instanceof File) || !BACKGROUND_IMAGE_TYPES.includes(file.type) || file.size > BACKGROUND_MAX_BYTES) return null;
+  let webp: Buffer;
+  try {
+    webp = await sharp(new Uint8Array(await file.arrayBuffer())).resize({ width: 2048, height: 2048, fit: "inside", withoutEnlargement: true }).webp({ quality: 88 }).toBuffer();
+  } catch {
+    return null;
+  }
+  return saveAsset(orgId, webp, "image/webp", kind);
+}
+
+/** One of the org's backgrounds, or null (another org's id finds nothing). */
+export async function getRoomBackground(orgId: string, id: string): Promise<RoomBackground | null> {
+  return db.forOrg(orgId).first(roomBackgrounds, eq(roomBackgrounds.id, id));
+}
+
+export async function insertRoomBackground(input: Omit<RoomBackground, "id" | "createdAt" | "starter">): Promise<RoomBackground> {
   const { orgId, ...values } = input;
   const [row] = await db.forOrg(orgId).insert(roomBackgrounds, { ...values, id: randomUUID() });
   return row;

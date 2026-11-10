@@ -1,6 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, ne } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import type { LookItem } from "@/features/looks/config";
 
@@ -51,4 +51,9 @@ export async function updateLook(orgId: string, id: string, patch: Partial<Omit<
 
 export async function removeLook(orgId: string, id: string) {
   await db.forOrg(orgId).delete(looks, eq(looks.id, id));
+}
+
+/** Whether another of the org's looks uses this background (duplicates share an uploaded one). */
+export async function backgroundInUse(orgId: string, backgroundId: string, exceptLookId: string) {
+  return (await db.forOrg(orgId).first(looks, and(eq(looks.backgroundId, backgroundId), ne(looks.id, exceptLookId)))) !== null;
 }

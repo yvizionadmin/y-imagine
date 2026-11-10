@@ -33,6 +33,7 @@ import { TEXT_LIMITS } from "../config";
 import { AplusCanvas, type AplusCanvasState, type AplusDraft } from "./aplus-canvas";
 import { FeatureBlocks, ProductSourceInput, ReferencePicker, type ProductSource, type ReferenceChoice } from "./aplus-inputs";
 import { useJobCost } from "@/features/credits/use-job-cost";
+import { useOrgCatalog } from "@/components/app/org-catalog";
 
 type FormState = {
   sku: string;
@@ -73,6 +74,7 @@ export function AplusWorkspace() {
   const t = useTranslations("Aplus");
   const tw = useTranslations("Workspace");
   const tp = useTranslations("Presets");
+  const { categories: orgCategories, storedType } = useOrgCatalog();
   const locale = useLocale();
   const searchParams = useSearchParams();
   // History → "Open in tool" passes ?sku= so the merchant can regenerate for the same product;
@@ -181,7 +183,7 @@ export function AplusWorkspace() {
         subtitle: form.subtitle || null,
         features: JSON.stringify(form.features),
         layout: draft.layout,
-        subcategory,
+        subcategory: storedType(form.category, subcategory),
         scene: form.scene,
         style: form.style,
         aspectRatio: form.aspectRatio,
@@ -274,7 +276,7 @@ export function AplusWorkspace() {
                   <option value="" disabled>
                     {tw("chooseCategory")}
                   </option>
-                  {categoryPresets.map((c) => (
+                  {orgCategories(form.category).map((c) => (
                     <option key={c.key} value={c.key}>
                       {tp(`categories.${c.key}`)}
                     </option>

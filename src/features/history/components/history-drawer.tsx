@@ -46,6 +46,8 @@ export function HistoryDrawer({
     const presetNs = PRESET_SETTINGS[key];
     if (presetNs && tp.has(`${presetNs}.${value}`)) return tp(`${presetNs}.${value}`);
     if (key === "layout" && tl.has(`layouts.${value}`)) return tl(`layouts.${value}`);
+    // A built-in product type is a preset key; the org's own types are stored by name.
+    if (key === "subcategory") return tp.has(`subcategories.${value}`) ? tp(`subcategories.${value}`) : value;
     if (key === "features") {
       try {
         return t("featureCount", { count: (JSON.parse(value) as unknown[]).length });

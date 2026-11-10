@@ -6,7 +6,7 @@ import { useFormatter, useNow, useTranslations } from "next-intl";
 import { cn } from "cn";
 import { Link } from "@/i18n/navigation";
 import type { LookView } from "../actions";
-import { ROOM_TYPES } from "../config";
+import { lookCategories, ROOM_TYPES } from "../config";
 import { LookMenu, type LookMenuActions } from "./look-menu";
 import { useLooks } from "./use-looks";
 import { thumbnailUrl } from "@/lib/image/thumbnail-url";
@@ -14,14 +14,18 @@ import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 /** Mood Boards: looks promoted to boards (Figma 98:9358). Each card opens the board detail. */
 export function LooksGallery() {
   const t = useTranslations("Looks");
+  const tp = useTranslations("Presets");
   const { looks, canEdit, error, actions } = useLooks();
   const [query, setQuery] = useState("");
   const [room, setRoom] = useState<string | null>(null);
+  const [category, setCategory] = useState("");
 
   const source = (looks ?? []).filter((l) => l.isBoard);
   const rooms = ROOM_TYPES.filter((r) => source.some((l) => l.roomType === r));
+  const categories = lookCategories(source);
   const visible = source
     .filter((l) => !room || l.roomType === room)
+    .filter((l) => !category || l.category === category)
     .filter((l) => !query.trim() || l.title.toLowerCase().includes(query.trim().toLowerCase()))
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
@@ -49,6 +53,13 @@ export function LooksGallery() {
             {r ? t(`rooms.${r}`) : t("all")}
           </button>
         ))}
+        {categories.length > 1 && (
+          <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label={t("categoryFilter")}
+            className="h-8 rounded-lg border bg-background px-2.5 text-[11px] font-medium outline-none focus-visible:border-ring">
+            <option value="">{t("allCategories")}</option>
+            {categories.map((key) => <option key={key} value={key}>{tp(`categories.${key}`)}</option>)}
+          </select>
+        )}
         <span className="ms-auto rounded-lg border bg-background px-3 py-1.5 text-[11px] font-medium">{t("sortRecent")}</span>
       </div>
 

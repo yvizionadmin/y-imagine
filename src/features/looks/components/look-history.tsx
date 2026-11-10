@@ -11,6 +11,7 @@ import { regenerateLook, type LookView } from "../actions";
 import { LookDrawer } from "./look-drawer";
 import { LookMenu, LookModeBadge, type LookMenuActions } from "./look-menu";
 import { useLooks } from "./use-looks";
+import { lookCategories } from "../config";
 import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -20,11 +21,13 @@ type DateRange = keyof typeof DATE_RANGES;
 /** Look History table (Figma 98:9865) with the Look Details drawer (98:10207). */
 export function LooksHistory() {
   const t = useTranslations("Looks");
+  const tp = useTranslations("Presets");
   const tw = useTranslations("Workspace");
   const { looks, canEdit, error, setError, replace, actions } = useLooks();
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<LookMode | "all">("all");
   const [range, setRange] = useState<DateRange>("all");
+  const [category, setCategory] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
   const [drawerError, setDrawerError] = useState<string | null>(null);
@@ -70,7 +73,11 @@ export function LooksHistory() {
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("searchHistory")} aria-label={t("searchHistory")}
             className="h-8 w-full rounded-lg border bg-background ps-8 pe-2 text-xs outline-none focus-visible:border-ring" />
         </div>
-        <div className="ms-auto flex gap-2">
+        <div className="ms-auto flex flex-wrap gap-2">
+          {lookCategories(looks ?? []).length > 1 && (
+            <FilterSelect label={t("categoryFilter")} value={category} onChange={setCategory}
+              options={[{ value: "all", label: t("all") }, ...lookCategories(looks ?? []).map((key) => ({ value: key, label: tp(`categories.${key}`) }))]} />
+          )}
           <FilterSelect label={t("modeFilter")} value={mode} onChange={(v) => setMode(v as LookMode | "all")}
             options={[{ value: "all", label: t("all") }, { value: "generated", label: t("modes.generated") }, { value: "regenerated", label: t("modes.regenerated") }]} />
           <FilterSelect label={t("dateFilter")} value={range} onChange={(v) => setRange(v as DateRange)}
@@ -88,7 +95,7 @@ export function LooksHistory() {
           <p className="text-[13px] text-muted-foreground">{t("noHistoryBody")}</p>
         </div>
       ) : (
-        <HistoryTable looks={looks} query={query} mode={mode} range={range} canEdit={canEdit} actions={menuActions} />
+        <HistoryTable looks={looks} query={query} mode={mode} range={range} category={category} canEdit={canEdit} actions={menuActions} />
       )}
 
       <LookDrawer
@@ -112,6 +119,7 @@ function HistoryTable({
   query,
   mode,
   range,
+  category,
   canEdit,
   actions,
 }: {
@@ -119,6 +127,8 @@ function HistoryTable({
   query: string;
   mode: LookMode | "all";
   range: DateRange;
+  /** A category preset key, or "all". */
+  category: string;
   canEdit: boolean;
   actions: LookMenuActions;
 }) {
@@ -130,6 +140,7 @@ function HistoryTable({
 
   const rows = looks
     .filter((l) => mode === "all" || l.mode === mode)
+    .filter((l) => category === "all" || l.category === category)
     .filter((l) => days === null || now.getTime() - new Date(l.createdAt).getTime() <= days * DAY)
     .filter((l) => !q || l.title.toLowerCase().includes(q) || l.items.some((i) => i.sku.toLowerCase().includes(q)))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));

@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { CatalogFetch } from "@/features/catalog/components/catalog-fetch";
 import { Textarea } from "@/components/ui/textarea";
 import { ScenePicker, type SceneChoice } from "@/components/app/scene-picker";
+import { useTeamScenes } from "@/features/scenes/use-team-scenes";
 import { SubcategoryField } from "@/components/app/subcategory-field";
 import { PromptChips, PromptTips, useTeamPhrases } from "@/components/app/prompt-assist";
 import type { GeneratedImage } from "@/lib/ai/types";
@@ -43,6 +44,7 @@ import { DimensionsField, ShotFields, type Dimensions, type ShotSettings } from 
 import { BulkModeTabs } from "@/features/image-batch/components/bulk-mode-tabs";
 import { useJobCost } from "@/features/credits/use-job-cost";
 import { thumbnailUrl } from "@/lib/image/thumbnail-url";
+import { useOrgCatalog } from "@/components/app/org-catalog";
 
 type FormState = {
   sku: string;
@@ -120,6 +122,8 @@ export function GenerateWorkspace() {
   const [exportOpen, setExportOpen] = useState(false);
   const feed = useToolFeed("lifestyle");
   const teamPhrases = useTeamPhrases("generate", form.category);
+  const teamScenes = useTeamScenes(form.category, form.style);
+  const { categories: orgCategories, storedType } = useOrgCatalog();
   // History ids of this job's saved shots, by shot index (shown in the canvas, so hidden from the feed).
   const [savedIds, setSavedIds] = useState<Record<number, string>>({});
   // Opened from History ("Open in tool"): put that result's prompt back, once, to regenerate from it.
@@ -135,7 +139,8 @@ export function GenerateWorkspace() {
 
   const preset = findCategory(form.category) ?? null;
   const scenePreview = useObjectUrl(form.scene?.kind === "upload" ? form.scene.file : null);
-  const sceneImage = form.scene?.kind === "preset" ? (findScene(form.scene.key)?.image ?? null) : scenePreview;
+  const sceneImage =
+    form.scene?.kind === "preset" ? (findScene(form.scene.key)?.image ?? null) : form.scene?.kind === "team" ? form.scene.scene.imageUrl : scenePreview;
   // Display only: the job is sent the scene key, and the frame is at most 640px wide.
   const previewSrc = (sceneImage && thumbnailUrl(sceneImage, 640)) ?? productPreview;
   const shot = shots?.[activeShot] ?? null;
@@ -169,6 +174,7 @@ export function GenerateWorkspace() {
     if (form.scene?.kind === "preset") data.set("scene", form.scene.key);
     if (form.scene?.kind === "custom") data.set("customScene", form.scene.prompt);
     if (form.scene?.kind === "upload") data.set("sceneImage", form.scene.file);
+    if (form.scene?.kind === "team") data.set("teamScene", form.scene.scene.id);
     if (form.style) data.set("style", form.style);
     data.set("productSize", formatDimensions(form.dimensions));
     data.set("angle", angle);
@@ -195,6 +201,8 @@ export function GenerateWorkspace() {
             ? t("customScene")
             : form.scene?.kind === "upload"
               ? t("uploadedScene")
+              : form.scene?.kind === "team"
+                ? form.scene.scene.name
               : subcategory
                 ? tp(`subcategories.${subcategory}`)
                 : tp(`categories.${form.category}`),
@@ -210,10 +218,11 @@ export function GenerateWorkspace() {
       model: image.model,
       settings: {
         category: form.category,
-        subcategory,
+        subcategory: storedType(form.category, subcategory),
         scene: form.scene?.kind === "preset" ? form.scene.key : null,
         customScene: form.scene?.kind === "custom" ? form.scene.prompt.trim() : null,
         sceneUpload: form.scene?.kind === "upload" ? form.scene.file.name : null,
+        teamScene: form.scene?.kind === "team" ? form.scene.scene.name : null,
         style: form.style,
         productSize: formatDimensions(form.dimensions) || null,
         angle: angle,
@@ -300,6 +309,8 @@ export function GenerateWorkspace() {
         ? t("customScene")
         : form.scene?.kind === "upload"
           ? t("uploadedScene")
+          : form.scene?.kind === "team"
+            ? form.scene.scene.name
           : subcategory
             ? tp(`subcategories.${subcategory}`)
             : form.category
@@ -364,7 +375,7 @@ export function GenerateWorkspace() {
                   <option value="" disabled>
                     {tw("chooseCategory")}
                   </option>
-                  {categoryPresets.map((c) => (
+                  {orgCategories(form.category).map((c) => (
                     <option key={c.key} value={c.key}>
                       {tp(`categories.${c.key}`)}
                     </option>
@@ -384,6 +395,7 @@ export function GenerateWorkspace() {
                 value={form.scene}
                 onChange={(scene) => set("scene", scene)}
                 chips={preset ? (th.raw(`scenes.${form.category}`) as string[]) : []}
+                team={preset ? teamScenes : undefined}
               />
             </Field>
 

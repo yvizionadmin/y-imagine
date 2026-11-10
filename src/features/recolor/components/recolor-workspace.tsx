@@ -39,6 +39,7 @@ import { analyzeSwatch, recolorProduct } from "../actions";
 import { RecolorCanvas, type RecolorCanvasState } from "./recolor-canvas";
 import { swatchDisplayName, SwatchPicker, type SwatchState } from "./swatch-picker";
 import { useJobCost } from "@/features/credits/use-job-cost";
+import { useOrgCatalog } from "@/components/app/org-catalog";
 
 type FormState = {
   category: string;
@@ -85,6 +86,7 @@ export function RecolorWorkspace() {
   const chooseCategory = useCategorySync(form.category, (category) => setForm((f) => ({ ...f, category })));
   const [subcategory, chooseSubcategory] = useSubcategorySync(form.category);
   const teamPhrases = useTeamPhrases("recolor", form.category);
+  const { categories: orgCategories, storedType } = useOrgCatalog();
   // Before a category is chosen, labels follow the first preset (a fabric recolor).
   const preset = categoryPresets.find((c) => c.key === form.category) ?? categoryPresets[0];
   const kind = preset.recolorKind;
@@ -198,7 +200,7 @@ export function RecolorWorkspace() {
       model: image.model,
       settings: {
         category: form.category,
-        subcategory,
+        subcategory: storedType(form.category, subcategory),
         swatch: form.swatch?.name ?? null,
         hex,
         scope: form.scope,
@@ -242,7 +244,7 @@ export function RecolorWorkspace() {
                   <option value="" disabled>
                     {tw("chooseCategory")}
                   </option>
-                  {categoryPresets.map((c) => (
+                  {orgCategories(form.category).map((c) => (
                     <option key={c.key} value={c.key}>
                       {tp(`categories.${c.key}`)}
                     </option>
