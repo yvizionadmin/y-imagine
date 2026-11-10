@@ -3,30 +3,26 @@
 import { useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
+import { Link } from "@/i18n/navigation";
+import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 import { blockedReason } from "@/components/app/job-errors";
 import { Choice } from "@/features/editor/components/editor-panels";
 import { VOICE_STYLES } from "@/lib/ai/types";
-import { videoCost, type VideoResolution } from "@/lib/credits";
-import { DEFAULT_DIRECTOR_SETTINGS, DIRECTOR_IDEA_MAX, DIRECTOR_MAX_SCENES, DIRECTOR_MIN_SCENES, type DirectorSettings } from "@/lib/director/limits";
+import { DEFAULT_DIRECTOR_SETTINGS, pricingEstimate as estimate, DIRECTOR_IDEA_MAX, DIRECTOR_MAX_SCENES, DIRECTOR_MIN_SCENES, type DirectorSettings } from "@/lib/director/limits";
 import type { DirectorSetup } from "../actions";
 
 const SCENE_COUNTS = Array.from({ length: DIRECTOR_MAX_SCENES - DIRECTOR_MIN_SCENES + 1 }, (_, i) => String(DIRECTOR_MIN_SCENES + i));
 
-/** What a project will cost, part by part (the same sum the server checks). */
-export function estimate(pricing: DirectorSetup["pricing"], s: Pick<DirectorSettings, "scenes" | "seconds" | "resolution" | "voiceOver">) {
-  const video = videoCost({ video: pricing.video as Parameters<typeof videoCost>[0]["video"] }, { seconds: s.seconds, resolution: s.resolution as VideoResolution });
-  const parts = { script: pricing.director, images: s.scenes * pricing.create, videos: s.scenes * video, voice: s.voiceOver ? pricing.voice : 0 };
-  return { ...parts, total: parts.script + parts.images + parts.videos + parts.voice };
-}
-
 /** The idea and the video's settings, limited to what the org's video model can make. */
-export function DirectorForm({ setup, onCreate }: { setup: DirectorSetup; onCreate: (idea: string, settings: DirectorSettings) => Promise<boolean> }) {
+export function DirectorForm({ setup, onCreate }: { setup: DirectorSetup; onCreate: (idea: string, settings: DirectorSettings, characterId: string | null) => Promise<boolean> }) {
   const t = useTranslations("Director");
   const tw = useTranslations("Workspace");
   const options = setup.options;
   const [idea, setIdea] = useState("");
   const [busy, setBusy] = useState(false);
+  const [characterId, setCharacterId] = useState<string | null>(null);
   const [settings, setSettings] = useState<DirectorSettings>(() => ({
     ...DEFAULT_DIRECTOR_SETTINGS,
     aspectRatio: options?.aspectRatios.includes(DEFAULT_DIRECTOR_SETTINGS.aspectRatio) ? DEFAULT_DIRECTOR_SETTINGS.aspectRatio : (options?.aspectRatios[0] ?? "9:16"),
@@ -43,7 +39,7 @@ export function DirectorForm({ setup, onCreate }: { setup: DirectorSetup; onCrea
   async function submit() {
     if (!idea.trim() || busy || problem || tooDear) return;
     setBusy(true);
-    if (await onCreate(idea, settings)) setIdea("");
+    if (await onCreate(idea, settings, characterId)) setIdea("");
     setBusy(false);
   }
 
@@ -75,6 +71,34 @@ export function DirectorForm({ setup, onCreate }: { setup: DirectorSetup; onCrea
         placeholder={t("form.ideaPlaceholder")}
         className="w-full resize-none rounded-xl border bg-background px-3 py-2 text-sm"
       />
+      <div role="radiogroup" aria-label={t("form.character")} className="flex flex-col gap-1.5">
+        <span className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground">
+          {t("form.character")}
+          <Link href="/editor/characters" className="text-primary hover:underline">
+            {t("form.manageCharacters")}
+          </Link>
+        </span>
+        <div className="flex flex-wrap gap-1.5">
+          {[{ id: null, name: t("form.noCharacter"), imageUrl: null }, ...setup.characters].map((c) => (
+            <button
+              key={c.id ?? "none"}
+              type="button"
+              role="radio"
+              aria-checked={characterId === c.id}
+              onClick={() => setCharacterId(c.id)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full border py-1 pe-3 ps-1 text-xs",
+                c.id === null && "ps-3",
+                characterId === c.id ? "border-primary bg-primary/10 font-medium text-primary" : "bg-background hover:bg-muted",
+              )}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- our asset route, thumbnailed */}
+              {c.imageUrl && <img src={thumbnailUrl(c.imageUrl, 96)} alt="" className="size-6 rounded-full object-cover" />}
+              <span dir="auto">{c.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
       {options && (
         <fieldset disabled={busy} className="grid gap-3 sm:grid-cols-2">
           <Choice label={t("form.scenes")} value={String(settings.scenes)} options={SCENE_COUNTS} labelFor={(v) => v} onChange={(v) => set({ scenes: Number(v) })} />

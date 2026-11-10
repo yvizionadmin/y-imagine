@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { brandSection } from "./copy-prompt";
-import { CAMERA_MOVES, type CameraMove, type DirectorPlan, type DirectorPlanRequest } from "./types";
+import { CAMERA_MOVES, MOTION_LEVELS, type CameraMove, type DirectorPlan, type DirectorPlanRequest, type MotionLevel } from "./types";
 
 // What a good AI Director script is, shared by every text provider: the prompt, the output schema
 // and the clean-up of what comes back (lengths cut, scene count enforced).
@@ -13,7 +13,7 @@ const WORDS_PER_SECOND = 2.3;
 
 export const directorPlanSchema = z.object({
   title: z.string(),
-  scenes: z.array(z.object({ visual: z.string(), narration: z.string(), camera: z.enum(CAMERA_MOVES) })),
+  scenes: z.array(z.object({ visual: z.string(), narration: z.string(), camera: z.enum(CAMERA_MOVES), motion: z.enum(MOTION_LEVELS) })),
 });
 
 export function directorPrompt(request: DirectorPlanRequest) {
@@ -28,6 +28,10 @@ export function directorPrompt(request: DirectorPlanRequest) {
       request.language === "ar" ? "Write it in Modern Standard Arabic as Gulf brands write it, with Western digits." : "Write it in English."
     } Never invent prices, discounts, sizes or claims that the idea doesn't give.`,
     `- camera: one of ${CAMERA_MOVES.join(", ")}.`,
+    `- motion: how much moves in the shot, one of ${MOTION_LEVELS.join(", ")}. Vary it with the story (calm openings, livelier middles).`,
+    request.character
+      ? `Feature the same character in every scene: ${request.character.name}, ${request.character.description || "as in their reference images"}. Name them in each visual and describe the same face, hair and outfit every time, so they look identical from scene to scene.`
+      : "",
     `title: a short name for the video (at most ${TITLE_MAX} characters) in the narration's language.`,
     request.brand ? brandSection(request.brand) : "",
   ]
@@ -40,7 +44,12 @@ const clean = (text: string, max: number) => text.replace(/\s+/g, " ").trim().sl
 /** The model's script tidied: lengths cut, exactly `scenes` scenes (or null when it gave too few). */
 export function tidyPlan(raw: z.infer<typeof directorPlanSchema>, scenes: number): DirectorPlan | null {
   const kept = raw.scenes
-    .map((s) => ({ visual: clean(s.visual, VISUAL_MAX), narration: clean(s.narration, NARRATION_MAX), camera: (CAMERA_MOVES as readonly string[]).includes(s.camera) ? s.camera : ("static" as CameraMove) }))
+    .map((s) => ({
+      visual: clean(s.visual, VISUAL_MAX),
+      narration: clean(s.narration, NARRATION_MAX),
+      camera: (CAMERA_MOVES as readonly string[]).includes(s.camera) ? s.camera : ("static" as CameraMove),
+      motion: (MOTION_LEVELS as readonly string[]).includes(s.motion) ? s.motion : ("medium" as MotionLevel),
+    }))
     .filter((s) => s.visual)
     .slice(0, scenes);
   if (kept.length < scenes) return null;

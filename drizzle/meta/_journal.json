@@ -162,6 +162,13 @@
       "when": 1794318663847,
       "tag": "0022_video_cleanup_notices",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794319299430,
+      "tag": "0023_characters",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import type { ProviderErrorCode } from "@/lib/ai/errors";
 import { audioProviderProblem, textProviderProblem, videoModelFor } from "@/lib/ai/registry";
 import { videoCapabilities, videoModelName } from "@/lib/ai/video-models";
 import { planAllows, planHasVideo } from "@/lib/credits";
+import { getCharacter, listCharacters } from "@/lib/characters/characters";
 import { getEdit, queueRender } from "@/lib/editor/edits";
 import { dispatchEditRender } from "@/lib/editor/queue";
 import {
@@ -46,13 +47,20 @@ export type DirectorSetup = {
   /** What each part costs, for the estimate shown before starting. */
   pricing: { director: number; create: number; voice: number; video: { base: number; perSecond: number; resolution: Record<string, number> } };
   creditsRemaining: number;
+  /** The team's saved characters, to feature one in every scene. */
+  characters: { id: string; name: string; imageUrl: string | null }[];
 };
 
 export async function getDirectorSetup(): Promise<DirectorSetup> {
   const workspace = await getWorkspace({ read: true });
   const { creditRules, disabledFeatures } = await getPlatformSettings();
   const allowed = planHasVideo(workspace.plan) && planAllows(creditRules, workspace.plan, "director");
-  const [video, writer, voice] = await Promise.all([videoModelFor(workspace.orgId), textProviderProblem(workspace.orgId, "director"), audioProviderProblem(workspace.orgId, "voice")]);
+  const [video, writer, voice, characters] = await Promise.all([
+    videoModelFor(workspace.orgId),
+    textProviderProblem(workspace.orgId, "director"),
+    audioProviderProblem(workspace.orgId, "voice"),
+    listCharacters(workspace.orgId),
+  ]);
   const off = (["director", "video", "create"] as const).find((f) => disabledFeatures.includes(f));
   const problem: ProviderErrorCode | null = off ? "feature_disabled" : !video.ok ? video.code : writer;
   return {
@@ -64,6 +72,7 @@ export async function getDirectorSetup(): Promise<DirectorSetup> {
     options: video.ok ? directorOptions(videoCapabilities(video.model)) : null,
     pricing: { director: creditRules.featureCosts.director, create: creditRules.featureCosts.create, voice: creditRules.featureCosts.voice, video: creditRules.video },
     creditsRemaining: workspace.creditsRemaining,
+    characters: characters.map((c) => ({ id: c.id, name: c.name, imageUrl: c.images[0] ? assetUrl(c.images[0].assetId) : null })),
   };
 }
 
@@ -115,14 +124,18 @@ async function directorWorkspace(): Promise<{ ok: true; workspace: Workspace } |
  * Starts a project: checks the idea and settings against the org's video model, the credits the
  * whole video will use, storage and the project limit, then queues the first step.
  */
-export async function createDirectorProject(input: { idea: string; settings: DirectorSettings }): Promise<Result<{ project: DirectorView }>> {
+export async function createDirectorProject(input: { idea: string; settings: DirectorSettings; characterId?: string | null }): Promise<Result<{ project: DirectorView }>> {
   const gate = await directorWorkspace();
   if (!gate.ok) return gate;
   const { workspace } = gate;
   const idea = typeof input?.idea === "string" ? input.idea.trim() : "";
   const parsed = directorSettingsSchema.safeParse(input?.settings);
   if (!idea || idea.length > DIRECTOR_IDEA_MAX || !parsed.success) return { ok: false, error: "invalid_input" };
-  const settings = parsed.data;
+  // The character is kept on the project as it is now (name and look), so later edits don't change a video in progress.
+  const characterId = typeof input?.characterId === "string" && input.characterId ? input.characterId : null;
+  const character = characterId ? await getCharacter(workspace.orgId, characterId) : null;
+  if (characterId && !character) return { ok: false, error: "invalid_input" };
+  const settings: DirectorSettings = { ...parsed.data, character: character ? { id: character.id, name: character.name, description: character.description } : null };
 
   const setup = await getDirectorSetup();
   if (!setup.allowed) return { ok: false, error: "not_in_plan" };

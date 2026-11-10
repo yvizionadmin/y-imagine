@@ -10,6 +10,7 @@ import type { CatalogErrorCode, ConnectorType } from "@/lib/catalog/types";
 import type { EncryptedSecret } from "@/lib/crypto/secrets";
 import type { LookItem } from "@/features/looks/config";
 import type { AgentRunStatus, AgentStep } from "@/lib/agent/limits";
+import type { CharacterImage, CharacterSource } from "@/lib/characters/limits";
 import type { DirectorScene, DirectorSettings, DirectorStatus, DirectorStep } from "@/lib/director/limits";
 import type { EditTimeline } from "@/lib/editor/timeline";
 import type { EditorMedia } from "@/lib/editor/media";
@@ -206,7 +207,7 @@ export const assets = pgTable(
     id: text().primaryKey(),
     orgId: orgId(),
     mimeType: text().notNull(),
-    kind: text().$type<"generation" | "look-product" | "room-background" | "look-background" | "look" | "swatch" | "video" | "video-frame" | "editor-media" | "edit-render">().notNull(),
+    kind: text().$type<"generation" | "look-product" | "room-background" | "look-background" | "look" | "swatch" | "video" | "video-frame" | "editor-media" | "edit-render" | "character">().notNull(),
     byteSize: integer(),
     createdAt: now(),
   },
@@ -622,6 +623,33 @@ export const chatMessages = pgTable(
     createdAt: now(),
   },
   (t) => [index().on(t.threadId, t.createdAt)],
+);
+
+// ── Characters ───────────────────────────────────────────────────────────────────────────────
+
+/**
+ * A saved character the team reuses across AI Director scenes: a name, how they look, and 1–3
+ * reference images (asset kind `character`). Photos of a real person need the uploader's
+ * confirmation of rights and consent (`consentedAt`, audited); a portrait generated from the
+ * description is an AI person and needs none.
+ */
+export const characters = pgTable(
+  "characters",
+  {
+    id: text().primaryKey(),
+    orgId: orgId(),
+    name: text().notNull(),
+    description: text().notNull().default(""),
+    source: text().$type<CharacterSource>().notNull(),
+    images: jsonb().$type<CharacterImage[]>().notNull(),
+    consentedAt: timestamp(),
+    consentedBy: text(),
+    createdBy: text().notNull(),
+    createdById: text().notNull(),
+    createdAt: now(),
+    updatedAt: now(),
+  },
+  (t) => [index().on(t.orgId, t.updatedAt)],
 );
 
 // ── AI Director ──────────────────────────────────────────────────────────────────────────────

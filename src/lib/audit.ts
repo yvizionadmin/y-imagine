@@ -56,7 +56,10 @@ export type AuditAction =
   | "catalog.type_removed"
   | "video.consent_given"
   | "video.cleaned_up"
-  | "video.cleanup_warned";
+  | "video.cleanup_warned"
+  | "character.created"
+  | "character.consent_given"
+  | "character.deleted";
 
 /** orgId for entries that belong to no single org (platform settings, users). */
 export const PLATFORM_ORG = "platform";

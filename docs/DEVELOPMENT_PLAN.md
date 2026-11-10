@@ -294,7 +294,7 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
 | B10 ✅ | Video editor (FFmpeg in the worker) | Trim, merge clips, subtitles, music / voice-over, export sizes (9:16, 1:1, 16:9) | A user cuts two clips together with subtitles and downloads the MP4 | 4–6 |
 | B11 ✅ | AI Director | Idea → script → scenes → storyboard images → a video per scene → assembled MP4 (uses B10) | One prompt gives a finished multi-scene video | 3–5 |
 | B12 ✅ | Audio | Voice-over (TTS) and music generation, plan-gated and priced in Admin → Credits | Audio can be generated and added to an editor project | 2–3 |
-| B13 | Characters + motion | Saved characters reused across scenes, motion control where providers support it, consent kept | The same character appears across AI Director scenes | 3–5 |
+| B13 ✅ | Characters + motion | Saved characters reused across scenes, motion control where providers support it, consent kept | The same character appears across AI Director scenes | 3–5 |
 | B14 ✅ | Polish | Copy fixes (A+ title overlap, Arabic units), performance and accessibility pass | Known small issues closed | 1–2 |
 
 ## Progress
@@ -1310,7 +1310,34 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   be removed on {date}… View History") from `getStudioSetup().videoCleanup`. Verified: tsc + eslint clean; 435 Vitest tests
   (+3 in `video-safety`: a week's notice, one email, Studio date, kept until the notice is a week old; a downgrade still
   gets a week; nothing due sends nothing; the existing cleanup tests in `video-safety` and `video-editor` now announce
-  first); `next build`. **Not yet / risks:** Playwright specs not re-run (another session held the test server port); no
-  screenshot pass of the note; scheduled emails are English (no saved language per user); existing deployments get their
+  first); `next build`; Playwright `studio.spec.ts` + `video-editor.spec.ts` (3 passed). **Not yet / risks:** the note itself
+  has no Playwright check or screenshot pass (it needs videos aged past 23 days); scheduled emails are English (no saved language per user); existing deployments get their
   first notices on the first run, so nothing is removed for a week after this ships; storage and retention still aren't
   on the Billing page and there is no per-org override.
+- **2026-11-10, Roadmap B13: characters + motion (local).** New page **Characters** (`/editor/characters`, linked from the
+  AI Director's form): the team's saved people or mascots (`characters`, migration `0023`; asset kind `character`; 50 per
+  org). Two ways to add one: **from photos** (1–3 PNG / JPEG / WebP up to 10 MB, optional description) only after the
+  uploader confirms the team has the rights and the person's consent (`consentedAt` / `consentedBy`, audit
+  `character.consent_given`; uploads cost nothing), or **from a description** (one Studio `create` image job: a reference
+  portrait of a fictional person, no consent needed, audit `character.created`). Members add; the creator or an admin
+  deletes (images removed, audit `character.deleted`); viewers and a read-only org view look. **AI Director:** a
+  Character picker in the form; the project keeps the character's name and look (`settings.character`), so a later edit
+  or delete doesn't change a video in progress. The script must feature the character, named and described the same way,
+  in every scene; **every storyboard image is made from the character's reference images** (image-to-image, "keep them
+  exactly as in the references"), and each scene video starts from its storyboard frame, so the same person carries
+  through. A character from photos passes its recorded consent to its scene video jobs (`consentedAt`); an AI character
+  passes none; a deleted character falls back to its kept description. **Motion:** the script now picks a motion level
+  per scene (low / medium / high, varied with the story; older projects film at medium) next to its camera move; both go
+  through the existing B2 rules (native where the model has the setting, BytePlus's fixed camera, else written into the
+  prompt). None of the video providers documents a native motion-strength or subject-reference parameter, so none is
+  invented. Project pages show "Starring {name}" and each scene card shows its storyboard frame until it plays. The offline
+  demo pastes the first reference into its images, so the flow can be seen without keys. Verified: tsc + eslint clean; 440
+  Vitest tests (+8: `characters` integration for consent and audit, the AI portrait job, who may delete, viewers and other
+  orgs; the done-when run: the script names the character in all 3 scenes, all 3 storyboard images get both reference
+  photos and the keep-the-look instruction, the 3 scene videos carry the consent and varied motion; an AI character
+  without consent, a deleted character, another org's character refused; `director` unit for the motion field and the
+  character line); `next build`; full Playwright suite (46; new `characters.spec.ts`: save a character from two photos
+  with consent, star her in a two-scene Director video, Arabic); screenshots en, ar, 390 px; migration `0023` applied to
+  the local dev database only. **Not yet / risks:** not run with live keys; how closely a real image model keeps a face
+  from reference photos varies by model (OpenAI and Gemini both take reference images); no character picker in the
+  Studio yet; one character per video.

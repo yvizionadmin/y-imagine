@@ -297,6 +297,8 @@ export type DirectorPlanRequest = {
   /** Language of the narration (the scene pictures are always described in English). */
   language: CopyLanguage;
   brand?: BrandKit | null;
+  /** A saved character to feature in every scene (B13). */
+  character?: { name: string; description: string } | null;
 };
 
 export type DirectorScenePlan = {
@@ -305,6 +307,8 @@ export type DirectorScenePlan = {
   /** What the voice-over says over this scene (in the request's language); fits the scene's length. */
   narration: string;
   camera: CameraMove;
+  /** How much moves in the shot. */
+  motion: MotionLevel;
 };
 
 export type DirectorPlan = { title: string; scenes: DirectorScenePlan[] };

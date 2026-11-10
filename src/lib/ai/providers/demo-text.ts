@@ -1,6 +1,6 @@
 import "server-only";
 import { ProviderError } from "../errors";
-import type { AgentEvent, AgentRequest, CameraMove, ChatRequest, DirectorPlanRequest, CopyRequest, ImprovePromptRequest, ProductCopy, TextProvider } from "../types";
+import type { AgentEvent, AgentRequest, CameraMove, MotionLevel, ChatRequest, DirectorPlanRequest, CopyRequest, ImprovePromptRequest, ProductCopy, TextProvider } from "../types";
 
 // Offline stand-in for a writing model: assembles plausible copy from the merchant's own details so
 // the Copy tool works without keys. Include "FAIL" in the SKU to exercise the failure state.
@@ -169,6 +169,7 @@ async function* demoAgent(request: AgentRequest): AsyncGenerator<AgentEvent> {
 }
 
 const DEMO_CAMERAS: CameraMove[] = ["pushIn", "orbit", "tracking", "pullOut", "pan", "static"];
+const DEMO_MOTION: MotionLevel[] = ["low", "medium", "high", "medium", "low", "medium"];
 const DEMO_BEATS = {
   en: ["Here it is.", "Made for everyday life.", "Every detail matters.", "Built to last.", "Feel the difference.", "Find yours today."],
   ar: ["ها هو.", "صُمّم لحياتك اليومية.", "كل تفصيل مهم.", "صُنع ليدوم.", "اشعر بالفرق.", "اكتشفه اليوم."],
@@ -189,9 +190,10 @@ function demoPlan(request: DirectorPlanRequest) {
   return {
     title,
     scenes: Array.from({ length: request.scenes }, (_, i) => ({
-      visual: `${DEMO_SHOTS[i % DEMO_SHOTS.length]}. Subject: ${idea.slice(0, 120)}.`,
+      visual: `${DEMO_SHOTS[i % DEMO_SHOTS.length]}. Subject: ${idea.slice(0, 120)}.${request.character ? ` Featuring ${request.character.name}, ${request.character.description}.` : ""}`,
       narration: DEMO_BEATS[request.language][i % DEMO_BEATS.en.length],
       camera: DEMO_CAMERAS[i % DEMO_CAMERAS.length],
+      motion: DEMO_MOTION[i % DEMO_MOTION.length],
     })),
   };
 }

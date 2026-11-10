@@ -4,6 +4,7 @@ import { ProviderError } from "@/lib/ai/errors";
 import { getAudioProvider, getImageProvider, getTextProvider, videoModelFor, type JobActor } from "@/lib/ai/registry";
 import { fitsCapabilities, videoCapabilities } from "@/lib/ai/video-models";
 import { getBrandKit, isEmptyBrandKit } from "@/lib/brand/brand-kit";
+import { characterReferences, getCharacter } from "@/lib/characters/characters";
 import { videoCost } from "@/lib/credits";
 import { getEdit, insertEdit, queueRender, saveEdit } from "@/lib/editor/edits";
 import { dispatchEditRender } from "@/lib/editor/queue";
@@ -61,18 +62,27 @@ async function plan(p: DirectorProject) {
     aspectRatio: p.settings.aspectRatio,
     language: p.settings.language,
     brand: brand && !isEmptyBrandKit(brand) ? brand : null,
+    character: p.settings.character ? { name: p.settings.character.name, description: p.settings.character.description } : null,
   });
   const scenes: DirectorScene[] = script.scenes.map((s) => ({ id: randomUUID(), ...s, imageAssetId: null, imageMime: null, videoJobId: null, videoAssetId: null, videoMime: null, error: null }));
   await updateDirector(p.orgId, p.id, { title: script.title, scenes, status: "storyboard" });
 }
 
-/** One storyboard image per scene (Studio text-to-image), saved as the scene video's first frame. */
+/**
+ * One storyboard image per scene (Studio text-to-image), saved as the scene video's first frame. With a
+ * saved character, every image is made from the character's reference images, so they look the same
+ * in every scene (and so does each video, which starts from its image).
+ */
 async function storyboard(p: DirectorProject) {
   const scenes = [...p.scenes];
+  const ref = p.settings.character;
+  const character = ref ? await getCharacter(p.orgId, ref.id) : null;
+  const references = character ? await characterReferences(p.orgId, character) : [];
+  const keep = ref && references.length ? ` Keep ${ref.name} exactly as in the reference images: the same face, hair, build and outfit.` : "";
   for (const [i, scene] of scenes.entries()) {
     if (scene.imageAssetId) continue;
     const provider = await getImageProvider(actorOf(p), "create");
-    const image = await provider.createImage({ prompt: scene.visual, aspectRatio: p.settings.aspectRatio, resolution: "HD", references: [] });
+    const image = await provider.createImage({ prompt: `${scene.visual}${keep}`, aspectRatio: p.settings.aspectRatio, resolution: "HD", references });
     const decoded = await decodeImage(image.url);
     if (!decoded) throw new StepFailure("generation_failed");
     const assetId = await saveAsset(p.orgId, decoded.bytes, decoded.mimeType, "video-frame");
@@ -107,17 +117,20 @@ async function film(p: DirectorProject): Promise<boolean> {
     const fits = fitsCapabilities(videoCapabilities(model.model), { aspectRatio: settings.aspectRatio, seconds: settings.seconds, resolution: settings.resolution, hasStartFrame: true });
     if (!fits) throw new StepFailure("unsupported");
     const credits = videoCost((await getPlatformSettings()).creditRules, { seconds: settings.seconds, resolution: settings.resolution });
+    // A character from photos of a real person: the consent given when it was saved carries to its videos.
+    const character = p.settings.character ? await getCharacter(p.orgId, p.settings.character.id) : null;
+    const consentedAt = character?.source === "upload" ? (character.consentedAt ?? null) : null;
     let open = await countOpenVideoJobs(p.orgId);
     for (const scene of waiting) {
       if (open >= MAX_OPEN_VIDEO_JOBS) break;
       const job = await insertVideoJob({
         orgId: p.orgId,
         prompt: scene.visual,
-        settings: { aspectRatio: settings.aspectRatio, seconds: settings.seconds, resolution: settings.resolution, camera: scene.camera, motion: "medium", lens: "auto", lighting: "auto", directorId: p.id },
+        settings: { aspectRatio: settings.aspectRatio, seconds: settings.seconds, resolution: settings.resolution, camera: scene.camera, motion: scene.motion ?? "medium", lens: "auto", lighting: "auto", directorId: p.id },
         startFrameAssetId: scene.imageAssetId,
         startFrameMime: scene.imageMime,
-        // The first frame is the Director's own AI storyboard image, not an upload of a real person.
-        consentedAt: null,
+        // The first frame is the Director's own storyboard image; it shows a real person only through a character saved with consent.
+        consentedAt,
         credits,
         createdBy: p.createdBy,
         createdById: p.createdById,

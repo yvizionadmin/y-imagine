@@ -31,6 +31,9 @@ export function DirectorProjectView({ project, canEdit, busy, onRetry, onDelete 
           <h2 id="director-title" dir="auto" className="text-start text-lg font-bold">
             {project.title || t("untitled")}
           </h2>
+          {project.settings.character && (
+            <p className="text-start text-xs font-medium text-primary">{t("starring", { name: project.settings.character.name })}</p>
+          )}
           {project.idea !== project.title && (
             <p dir="auto" className="text-start text-xs text-muted-foreground">
               {project.idea}
@@ -112,7 +115,16 @@ export function DirectorProjectView({ project, canEdit, busy, onRetry, onDelete 
             <li key={scene.id} aria-label={t("scene", { n: i + 1 })} className="flex flex-col gap-2 rounded-2xl border bg-background p-3">
               <div className={cn("relative mx-auto overflow-hidden rounded-lg bg-muted", RATIO_CLASS[project.settings.aspectRatio], project.settings.aspectRatio === "9:16" ? "h-72" : "w-full")}>
                 {scene.videoUrl ? (
-                  <video src={scene.videoUrl} controls playsInline preload="metadata" aria-label={t("sceneVideo", { n: i + 1 })} className="size-full object-cover" />
+                  <video
+                    src={scene.videoUrl}
+                    // The storyboard frame (with the character, when there is one) until it plays.
+                    poster={scene.imageUrl ? thumbnailUrl(scene.imageUrl, 640) : undefined}
+                    controls
+                    playsInline
+                    preload="none"
+                    aria-label={t("sceneVideo", { n: i + 1 })}
+                    className="size-full object-cover"
+                  />
                 ) : scene.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element -- our asset route, thumbnailed
                   <img src={thumbnailUrl(scene.imageUrl, 640)} alt={t("sceneImage", { n: i + 1 })} className="size-full object-cover" />

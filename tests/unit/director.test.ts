@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest";
 import { directorPrompt, tidyPlan } from "@/lib/ai/director-prompt";
 import { videoCapabilities } from "@/lib/ai/video-models";
 import { DEFAULT_CREDIT_RULES } from "@/lib/credits";
-import { DEFAULT_DIRECTOR_SETTINGS, directorEstimate, directorOptions, directorSettingsSchema } from "@/lib/director/limits";
-import { estimate } from "@/features/director/components/director-form";
+import { DEFAULT_DIRECTOR_SETTINGS, directorEstimate, directorOptions, directorSettingsSchema, pricingEstimate as estimate } from "@/lib/director/limits";
 
 describe("AI Director", () => {
   it("asks for the exact scenes, timed narration in the chosen language, and no invented claims", () => {
@@ -14,10 +13,14 @@ describe("AI Director", () => {
     expect(prompt).toContain("Modern Standard Arabic");
     expect(prompt).toContain("Never invent prices");
     expect(prompt).toContain("No text, logos or captions");
+    expect(prompt).toContain("motion: how much moves");
+    expect(prompt).not.toContain("same character");
+    const withCharacter = directorPrompt({ idea: "x", scenes: 2, secondsPerScene: 4, aspectRatio: "9:16", language: "en", character: { name: "Layla", description: "woman in her 30s, short black hair, mustard sweater" } });
+    expect(withCharacter).toContain("Feature the same character in every scene: Layla, woman in her 30s, short black hair, mustard sweater.");
   });
 
   it("tidies the script: lengths cut, scene count enforced, unknown camera moves made static", () => {
-    const scene = (i: number) => ({ visual: `  Shot ${i}  with   spaces `, narration: "x".repeat(300), camera: "orbit" as const });
+    const scene = (i: number) => ({ visual: `  Shot ${i}  with   spaces `, narration: "x".repeat(300), camera: "orbit" as const, motion: "high" as const });
     const plan = tidyPlan({ title: "  A".padEnd(120, "b"), scenes: [scene(1), scene(2), scene(3)] }, 2);
     expect(plan?.scenes).toHaveLength(2);
     expect(plan?.scenes[0].visual).toBe("Shot 1 with spaces");
@@ -26,6 +29,7 @@ describe("AI Director", () => {
     expect(tidyPlan({ title: "", scenes: [scene(1)] }, 2)).toBeNull();
     expect(tidyPlan({ title: "", scenes: [scene(1), { ...scene(2), camera: "dolly" as never }] }, 2)?.scenes[1].camera).toBe("static");
     expect(tidyPlan({ title: " ", scenes: [scene(1), scene(2)] }, 2)?.title).toBe("Untitled video");
+    expect(tidyPlan({ title: "", scenes: [scene(1), { ...scene(2), motion: "wild" as never }] }, 2)?.scenes.map((s) => s.motion)).toEqual(["high", "medium"]);
   });
 
   it("offers only what both the video model and the editor can do", () => {

@@ -65,9 +65,9 @@ export function DirectorWorkspace() {
     window.history.replaceState(null, "", url);
   }
 
-  async function create(idea: string, settings: DirectorSettings) {
+  async function create(idea: string, settings: DirectorSettings, characterId: string | null) {
     setError(null);
-    const result = await createDirectorProject({ idea, settings });
+    const result = await createDirectorProject({ idea, settings, characterId });
     if (!result.ok) {
       setError(result.error);
       return false;

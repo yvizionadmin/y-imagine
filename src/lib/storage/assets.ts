@@ -17,7 +17,7 @@ const ALL_EXT: Record<string, string> = { ...EXT, ...VIDEO_EXT, ...AUDIO_EXT };
 const ID = /^[0-9a-f-]{36}$/;
 const ORG = /^[A-Za-z0-9_-]{1,64}$/;
 
-export type AssetKind = "generation" | "look-product" | "room-background" | "look-background" | "look" | "swatch" | "video" | "video-frame" | "editor-media" | "edit-render";
+export type AssetKind = "generation" | "look-product" | "room-background" | "look-background" | "look" | "swatch" | "video" | "video-frame" | "editor-media" | "edit-render" | "character";
 
 const { assets } = schema;
 

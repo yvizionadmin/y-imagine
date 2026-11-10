@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { VOICE_STYLES, type CameraMove, type VoiceStyle } from "@/lib/ai/types";
+import { VOICE_STYLES, type CameraMove, type MotionLevel, type VoiceStyle } from "@/lib/ai/types";
+import type { CharacterRef } from "@/lib/characters/limits";
 import type { VideoCapabilities } from "@/lib/ai/video-models";
 import { videoCost, type CreditRules, type VideoResolution } from "@/lib/credits";
 import { EDIT_ASPECT_RATIOS, type EditAspectRatio } from "@/lib/editor/timeline";
@@ -30,6 +31,8 @@ export type DirectorSettings = {
   voiceOver: boolean;
   voice: VoiceStyle;
   subtitles: boolean;
+  /** A saved character in every scene (B13), kept as it was when the project started. Set by the server. */
+  character?: CharacterRef | null;
 };
 
 export const directorSettingsSchema = z.object({
@@ -57,6 +60,8 @@ export type DirectorScene = {
   visual: string;
   narration: string;
   camera: CameraMove;
+  /** Absent on projects planned before B13 (they film at medium). */
+  motion?: MotionLevel;
   /** Storyboard image (asset kind video-frame). */
   imageAssetId: string | null;
   imageMime: string | null;
@@ -116,3 +121,14 @@ export function directorEstimate(rules: CreditRules, settings: Pick<DirectorSett
   const voice = settings.voiceOver ? rules.featureCosts.voice : 0;
   return { script, images, videos, voice, total: script + images + videos + voice };
 }
+
+/** The same estimate from the prices the Director screen gets (only what it needs of the credit rules). */
+export function pricingEstimate(
+  pricing: { director: number; create: number; voice: number; video: CreditRules["video"] | { base: number; perSecond: number; resolution: Record<string, number> } },
+  s: Pick<DirectorSettings, "scenes" | "seconds" | "resolution" | "voiceOver">,
+) {
+  const video = videoCost({ video: pricing.video as CreditRules["video"] }, { seconds: s.seconds, resolution: s.resolution });
+  const parts = { script: pricing.director, images: s.scenes * pricing.create, videos: s.scenes * video, voice: s.voiceOver ? pricing.voice : 0 };
+  return { ...parts, total: parts.script + parts.images + parts.videos + parts.voice };
+}
+

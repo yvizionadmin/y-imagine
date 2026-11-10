@@ -43,7 +43,13 @@ export const demoProvider: ImageProvider = {
     const [w, h] = request.aspectRatio.split(":").map(Number);
     const edge = MAX_EDGE[request.resolution];
     const [width, height] = w >= h ? [edge, Math.round((edge * h) / w)] : [Math.round((edge * w) / h), edge];
-    const data = await sharp(path.join(process.cwd(), "public", "scenes/minimalist-studio.png")).resize(width, height, { fit: "cover" }).webp({ quality: 85 }).toBuffer();
+    let scene = await sharp(path.join(process.cwd(), "public", "scenes/minimalist-studio.png")).resize(width, height, { fit: "cover" }).png().toBuffer();
+    // With references (e.g. a saved character), they appear in the picture, like an image-to-image model.
+    if (request.references.length) {
+      const background = { bytes: new Uint8Array(scene), mimeType: "image/png", name: "scene.png" };
+      scene = Buffer.from(await composeLook({ background, items: [{ image: request.references[0], x: 0.3, y: 0.3, w: 0.4, h: 0.6 }], width, height }));
+    }
+    const data = await sharp(scene).webp({ quality: 85 }).toBuffer();
     return { url: `data:image/webp;base64,${data.toString("base64")}`, width, height, provider: "demo", model: "demo-create-v1" };
   },
 

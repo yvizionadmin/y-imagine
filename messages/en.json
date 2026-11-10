@@ -3511,7 +3511,10 @@
       "estimate": "About {count, plural, one {# credit} other {# credits}}",
       "breakdown": "Script {script} · images {images} · videos {videos} · voice {voice}",
       "tooDear": "Your team has {count} credits left this month.",
-      "submit": "Make the video"
+      "submit": "Make the video",
+      "character": "Character",
+      "manageCharacters": "Manage characters",
+      "noCharacter": "None"
     },
     "errors": {
       "generic": "Something went wrong. Try again.",
@@ -3528,6 +3531,50 @@
       "render_failed": "The final video couldn't be put together.",
       "media_missing": "A scene's video is missing.",
       "render_unavailable": "Videos can't be put together on this server right now."
+    },
+    "starring": "Starring {name}"
+  },
+  "Characters": {
+    "title": "Characters",
+    "subtitle": "Save the people or mascots you use again and again. The AI Director keeps them the same in every scene.",
+    "director": "AI Director",
+    "loading": "Loading characters",
+    "saved": "Your team's characters",
+    "none": "No characters yet.",
+    "name": "Name",
+    "namePlaceholder": "e.g. Layla",
+    "imageAlt": "{name}, reference image {n}",
+    "delete": "Delete {name}",
+    "deleteConfirm": "Delete {name}? Videos already made keep their scenes.",
+    "consented": "Photos · rights and consent confirmed {date}",
+    "generated": "AI portrait from a description",
+    "photos": {
+      "title": "From photos",
+      "body": "Upload 1 to 3 clear photos of the same person or mascot: face visible, plain light, no other people.",
+      "description": "How they look (optional)",
+      "descriptionPlaceholder": "e.g. woman in her 30s, short black hair, mustard sweater",
+      "choose": "Choose up to {max} photos",
+      "chosen": "{count, plural, one {# photo} other {# photos}} chosen",
+      "consent": "I confirm my team has the rights to these photos and the consent of the person shown to use their likeness in AI-made videos.",
+      "save": "Save character"
+    },
+    "generate": {
+      "title": "From a description",
+      "body": "Describe someone who doesn't exist; we make a portrait to use as their reference.",
+      "description": "How they look",
+      "descriptionPlaceholder": "e.g. friendly man in his 40s, short grey beard, round glasses, navy linen shirt",
+      "save": "Make portrait",
+      "making": "Making…",
+      "cost": "{count, plural, one {# credit} other {# credits}}"
+    },
+    "errors": {
+      "generic": "Something went wrong. Try again.",
+      "forbidden": "You can't change characters.",
+      "invalid_input": "Add a name and 1 to 3 photos (PNG, JPEG or WebP, up to 10 MB), or a description of at least 10 characters.",
+      "consent_required": "Confirm the rights and consent first.",
+      "not_found": "This character no longer exists.",
+      "too_many": "Your team has the most characters it can keep. Delete one first.",
+      "generation_failed": "The portrait couldn't be made. Try again."
     }
   }
 }
