@@ -1936,7 +1936,8 @@
       },
       "video": {
         "consent_given": "confirmed consent for the people and rights in the start frame of the video:",
-        "cleaned_up": "removed videos past the plan's retention period:"
+        "cleaned_up": "removed videos past the plan's retention period:",
+        "cleanup_warned": "warned admins that old videos will be removed, count:"
       },
       "image": {
         "submitted": "submitted images for review:",
@@ -2813,7 +2814,8 @@
     },
     "lookHint": "Lens and lighting are added to your prompt as direction. Auto adds nothing.",
     "cameraNative": "{model} sets {move} with its own camera setting, not through your prompt.",
-    "editVideo": "Edit in the video editor"
+    "editVideo": "Edit in the video editor",
+    "cleanupDue": "{count, plural, one {One video or project} other {# videos and projects}} will be removed on {date} (older than {days, plural, one {# day} other {# days}}). Download what you want to keep."
   },
   "Emails": {
     "footer": "Imagine AI · You're getting this email because of your Imagine AI workspace.",
@@ -2873,7 +2875,14 @@
       "heading": "Changes requested on your images",
       "body": "{actor} asked for changes to {count, plural, one {{label}} other {# of your images}} in {org}:"
     },
-    "imageOpen": "Open History"
+    "imageOpen": "Open History",
+    "videoCleanup": {
+      "subject": "{count, plural, one {A video} other {# videos}} will be removed on {date}",
+      "heading": "Old videos will be removed soon",
+      "body": "{org} keeps videos and editor projects for {days, plural, one {# day} other {# days}}. {count, plural, one {One video or project reaches} other {# videos and projects reach}} that age and will be removed on {date}.",
+      "keep": "Download anything you want to keep from History before then.",
+      "button": "Open History"
+    }
   },
   "Chat": {
     "title": "New chat",

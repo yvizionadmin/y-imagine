@@ -357,6 +357,18 @@ export function StudioHome() {
                 )}
               </p>
             )}
+            {setup?.videoCleanup && (
+              <p role="status" className="w-full rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                {t("cleanupDue", {
+                  count: setup.videoCleanup.count,
+                  date: format.dateTime(new Date(setup.videoCleanup.date), { ...LATN, dateStyle: "long" }),
+                  days: setup.videoStorage.retentionDays,
+                })}{" "}
+                <Link href="/history" className="font-semibold underline">
+                  {t("viewHistory")}
+                </Link>
+              </p>
+            )}
             {setup && !setup.canCreate && <p className="text-xs text-muted-foreground">{t("viewerNote")}</p>}
             {setup && setup.canCreate && mode === "image" && !setup.imageAllowed && <p className="text-xs text-danger">{tw("blocked.plan.title")}</p>}
             {setup && modeReady && cost !== null && cost > setup.creditsRemaining && <p className="text-xs text-danger">{t("notEnoughCredits", { count: cost })}</p>}

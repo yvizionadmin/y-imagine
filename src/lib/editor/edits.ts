@@ -99,9 +99,12 @@ export async function removeEdits(orgId: string, edits: Pick<VideoEdit, "id" | "
   await db.forOrg(orgId).delete(videoEdits, inArray(videoEdits.id, edits.map((e) => e.id)));
 }
 
+/** Project states the video retention sweep may remove (never one that is rendering). */
+export const IDLE_EDIT_STATUSES = ["draft", "ok", "failed"] as const;
+
 /** Projects not changed since the cutoff and not rendering (the video retention sweep). */
 export async function listIdleEdits(orgId: string, cutoff: string, limit: number) {
-  return db.forOrg(orgId).select(videoEdits, and(inArray(videoEdits.status, ["draft", "ok", "failed"]), lt(videoEdits.updatedAt, cutoff)), { limit });
+  return db.forOrg(orgId).select(videoEdits, and(inArray(videoEdits.status, [...IDLE_EDIT_STATUSES]), lt(videoEdits.updatedAt, cutoff)), { limit });
 }
 
 /** Fails renders stuck in `running` (scheduled, all orgs). */

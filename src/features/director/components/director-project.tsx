@@ -11,6 +11,8 @@ import { DIRECTOR_STEPS, type DirectorView } from "@/lib/director/limits";
 
 const SHOWN_STEPS = DIRECTOR_STEPS.filter((s) => s !== "done");
 const RATIO_CLASS = { "9:16": "aspect-[9/16]", "1:1": "aspect-square", "16:9": "aspect-video" } as const;
+/** The finished video's frame, sized before the file loads (like the editor's preview). */
+const PLAYER_CLASS = { "9:16": "aspect-[9/16] h-[min(60vh,560px)]", "1:1": "aspect-square h-[min(60vh,480px)]", "16:9": "aspect-video w-full max-w-3xl" } as const;
 
 /** One Director project: where it is, the scenes as they are made, and the finished video. */
 export function DirectorProjectView({ project, canEdit, busy, onRetry, onDelete }: { project: DirectorView; canEdit: boolean; busy: boolean; onRetry: () => void; onDelete: () => void }) {
@@ -29,9 +31,11 @@ export function DirectorProjectView({ project, canEdit, busy, onRetry, onDelete 
           <h2 id="director-title" dir="auto" className="text-start text-lg font-bold">
             {project.title || t("untitled")}
           </h2>
-          <p dir="auto" className="text-start text-xs text-muted-foreground">
-            {project.idea}
-          </p>
+          {project.idea !== project.title && (
+            <p dir="auto" className="text-start text-xs text-muted-foreground">
+              {project.idea}
+            </p>
+          )}
         </div>
         {canEdit && !working && (
           <Button type="button" size="sm" variant="ghost" onClick={onDelete} disabled={busy}>
@@ -86,7 +90,7 @@ export function DirectorProjectView({ project, canEdit, busy, onRetry, onDelete 
       {project.output && (
         <div className="flex flex-col gap-3 rounded-2xl border bg-background p-4">
           <h3 className="text-sm font-bold">{t("result")}</h3>
-          <video src={project.output.url} controls playsInline preload="metadata" aria-label={t("result")} className={cn("max-h-[60vh] w-auto self-center rounded-lg bg-black", RATIO_CLASS[project.settings.aspectRatio])} />
+          <video src={project.output.url} controls playsInline preload="metadata" aria-label={t("result")} className={cn("self-center rounded-lg bg-black", PLAYER_CLASS[project.settings.aspectRatio])} />
           <div className="flex flex-wrap gap-2">
             <a href={project.output.url} download={fileName} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90">
               <Download className="size-3.5" aria-hidden />
@@ -106,7 +110,7 @@ export function DirectorProjectView({ project, canEdit, busy, onRetry, onDelete 
         <ol aria-label={t("scenes")} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {project.scenes.map((scene, i) => (
             <li key={scene.id} aria-label={t("scene", { n: i + 1 })} className="flex flex-col gap-2 rounded-2xl border bg-background p-3">
-              <div className={cn("relative w-full overflow-hidden rounded-lg bg-muted", RATIO_CLASS[project.settings.aspectRatio], "max-h-72")}>
+              <div className={cn("relative mx-auto overflow-hidden rounded-lg bg-muted", RATIO_CLASS[project.settings.aspectRatio], project.settings.aspectRatio === "9:16" ? "h-72" : "w-full")}>
                 {scene.videoUrl ? (
                   <video src={scene.videoUrl} controls playsInline preload="metadata" aria-label={t("sceneVideo", { n: i + 1 })} className="size-full object-cover" />
                 ) : scene.imageUrl ? (

@@ -8,7 +8,7 @@ import { runEditRender } from "@/lib/editor/runner";
 import { db, schema } from "@/lib/db";
 import { insertGeneration } from "@/lib/generations";
 import { getAsset, getAssetRecord, saveAsset } from "@/lib/storage/assets";
-import { cleanupOldVideos, videoBytesUsed } from "@/lib/video/storage";
+import { CLEANUP_NOTICE_DAYS, cleanupOldVideos, videoBytesUsed } from "@/lib/video/storage";
 import type { Workspace } from "@/lib/workspace";
 import { makeOrg } from "../helpers";
 
@@ -234,6 +234,10 @@ describe("video editor", () => {
     const old = new Date(Date.now() - 91 * 24 * 60 * 60_000).toISOString();
     await db.forOrg(org.id).update(schema.videoEdits, { updatedAt: old }, (await import("drizzle-orm")).eq(schema.videoEdits.id, created.project.id));
 
+    // The first run announces it; a week after that notice it goes.
+    await cleanupOldVideos();
+    expect(await getEdit(org.id, created.project.id)).not.toBeNull();
+    await db.$client`update video_cleanup_notices set sent_at = sent_at - make_interval(days => ${CLEANUP_NOTICE_DAYS}) where org_id = ${org.id}`;
     await cleanupOldVideos();
     expect(await getEdit(org.id, created.project.id)).toBeNull();
     expect(await getAsset(org.id, media.assetId)).toBeNull();

@@ -306,6 +306,23 @@ export const videoEdits = pgTable(
   (t) => [index().on(t.orgId, t.updatedAt), index().on(t.status, t.updatedAt)],
 );
 
+/**
+ * Warnings sent before the `cleanup-videos` schedule removes old videos (src/lib/video/storage.ts):
+ * everything made (or, for editor projects, last changed) at or before `through` was announced at
+ * `sentAt`, and is only removed once that is at least 7 days ago.
+ */
+export const videoCleanupNotices = pgTable(
+  "video_cleanup_notices",
+  {
+    id: text().primaryKey(),
+    orgId: orgId(),
+    through: timestamp().notNull(),
+    count: integer().notNull(),
+    sentAt: now(),
+  },
+  (t) => [index().on(t.orgId, t.sentAt)],
+);
+
 export const looks = pgTable(
   "looks",
   {

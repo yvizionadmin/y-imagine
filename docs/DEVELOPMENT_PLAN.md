@@ -27,7 +27,7 @@ frames (file `n2sZrjuN0QtS3mYXaPXiSz`), in English LTR and Arabic RTL.
 | SaaS billing | Stripe subscriptions (plan limits on seats/projects, not on tokens) |
 | Design system | **Light + 72px icon rail** (Figma Sections 1/3/4/5, master 98:32). Rebrand to Imagine AI. Dark screens are only a reference for analytics, team settings and lookbook content, restyled to light |
 | Credits | **Plan job quota**: each plan includes N jobs/month, the badge shows jobs remaining, and estimated provider cost is shown separately. We never bill tokens |
-| Video storage + retention | Confirmed 2026-11-10 (A6 defaults kept, `src/lib/plans.ts`): storage Free 0 / Starter 5 GB / Pro 25 GB / Enterprise 100 GB; clips kept 30 / 30 / 90 / 365 days. **To build:** warn 7 days before removal (email to org admins + Studio banner) |
+| Video storage + retention | Confirmed 2026-11-10 (A6 defaults kept, `src/lib/plans.ts`): storage Free 0 / Starter 5 GB / Pro 25 GB / Enterprise 100 GB; clips kept 30 / 30 / 90 / 365 days. Nothing is removed without 7 days' notice (email to org admins + Studio banner), built 2026-11-10 |
 | Team prompt suggestions | Confirmed 2026-11-10 (B5 defaults kept): a phrase is suggested once it appears in 2+ prompts, from the last 400 saved results |
 
 ## Architecture
@@ -292,7 +292,7 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
 | B8 | Store publishing | Real Shopify and Magento image upload through the catalog connectors | An approved image appears on a test store | 3–5 |
 | B9 ✅ | Impersonation | Super-admin "view as org admin", read-only, audited, time-limited | Console can open an org view and every visit is in the audit log | 1–2 |
 | B10 ✅ | Video editor (FFmpeg in the worker) | Trim, merge clips, subtitles, music / voice-over, export sizes (9:16, 1:1, 16:9) | A user cuts two clips together with subtitles and downloads the MP4 | 4–6 |
-| B11 | AI Director | Idea → script → scenes → storyboard images → a video per scene → assembled MP4 (uses B10) | One prompt gives a finished multi-scene video | 3–5 |
+| B11 ✅ | AI Director | Idea → script → scenes → storyboard images → a video per scene → assembled MP4 (uses B10) | One prompt gives a finished multi-scene video | 3–5 |
 | B12 ✅ | Audio | Voice-over (TTS) and music generation, plan-gated and priced in Admin → Credits | Audio can be generated and added to an editor project | 2–3 |
 | B13 | Characters + motion | Saved characters reused across scenes, motion control where providers support it, consent kept | The same character appears across AI Director scenes | 3–5 |
 | B14 ✅ | Polish | Copy fixes (A+ title overlap, Arabic units), performance and accessibility pass | Known small issues closed | 1–2 |
@@ -1268,3 +1268,49 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   MP3 vs WAV, track length) and safety-refusal wording are taken from the AI SDK's code, not from a live call. Music is one
   clip per request (no length setting); no voice cloning or ElevenLabs; generated audio isn't listed in History; a long
   music request runs inside the server action (up to 3 minutes).
+- **2026-11-10, Roadmap B11: AI Director (local).** New page **AI Director** (`/editor/director`, linked from the video
+  editor's header; the rail is full at 720 px). The user writes an idea and picks scenes (2–6), the length of each scene
+  (the org's video model durations), size (the model's ratios that the editor also exports: 9:16 / 1:1 / 16:9),
+  resolution (720p / 1080p), narration language (en / ar), subtitles and a voice-over (voice style). The screen shows the
+  credit estimate (script + an image and a video per scene + the voice-over; `directorEstimate`, the same sum the server
+  checks against the credits left) and refuses what the model can't do. A project (`director_projects`, migration `0021`)
+  then moves on by itself (`advanceDirector`, queue `director`, worker `DIRECTOR_CONCURRENCY`, `after()` without Redis):
+  **script** (new `director` text tool: `planVideo`, structured output, `tidyPlan` enforces the scene count and lengths;
+  narration sized to the scene length, never inventing prices or claims; brand kit applied) → **storyboard** (one Studio
+  `create` image per scene, saved as the scene's first frame) → **filming** (one Studio video job per scene with that
+  frame, `settings.directorId`; at most the org's 3 open video jobs at a time, the rest start as scenes finish; the clips
+  also land in History) → **assembling** (a video editor project: the clips back to back, narration as subtitles, the
+  voice-over from B12 with the clips' sound at 30%, rendered by B10) → **done** (play, download, "Open in the video
+  editor"). Every part is its own job of its own tool (script, image, video, voice), charged through the registry; the
+  `director` tool is paid-plan only, priced and switchable in the console. A finished scene video or the final render
+  queues the project again (`notify.ts`); one worker holds a project at a time (`lockedUntil`), a busy or rate-limited
+  step is retried; a failed step stops the project with its code and **Try again** resumes from there (only failed scenes
+  are filmed again, a failed render is queued again); projects stuck for 2 h are failed by `close-stale-jobs`. Delete
+  removes the project and its storyboard images (scene videos stay in History, the video in the editor). **Found on the
+  way:** with Cache Components, Next keeps the editor mounted between visits, so "Open in the video editor" landed on the
+  old empty state; the editor now opens a new `?project=` when it changes. Verified: tsc + eslint clean; 432 Vitest tests
+  (+11: `director` unit for the prompt, plan clean-up, options per model, estimate (screen = server), settings;
+  `director` integration runs the whole pipeline with the queues driven by hand: idea → 3 scenes → storyboard frames →
+  3 Studio jobs → editor project with subtitles + voice-over → real ffmpeg MP4 with sound, 8 jobs charged; the open-job
+  limit with 5 scenes; a failed scene and retry keeping finished clips; credits, settings, role, plan, kill switch, no
+  provider; a failed script and an empty month fail at their step; locking, stale sweep, org isolation, viewers, delete);
+  `next build`; full Playwright suite (45; new `director.spec.ts`: locked on Free, from the editor, one idea → finished
+  two-scene video downloaded (1280×720, AAC), opened in the editor with its clips and voice-over, Arabic); screenshots en,
+  ar, 390 px; migration `0021` applied to the local dev database only. **Not yet / risks:** not run with live keys (script
+  quality, how well image-to-video keeps the look across scenes, real wait times: several minutes per scene on real
+  models); no editing of the script or storyboard before filming (edit the result in the editor instead); one voice-over
+  for the whole video (not timed per scene); the same character across scenes is B13.
+- **2026-11-10, Video cleanup warning (local; A6 follow-up, user decision).** Old videos are no longer removed silently.
+  The `cleanup-videos` schedule first runs `warnBeforeCleanup` (`src/lib/video/storage.ts`): History videos and idle editor
+  projects that reach the plan's retention within `CLEANUP_NOTICE_DAYS` (7) and weren't announced yet get one email to the
+  org's active admins (`notifyVideoCleanup`, en/ar template `Emails.videoCleanup`), a `video_cleanup_notices` row
+  (`through`, `count`, `sent_at`; migration `0022`) and an audit entry `video.cleanup_warned`. The removal then only takes
+  what a notice at least 7 days old covers (6 h slack for the run time), so a downgrade that shortens retention still gives
+  a week; failed jobs (no clip) still go at the retention alone. The Studio shows an amber note ("N videos and projects will
+  be removed on {date}… View History") from `getStudioSetup().videoCleanup`. Verified: tsc + eslint clean; 435 Vitest tests
+  (+3 in `video-safety`: a week's notice, one email, Studio date, kept until the notice is a week old; a downgrade still
+  gets a week; nothing due sends nothing; the existing cleanup tests in `video-safety` and `video-editor` now announce
+  first); `next build`. **Not yet / risks:** Playwright specs not re-run (another session held the test server port); no
+  screenshot pass of the note; scheduled emails are English (no saved language per user); existing deployments get their
+  first notices on the first run, so nothing is removed for a week after this ships; storage and retention still aren't
+  on the Billing page and there is no per-org override.

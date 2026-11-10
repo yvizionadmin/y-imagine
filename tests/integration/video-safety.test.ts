@@ -1,4 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
+import { eq } from "drizzle-orm";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { saveProviderKey } from "@/lib/ai/provider-keys";
@@ -10,12 +13,12 @@ import { PLANS, type PlanId } from "@/lib/plans";
 import { getAsset } from "@/lib/storage/assets";
 import { getVideoJobs } from "@/lib/video/jobs";
 import { runVideoJob } from "@/lib/video/runner";
-import { videoBytesUsed } from "@/lib/video/storage";
+import { CLEANUP_NOTICE_DAYS, videoBytesUsed, warnBeforeCleanup } from "@/lib/video/storage";
 import type { Workspace } from "@/lib/workspace";
 import { makeOrg } from "../helpers";
 
 // Video safety + storage (roadmap A6): likeness consent for a start frame, storage quota per plan,
-// and the scheduled removal of clips past the plan's retention.
+// and the scheduled removal of clips past the plan's retention, announced a week ahead.
 
 let workspace: Workspace;
 const dispatched: string[] = [];
@@ -130,6 +133,74 @@ describe("video storage", () => {
   });
 });
 
+/** Runs the warning, then makes its notice a week old, so the next cleanup may act on it. */
+async function announced(orgId: string) {
+  await warnBeforeCleanup();
+  await db.$client`update video_cleanup_notices set sent_at = sent_at - make_interval(days => ${CLEANUP_NOTICE_DAYS}) where org_id = ${orgId}`;
+}
+
+const OUTBOX = path.resolve(".data/test-outbox");
+async function mailTo(email: string) {
+  const files = (await readdir(OUTBOX).catch(() => [])).filter((f) => !f.startsWith("."));
+  const all = await Promise.all(files.map(async (f) => JSON.parse(await readFile(path.join(OUTBOX, f), "utf8")) as { to: string; subject: string; text: string }));
+  return all.filter((m) => m.to === email);
+}
+
+describe("cleanup warning", () => {
+  it("emails the admins a week ahead, once, shows it in the Studio, and removes nothing before the week is up", async () => {
+    const { org, user } = await signedIn("starter");
+    const job = await finishedVideo(org.id);
+    await age(org.id, PLANS.starter.videoRetentionDays - CLEANUP_NOTICE_DAYS + 1);
+    expect((await getStudioSetup()).videoCleanup).toMatchObject({ count: 1 });
+
+    expect((await cleanupOldVideos()).failed).toBe(0);
+    const mails = await mailTo(user.email);
+    expect(mails).toHaveLength(1);
+    expect(mails[0].subject).toMatch(/^A video will be removed on /);
+    expect(mails[0].text).toContain("https://app.test/en/history");
+    const [entry] = await listAudit(org.id, { prefix: "video.cleanup_warned" });
+    expect(entry).toMatchObject({ actor: "Imagine AI", target: "1" });
+    const due = (await getStudioSetup()).videoCleanup!;
+    const days = (Date.parse(due.date) - Date.now()) / 86_400_000;
+    expect(days).toBeGreaterThan(5.9);
+    expect(days).toBeLessThan(7.1);
+
+    // Past its retention, but the notice is only a day old: kept, and no second email.
+    await age(org.id, PLANS.starter.videoRetentionDays + 1);
+    await cleanupOldVideos();
+    expect(await getVideoJobs(org.id, [job.id])).toHaveLength(1);
+    expect(await mailTo(user.email)).toHaveLength(1);
+    expect(await listAudit(org.id, { prefix: "video.cleanup_warned" })).toHaveLength(1);
+
+    await db.$client`update video_cleanup_notices set sent_at = sent_at - make_interval(days => ${CLEANUP_NOTICE_DAYS}) where org_id = ${org.id}`;
+    await cleanupOldVideos();
+    expect(await getVideoJobs(org.id, [job.id])).toHaveLength(0);
+    expect((await getStudioSetup()).videoCleanup).toBeNull();
+  });
+
+  it("a downgrade that shortens retention still gives a week's notice", async () => {
+    const { org, user } = await signedIn("pro");
+    const job = await finishedVideo(org.id);
+    await age(org.id, 60);
+    await db.update(schema.organizations).set({ plan: "starter" }).where(eq(schema.organizations.id, org.id));
+    workspace = { ...workspace, plan: "starter" };
+
+    await cleanupOldVideos();
+    expect(await getVideoJobs(org.id, [job.id])).toHaveLength(1);
+    expect(await mailTo(user.email)).toHaveLength(1);
+    const days = (Date.parse((await getStudioSetup()).videoCleanup!.date) - Date.now()) / 86_400_000;
+    expect(days).toBeGreaterThan(6.9);
+  });
+
+  it("nothing due, no email; a new video isn't announced", async () => {
+    const { org, user } = await signedIn("starter");
+    await finishedVideo(org.id);
+    await cleanupOldVideos();
+    expect(await mailTo(user.email)).toHaveLength(0);
+    expect((await getStudioSetup()).videoCleanup).toBeNull();
+  });
+});
+
 describe("scheduled cleanup", () => {
   it("removes clips past the plan's retention with their History item, keeps newer ones, audits it", async () => {
     const { org } = await signedIn("starter");
@@ -137,6 +208,7 @@ describe("scheduled cleanup", () => {
     await age(org.id, PLANS.starter.videoRetentionDays + 1);
     const fresh = await finishedVideo(org.id);
 
+    await announced(org.id);
     const summary = await cleanupOldVideos();
     expect(summary.failed).toBe(0);
     expect(await getVideoJobs(org.id, [old.id, fresh.id])).toEqual([expect.objectContaining({ id: fresh.id })]);
@@ -157,6 +229,7 @@ describe("scheduled cleanup", () => {
     const job = await finishedVideo(org.id);
     await db.forOrg(org.id).delete(schema.videoJobs);
     await age(org.id, PLANS.starter.videoRetentionDays + 1);
+    await announced(org.id);
     await cleanupOldVideos();
     expect(await listGenerations(org.id)).toHaveLength(0);
     expect(await getAsset(org.id, job.assetId!)).toBeNull();
@@ -167,10 +240,12 @@ describe("scheduled cleanup", () => {
     const kept = await finishedVideo(org.id);
     expect((await startVideo(form())).ok).toBe(true); // still pending
     await age(org.id, PLANS.starter.videoRetentionDays + 1);
+    await announced(org.id);
     await cleanupOldVideos();
     expect((await getVideoJobs(org.id, [kept.id, dispatched.at(-1)!])).map((j) => j.status).sort()).toEqual(["ok", "pending"]);
 
     await age(org.id, PLANS.pro.videoRetentionDays + 1);
+    await announced(org.id);
     await cleanupOldVideos();
     expect((await getVideoJobs(org.id, [kept.id, dispatched.at(-1)!])).map((j) => j.status)).toEqual(["pending"]);
     expect(await listGenerations(org.id)).toHaveLength(0);

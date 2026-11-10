@@ -35,6 +35,8 @@ export type StudioSetup = {
   creditsRemaining: number;
   /** Video storage on the plan (bytes): clips and start frames; a new video is refused when full. */
   videoStorage: { used: number; limit: number; retentionDays: number; full: boolean };
+  /** Videos and editor projects the retention sweep removes within a week, and the earliest date. */
+  videoCleanup: { count: number; date: string } | null;
 };
 
 export type StudioItem = {

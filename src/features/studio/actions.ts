@@ -14,7 +14,7 @@ import { saveAsset } from "@/lib/storage/assets";
 import { decodeImage } from "@/lib/storage/decode-image";
 import { countOpenVideoJobs, getVideoJobs, insertVideoJob, listRecentVideoJobs, MAX_OPEN_VIDEO_JOBS, type VideoJob, type VideoSettings } from "@/lib/video/jobs";
 import { dispatchVideoJob } from "@/lib/video/queue";
-import { videoStorageFor } from "@/lib/video/storage";
+import { videoCleanupDue, videoStorageFor } from "@/lib/video/storage";
 import { recordAudit } from "@/lib/audit";
 import { getWorkspace } from "@/lib/workspace";
 import { PROMPT_MAX, STUDIO_MAX_IMAGES, STUDIO_MAX_REFERENCES, type StudioItem, type StudioSetup } from "./types";
@@ -64,10 +64,11 @@ const toVideoItem = (j: VideoJob): StudioItem => {
 
 export async function getStudioSetup(): Promise<StudioSetup> {
   const workspace = await getWorkspace({ read: true });
-  const [{ creditRules, disabledFeatures }, video, videoStorage] = await Promise.all([
+  const [{ creditRules, disabledFeatures }, video, videoStorage, videoCleanup] = await Promise.all([
     getPlatformSettings(),
     videoModelFor(workspace.orgId),
     videoStorageFor(workspace.orgId, workspace.plan),
+    videoCleanupDue(workspace.orgId, workspace.plan),
   ]);
   const model = video.ok ? video.model : DEFAULT_VIDEO_MODEL;
   return {
@@ -84,6 +85,7 @@ export async function getStudioSetup(): Promise<StudioSetup> {
     video: creditRules.video satisfies CreditRules["video"],
     creditsRemaining: workspace.creditsRemaining,
     videoStorage,
+    videoCleanup,
   };
 }
 

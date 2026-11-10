@@ -1,6 +1,7 @@
 import "server-only";
 import { getLocale } from "next-intl/server";
 import { appUrl } from "@/lib/app-url";
+import { LATN } from "@/lib/format";
 import { reportError } from "@/lib/observability/report";
 import { listMembers } from "@/lib/team/members";
 import { sendEmail, type EmailResult } from "./send";
@@ -158,6 +159,33 @@ export async function notifyCopyReviewed(input: {
     }),
   );
   return 1;
+}
+
+/**
+ * Old videos about to be removed by the retention sweep: every active admin of the org. Sent from the
+ * schedule, so there is no request language; English until users have a saved language.
+ */
+export async function notifyVideoCleanup(input: { orgId: string; orgName: string; count: number; days: number; removeOn: string; locale?: EmailLocale }) {
+  const locale = input.locale ?? "en";
+  const t = emailTranslator(locale);
+  const admins = (await listMembers({ orgId: input.orgId })).filter((m) => m.role === "admin" && m.status === "active");
+  const date = new Intl.DateTimeFormat(locale, { ...LATN, dateStyle: "long", timeZone: "UTC" }).format(new Date(input.removeOn));
+  const vars = { count: input.count, days: input.days, date, org: input.orgName };
+  const url = `${await appUrl()}/${locale}/history`;
+  for (const admin of admins) {
+    await sendEmail(
+      renderEmail({
+        locale,
+        to: admin.email,
+        subject: t("videoCleanup.subject", vars),
+        heading: t("videoCleanup.heading", vars),
+        lines: [t("videoCleanup.body", vars), t("videoCleanup.keep")],
+        button: { label: t("videoCleanup.button"), url },
+        note: t("noticeNote", { org: input.orgName }),
+      }),
+    );
+  }
+  return admins.length;
 }
 
 /** The current request's language for emails (en outside a request, where getLocale throws). */
