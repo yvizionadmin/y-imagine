@@ -8,7 +8,7 @@ import { REVIEW_STATUSES, type ReviewStatus } from "@/lib/copy/review-status";
 import type { GenerationMode, HistoryFilters, PublishStatus } from "../types";
 
 const MODES: GenerationMode[] = ["create", "video", "lifestyle", "recolor", "aplus"];
-const STATUSES: PublishStatus[] = ["pending", "uploaded", "failed"];
+const STATUSES: PublishStatus[] = ["pending", "publishing", "uploaded", "failed"];
 
 export type FilterDraft = Pick<HistoryFilters, "sku" | "from" | "to" | "mode" | "status" | "review" | "category">;
 

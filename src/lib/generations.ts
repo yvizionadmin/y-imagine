@@ -7,7 +7,7 @@ import { db, schema } from "@/lib/db";
 // Repository for saved generations (History), the `generations` table. Image bytes live in asset storage, referenced by assetId.
 
 export type GenerationMode = "create" | "video" | "lifestyle" | "recolor" | "aplus";
-export type PublishStatus = "pending" | "uploaded" | "failed";
+export type PublishStatus = "pending" | "publishing" | "uploaded" | "failed";
 
 export type Generation = {
   id: string;
@@ -26,6 +26,8 @@ export type Generation = {
   publishedTo: string | null;
   publishedAt: string | null;
   publishError: string | null;
+  publishRef: string | null;
+  publishStartedAt: string | null;
   reviewStatus: ReviewStatus;
   reviewNote: string | null;
   reviewedBy: string | null;
@@ -52,13 +54,13 @@ export async function listRecentGenerations(orgId: string, mode: GenerationMode,
   return db.forOrg(orgId).select(generations, and(eq(generations.mode, mode)), { orderBy: [desc(generations.createdAt)], limit });
 }
 
-export async function insertGeneration(input: Omit<Generation, "id" | "status" | "publishedTo" | "publishedAt" | "publishError" | "reviewStatus" | "reviewNote" | "reviewedBy" | "reviewedAt" | "createdAt">): Promise<Generation> {
+export async function insertGeneration(input: Omit<Generation, "id" | "status" | "publishedTo" | "publishedAt" | "publishError" | "publishRef" | "publishStartedAt" | "reviewStatus" | "reviewNote" | "reviewedBy" | "reviewedAt" | "createdAt">): Promise<Generation> {
   const { orgId, ...values } = input;
   const [row] = await db.forOrg(orgId).insert(generations, { ...values, id: randomUUID(), status: "pending" });
   return row;
 }
 
-export async function updateGenerations(orgId: string, ids: string[], patch: Partial<Pick<Generation, "status" | "publishedTo" | "publishedAt" | "publishError">>) {
+export async function updateGenerations(orgId: string, ids: string[], patch: Partial<Pick<Generation, "status" | "publishedTo" | "publishedAt" | "publishError" | "publishRef" | "publishStartedAt">>) {
   if (ids.length === 0) return;
   await db.forOrg(orgId).update(generations, patch, inArray(generations.id, ids));
 }

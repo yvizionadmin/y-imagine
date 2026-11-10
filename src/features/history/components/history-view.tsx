@@ -60,7 +60,16 @@ export function HistoryView() {
   const items = data?.items ?? [];
   const openItem = items.find((i) => i.id === openId) ?? null;
   const filtered = Object.values(applied).some(Boolean);
-  const isPublishing = (id: string) => publishing === "all" || publishing.has(id);
+  // Waiting on the click, or an upload job still running for it.
+  const isPublishing = (id: string) => publishing === "all" || publishing.has(id) || items.some((i) => i.id === id && i.status === "publishing");
+  const uploadsRunning = items.some((i) => i.status === "publishing");
+
+  // Follow the uploads until every image on the page has its result.
+  useEffect(() => {
+    if (!uploadsRunning) return;
+    const timer = setTimeout(() => void load(), 3000);
+    return () => clearTimeout(timer);
+  }, [uploadsRunning, data, load]);
 
   function apply(next: FilterDraft) {
     setApplied(next);
@@ -75,12 +84,9 @@ export function HistoryView() {
     const result = await publishGenerations(ids);
     setPublishing(new Set());
     if (!result.ok) return setNotice({ tone: "error", text: t("noTarget", { count: data?.pendingCount ?? 0 }) });
-    const ok = result.results.filter((r) => r.ok).length;
-    const failed = result.results.filter((r) => !r.ok);
-    const firstError = failed[0]?.error;
     setNotice({
-      tone: failed.length ? "error" : "success",
-      text: `${t("publishDone", { ok, failed: failed.length })}${firstError ? ` (${t(`publishErrors.${firstError}`)})` : ""}`,
+      tone: result.queued === 0 && result.notApproved > 0 ? "error" : "success",
+      text: [result.queued || !result.notApproved ? t("publishQueued", { count: result.queued }) : "", result.notApproved ? t("publishSkipped", { count: result.notApproved }) : ""].filter(Boolean).join(" "),
     });
     setSelected(new Set());
     await load();

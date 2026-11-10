@@ -29,6 +29,11 @@ export const DIRECTOR_QUEUE = "director";
 
 export type DirectorJobData = { orgId: string; directorId: string };
 
+/** History → Upload to Website: one job per image. */
+export const PUBLISH_QUEUE = "store-publish";
+
+export type PublishJobData = { orgId: string; generationId: string };
+
 export const SCHEDULES = {
   /** Daily at 03:00 UTC. */
   "revalidate-keys": { pattern: "0 3 * * *", tz: "UTC" },

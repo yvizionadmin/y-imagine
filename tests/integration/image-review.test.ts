@@ -20,6 +20,14 @@ vi.mock("@/lib/email/notify", async (original) => ({
   requestEmailLocale: async () => "en",
 }));
 
+// Uploads are queued (one job per image); here each one runs at once, as the worker would.
+vi.mock("@/lib/catalog/publish-queue", () => ({
+  dispatchPublishes: async (orgId: string, ids: string[]) => {
+    const { runPublish } = await import("@/lib/catalog/publish");
+    for (const id of ids) await runPublish(orgId, id);
+  },
+}));
+
 const { markGenerationsUploaded, publishGenerations, queryHistory, reviewImages } = await import("@/features/history/actions");
 const { getCatalogIntegrations, setImageApproval } = await import("@/features/integrations/actions");
 
@@ -185,7 +193,7 @@ describe("the publish gate", () => {
     const { id } = await image(made);
     expect((await query()).approvalRequired).toBe(false);
     expect((await query()).pendingCount).toBe(1);
-    expect(await publishGenerations([id])).toEqual({ ok: true, results: [{ id, ok: true }] });
+    expect(await publishGenerations([id])).toEqual({ ok: true, queued: 1, notApproved: 0 });
     expect((await one(made.org.id, id)).status).toBe("uploaded");
   });
 
@@ -193,11 +201,11 @@ describe("the publish gate", () => {
     const made = await withStore();
     const { id } = await image(made);
     await setImageApproval(true);
-    expect(await publishGenerations([id])).toEqual({ ok: true, results: [{ id, ok: false, error: "not_approved" }] });
+    expect(await publishGenerations([id])).toEqual({ ok: true, queued: 0, notApproved: 1 });
     expect(await one(made.org.id, id)).toMatchObject({ status: "pending", publishError: null, publishedAt: null });
 
     await reviewImages([id], "approve");
-    expect(await publishGenerations([id])).toEqual({ ok: true, results: [{ id, ok: true }] });
+    expect(await publishGenerations([id])).toEqual({ ok: true, queued: 1, notApproved: 0 });
     expect((await one(made.org.id, id)).status).toBe("uploaded");
   });
 
@@ -213,7 +221,8 @@ describe("the publish gate", () => {
     const before = await query();
     expect(before).toMatchObject({ approvalRequired: true, pendingCount: 1, awaitingApprovalCount: 2 });
 
-    expect(await publishGenerations("all-pending")).toEqual({ ok: true, results: [{ id: approved.id, ok: true }] });
+    expect(await publishGenerations("all-pending")).toEqual({ ok: true, queued: 1, notApproved: 0 });
+    expect((await one(made.org.id, approved.id)).status).toBe("uploaded");
     expect((await one(made.org.id, draft.id)).status).toBe("pending");
     expect((await one(made.org.id, inReview.id)).status).toBe("pending");
     expect(await query()).toMatchObject({ pendingCount: 0, awaitingApprovalCount: 2 });
@@ -225,7 +234,7 @@ describe("the publish gate", () => {
     await setImageApproval(true);
     await reviewImages([id], "approve");
     await reviewImages([id], "request_changes", "Wrong colour");
-    expect((await publishGenerations([id])).ok && (await publishGenerations([id]))).toMatchObject({ results: [{ id, ok: false, error: "not_approved" }] });
+    expect(await publishGenerations([id])).toEqual({ ok: true, queued: 0, notApproved: 1 });
   });
 
   it("can't be sidestepped with Mark as uploaded", async () => {
@@ -245,7 +254,7 @@ describe("the publish gate", () => {
     await setImageApproval(true);
     await setImageApproval(false);
     expect(await query()).toMatchObject({ approvalRequired: false, awaitingApprovalCount: 0, pendingCount: 1 });
-    expect(await publishGenerations([id])).toEqual({ ok: true, results: [{ id, ok: true }] });
+    expect(await publishGenerations([id])).toEqual({ ok: true, queued: 1, notApproved: 0 });
   });
 
   it("only admins switch it, it's audited, and it belongs to one org", async () => {

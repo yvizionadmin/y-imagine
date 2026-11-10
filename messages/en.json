@@ -906,7 +906,9 @@
       "bad_response": "The store returned an unexpected response. Check the field mapping.",
       "misconfigured": "The settings look wrong. Check the URL/domain (HTTPS only).",
       "invalid_input": "Check the highlighted field.",
-      "forbidden": "Only admins can do this."
+      "forbidden": "Only admins can do this.",
+      "rate_limited": "The store is busy and asked to slow down. Try again in a minute.",
+      "media_rejected": "The store refused the file."
     },
     "approvalTitle": "Approvals for store uploads",
     "approvalHint": "Decide whether images need a review before they reach your store.",
@@ -930,7 +932,9 @@
       "auth_failed": "Your catalog rejected the credentials. Ask an admin to reconnect it.",
       "unreachable": "Couldn’t reach your catalog.",
       "bad_response": "Your catalog returned an unexpected response.",
-      "misconfigured": "Your catalog connection needs attention."
+      "misconfigured": "Your catalog connection needs attention.",
+      "rate_limited": "The store is busy and asked to slow down. Try again in a minute.",
+      "media_rejected": "The store refused the file."
     }
   },
   "History": {
@@ -969,7 +973,8 @@
     "statuses": {
       "pending": "Pending",
       "uploaded": "Uploaded",
-      "failed": "Upload failed"
+      "failed": "Upload failed",
+      "publishing": "Uploading…"
     },
     "count": "{count, plural, one {# generation} other {# generations}}",
     "sortNewest": "Newest First",
@@ -1040,14 +1045,16 @@
     "createNewImage": "Create New Image",
     "noResults": "No generations match your filters",
     "noResultsBody": "Try a different SKU, date range, mode or status.",
-    "publishDone": "{ok, plural, =0 {No images uploaded} one {# image uploaded} other {# images uploaded}}{failed, plural, =0 {.} other {, # failed.}}",
     "publishErrors": {
       "not_found": "SKU not found in the store",
       "auth_failed": "the store rejected the credentials",
       "unreachable": "couldn’t reach the store",
       "bad_response": "the store returned an error",
       "misconfigured": "the catalog connection needs attention",
-      "not_approved": "needs approval first"
+      "not_approved": "needs approval first",
+      "rate_limited": "the store asked to slow down; try again in a few minutes",
+      "media_rejected": "the store couldn’t use this image",
+      "no_target": "no store connection can receive images"
     },
     "markedUploaded": "{count, plural, one {# image marked as uploaded.} other {# images marked as uploaded.}}",
     "deleted": "{count, plural, one {# generation deleted.} other {# generations deleted.}}",
@@ -1088,7 +1095,9 @@
     "submitSelected": "Submit for review",
     "approveSelected": "Approve",
     "reviewDone": "{count, plural, =0 {Nothing changed: those images can't take that step.} one {# image updated.} other {# images updated.}}",
-    "markSkipped": "{count, plural, one {# image wasn't marked because it needs approval first.} other {# images weren't marked because they need approval first.}}"
+    "markSkipped": "{count, plural, one {# image wasn't marked because it needs approval first.} other {# images weren't marked because they need approval first.}}",
+    "publishQueued": "{count, plural, =0 {Nothing to upload.} one {Uploading # image to your store…} other {Uploading # images to your store…}}",
+    "publishSkipped": "{count, plural, one {# image needs approval first.} other {# images need approval first.}}"
   },
   "Looks": {
     "tabs": {

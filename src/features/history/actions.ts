@@ -1,10 +1,10 @@
 "use server";
 
-import sharp from "sharp";
 import { recordAudit } from "@/lib/audit";
 import { loadConnection } from "@/lib/catalog/connections";
-import { canPublish, createConnector } from "@/lib/catalog/registry";
-import { CatalogError, type CatalogErrorCode } from "@/lib/catalog/types";
+import { canPublish } from "@/lib/catalog/registry";
+import { claimForPublish } from "@/lib/catalog/publish";
+import { dispatchPublishes } from "@/lib/catalog/publish-queue";
 import { REVIEW_FROM, REVIEW_NOTE_MAX, REVIEW_TO, type ReviewAction } from "@/lib/copy/review-status";
 import { notifyImagesReviewed, notifyImagesSubmitted, quietly, requestEmailLocale } from "@/lib/email/notify";
 import {
@@ -18,9 +18,8 @@ import {
   updateGenerations,
   type Generation,
   type GenerationMode,
-  type PublishStatus,
 } from "@/lib/generations";
-import { deleteAsset, isAssetMime, readAsset, saveAsset } from "@/lib/storage/assets";
+import { deleteAsset, isAssetMime, saveAsset } from "@/lib/storage/assets";
 import { decodeImage } from "@/lib/storage/decode-image";
 import { forgetVideoJobs } from "@/lib/video/history";
 import { getWorkspace } from "@/lib/workspace";
@@ -233,50 +232,26 @@ export async function markGenerationsUploaded(ids: string[]) {
   return { ok: true as const, count: allowed.length, skipped: wanted.length - allowed.length };
 }
 
-export type PublishResult = { id: string; ok: boolean; error?: CatalogErrorCode | "not_approved" };
-
-/** Push images to the org's default catalog (History → Upload to Website). */
+/**
+ * Push images to the org's default catalog (History → Upload to Website). The images are claimed
+ * (`publishing`) and each one is uploaded by its own queued job; the screen follows their status.
+ * With approvals on, only approved images go: "all pending" leaves the others out, asking for them
+ * by id counts them as `notApproved`.
+ */
 export async function publishGenerations(
   ids: string[] | "all-pending",
-): Promise<{ ok: true; results: PublishResult[] } | { ok: false; error: "forbidden" | "no_target" }> {
+): Promise<{ ok: true; queued: number; notApproved: number } | { ok: false; error: "forbidden" | "no_target" }> {
   const workspace = await canEdit();
   if (!workspace) return { ok: false, error: "forbidden" };
   const loaded = await loadConnection(workspace.orgId);
   if (!loaded || !canPublish(loaded.connection.type)) return { ok: false, error: "no_target" };
-  const connector = createConnector(loaded.connection.type, loaded.settings);
 
   const all = await listGenerations(workspace.orgId);
   const wanted = ids === "all-pending" ? null : new Set(cleanIds(ids));
-  const targets = all.filter(publishable).filter((g) => (wanted ? wanted.has(g.id) : g.status !== "uploaded"));
+  const targets = all.filter(publishable).filter((g) => (wanted ? wanted.has(g.id) : g.status === "pending" || g.status === "failed"));
   const required = await imageApprovalRequired(workspace.orgId);
-
-  const results: PublishResult[] = [];
-  for (const generation of targets) {
-    if (needsApproval(generation, required)) {
-      // "All pending" just leaves these out; asking for one by id says why it didn't go.
-      if (wanted) results.push({ id: generation.id, ok: false, error: "not_approved" });
-      continue;
-    }
-    try {
-      const png = await sharp(await readAsset(workspace.orgId, generation.assetId, generation.mimeType)).png().toBuffer();
-      await connector.publishImage!(generation.sku, {
-        bytes: new Uint8Array(png),
-        mimeType: "image/png",
-        filename: `${generation.sku.replace(/[^A-Za-z0-9_-]/g, "_")}_${generation.mode}_${generation.id.slice(0, 8)}.png`,
-        alt: generation.title || generation.sku,
-      });
-      await updateGenerations(workspace.orgId, [generation.id], {
-        status: "uploaded",
-        publishedTo: loaded.connection.name,
-        publishedAt: new Date().toISOString(),
-        publishError: null,
-      });
-      results.push({ id: generation.id, ok: true });
-    } catch (error) {
-      const code: CatalogErrorCode = error instanceof CatalogError ? error.code : "bad_response";
-      await updateGenerations(workspace.orgId, [generation.id], { status: "failed" satisfies PublishStatus, publishError: code });
-      results.push({ id: generation.id, ok: false, error: code });
-    }
-  }
-  return { ok: true, results };
+  const allowed = targets.filter((g) => !needsApproval(g, required));
+  const claimed = await claimForPublish(workspace.orgId, allowed.map((g) => g.id));
+  await dispatchPublishes(workspace.orgId, claimed);
+  return { ok: true, queued: claimed.length, notApproved: wanted ? targets.length - allowed.length : 0 };
 }

@@ -1,6 +1,7 @@
 import "server-only";
 import { releaseStaleRuns } from "@/lib/agent/runs";
 import { releaseStaleDirectors } from "@/lib/director/projects";
+import { releaseStalePublishes } from "@/lib/catalog/publish";
 import { listAllKeyRefs, recordKeyCheck, revealProviderKey } from "@/lib/ai/provider-keys";
 import { checkProviderKey } from "@/lib/ai/validate-key";
 import { recordAudit } from "@/lib/audit";
@@ -65,5 +66,6 @@ export async function closeStaleJobs() {
     editRenders: await releaseStaleRenders(),
     agentRuns: await releaseStaleRuns(),
     directors: await releaseStaleDirectors(),
+    storeUploads: await releaseStalePublishes(),
   };
 }

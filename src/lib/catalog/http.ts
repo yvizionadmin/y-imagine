@@ -20,6 +20,7 @@ export async function fetchJson(
     if (response.error === "http_error" && (response.status === 401 || response.status === 403)) {
       throw new CatalogError("auth_failed");
     }
+    if (response.error === "http_error" && response.status === 429) throw new CatalogError("rate_limited");
     if (response.error === "invalid_url" || response.error === "blocked_address") throw new CatalogError("misconfigured");
     throw new CatalogError(response.error === "network" ? "unreachable" : "bad_response");
   }
@@ -29,6 +30,19 @@ export async function fetchJson(
   } catch {
     throw new CatalogError("bad_response");
   }
+}
+
+/**
+ * A multipart form POST whose answer isn't JSON (a storage bucket's upload URL, e.g. Shopify's staged
+ * uploads, which answer 201 with XML or 204 with nothing). Any 2xx is success.
+ */
+export async function postForm(url: string, form: FormData): Promise<void> {
+  const response = await safeFetch(url, { maxBytes: 64 * 1024, method: "POST", body: form });
+  if (response.ok) return;
+  if (response.error === "http_error" && response.status === 429) throw new CatalogError("rate_limited");
+  // A refused signed upload (expired or mismatched policy) is about this file, not the store's credentials.
+  if (response.error === "invalid_url" || response.error === "blocked_address") throw new CatalogError("misconfigured");
+  throw new CatalogError(response.error === "network" ? "unreachable" : "media_rejected");
 }
 
 /** Read a dotted path such as "data.items.0.title"; "" returns the value itself. */

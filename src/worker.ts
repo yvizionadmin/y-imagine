@@ -8,12 +8,14 @@ import { runImageItem } from "@/lib/image-batch/runner";
 import { runVideoJob } from "@/lib/video/runner";
 import { runEditRender } from "@/lib/editor/runner";
 import { advanceDirector } from "@/lib/director/advance";
+import { runPublish } from "@/lib/catalog/publish";
 import { cleanupOldVideos, closeStaleJobs, revalidateAllKeys } from "@/lib/jobs/maintenance";
 import {
   COPY_BATCH_QUEUE,
   DIRECTOR_QUEUE,
   IMAGE_BATCH_QUEUE,
   MAINTENANCE_QUEUE,
+  PUBLISH_QUEUE,
   queueConnection,
   SCHEDULES,
   VIDEO_EDIT_QUEUE,
@@ -22,6 +24,7 @@ import {
   type DirectorJobData,
   type ImageItemJob,
   type MaintenanceJob,
+  type PublishJobData,
   type VideoEditJobData,
   type VideoJobData,
 } from "@/lib/jobs/queues";
@@ -113,7 +116,21 @@ const directorWorker = new Worker<DirectorJobData>(
   { connection, concurrency: Number(process.env.DIRECTOR_CONCURRENCY) || 2, lockDuration: 10 * 60_000 },
 );
 
-for (const w of [worker, copyWorker, imageWorker, videoWorker, editWorker, directorWorker] as Worker[]) {
+// Store uploads: a throttled store (429 / Shopify THROTTLED) waits and goes again without using an attempt.
+const publishWorker = new Worker<PublishJobData>(
+  PUBLISH_QUEUE,
+  async (job, token) => {
+    const outcome = await runPublish(job.data.orgId, job.data.generationId);
+    if (outcome === "retry") {
+      await job.moveToDelayed(Date.now() + RATE_LIMIT_DELAY_MS, token);
+      throw new DelayedError();
+    }
+    return outcome;
+  },
+  { connection, concurrency: Number(process.env.PUBLISH_CONCURRENCY) || 2 },
+);
+
+for (const w of [worker, copyWorker, imageWorker, videoWorker, editWorker, directorWorker, publishWorker] as Worker[]) {
   w.on("completed", (job: Job, result) => console.log(JSON.stringify({ job: job.name, ok: true, result })));
   w.on("failed", (job, error) => {
     console.error(JSON.stringify({ job: job?.name, ok: false, error: error.name }));
@@ -126,7 +143,7 @@ async function registerSchedules() {
   for (const [name, repeat] of Object.entries(SCHEDULES)) {
     await queue.upsertJobScheduler(name, repeat, { name, opts: { removeOnComplete: { count: 50 }, removeOnFail: { count: 200 } } });
   }
-  console.log(JSON.stringify({ worker: "started", queues: [MAINTENANCE_QUEUE, COPY_BATCH_QUEUE, IMAGE_BATCH_QUEUE, VIDEO_QUEUE, VIDEO_EDIT_QUEUE, DIRECTOR_QUEUE], schedules: Object.keys(SCHEDULES) }));
+  console.log(JSON.stringify({ worker: "started", queues: [MAINTENANCE_QUEUE, COPY_BATCH_QUEUE, IMAGE_BATCH_QUEUE, VIDEO_QUEUE, VIDEO_EDIT_QUEUE, DIRECTOR_QUEUE, PUBLISH_QUEUE], schedules: Object.keys(SCHEDULES) }));
 }
 
 registerSchedules().catch((error) => {
@@ -137,7 +154,7 @@ registerSchedules().catch((error) => {
 // Railway sends SIGTERM on deploy: finish the current job, then exit.
 for (const signal of ["SIGTERM", "SIGINT"] as const) {
   process.once(signal, async () => {
-    await Promise.all([worker.close(), copyWorker.close(), imageWorker.close(), videoWorker.close(), editWorker.close(), directorWorker.close()]);
+    await Promise.all([worker.close(), copyWorker.close(), imageWorker.close(), videoWorker.close(), editWorker.close(), directorWorker.close(), publishWorker.close()]);
     await queue.close();
     await Sentry.flush(2_000);
     process.exit(0);

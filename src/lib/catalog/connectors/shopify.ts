@@ -1,5 +1,5 @@
 import "server-only";
-import { asText, fetchJson, getPath } from "../http";
+import { asText, fetchJson, getPath, postForm } from "../http";
 import { CatalogError, type CatalogConnector, type ConnectorDefinition, type ConnectorSettings } from "../types";
 
 // Shopify Admin GraphQL API with a custom-app access token (shpat_…). A public OAuth app replaces
@@ -57,15 +57,28 @@ const PRODUCT_ID_QUERY = `query ProductId($query: String!) {
 const STAGED_UPLOAD = `mutation Stage($input: [StagedUploadInput!]!) {
   stagedUploadsCreate(input: $input) {
     stagedTargets { url resourceUrl parameters { name value } }
-    userErrors { message }
+    userErrors { field message }
   }
 }`;
 
-const CREATE_MEDIA = `mutation Attach($productId: ID!, $media: [CreateMediaInput!]!) {
-  productCreateMedia(productId: $productId, media: $media) { mediaUserErrors { message } }
+// productUpdate with media replaces the deprecated productCreateMedia. New media goes last, so the
+// last media node is the one just added.
+const ATTACH_MEDIA = `mutation Attach($product: ProductUpdateInput!, $media: [CreateMediaInput!]) {
+  productUpdate(product: $product, media: $media) {
+    product { id media(last: 1) { nodes { id status } } }
+    userErrors { field message }
+  }
 }`;
 
-export function createShopifyConnector({ config, secrets }: ConnectorSettings): CatalogConnector {
+const MEDIA_STATUS = `query MediaStatus($id: ID!) {
+  node(id: $id) { ... on MediaImage { id status mediaErrors { code } } }
+}`;
+
+/** Waits between checks of a new image's processing (Shopify processes media after it is attached). */
+const MEDIA_CHECKS_MS = [1000, 2000, 3000, 4000, 5000];
+
+export function createShopifyConnector({ config, secrets }: ConnectorSettings, options: { mediaChecksMs?: number[] } = {}): CatalogConnector {
+  const checks = options.mediaChecksMs ?? MEDIA_CHECKS_MS;
   const domain = config.shopDomain.trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
   if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i.test(domain) || !/^\d{4}-\d{2}$/.test(config.apiVersion)) {
     throw new CatalogError("misconfigured");
@@ -79,9 +92,18 @@ export function createShopifyConnector({ config, secrets }: ConnectorSettings): 
       body: JSON.stringify({ query, variables }),
     });
     if (json === null) throw new CatalogError("misconfigured");
-    if (getPath(json, "errors")) throw new CatalogError("bad_response");
+    const errors = getPath(json, "errors") as { extensions?: { code?: string } }[] | undefined;
+    if (errors) {
+      // Shopify's cost-based limit answers 200 with a THROTTLED error: wait and go again.
+      const codes = Array.isArray(errors) ? errors.map((e) => e.extensions?.code) : [];
+      if (codes.includes("THROTTLED")) throw new CatalogError("rate_limited");
+      if (codes.includes("ACCESS_DENIED")) throw new CatalogError("auth_failed");
+      throw new CatalogError("bad_response");
+    }
     return json;
   }
+
+  const userErrors = (json: unknown, path: string) => ((getPath(json, path) as unknown[] | undefined) ?? []).length > 0;
 
   return {
     // Staged upload → product media: the documented way to attach a local file to a product.
@@ -89,26 +111,41 @@ export function createShopifyConnector({ config, secrets }: ConnectorSettings): 
       const productId = asText(getPath(await graphql(PRODUCT_ID_QUERY, { query: `sku:${JSON.stringify(sku)}` }), "data.productVariants.nodes.0.product.id"));
       if (!productId) throw new CatalogError("not_found");
 
+      // 1. A temporary upload target on Shopify's storage.
       const staged = await graphql(STAGED_UPLOAD, {
-        input: [{ resource: "IMAGE", filename: image.filename, mimeType: image.mimeType, httpMethod: "POST" }],
+        input: [{ resource: "IMAGE", filename: image.filename, mimeType: image.mimeType, httpMethod: "POST", fileSize: String(image.bytes.byteLength) }],
       });
+      if (userErrors(staged, "data.stagedUploadsCreate.userErrors")) throw new CatalogError("media_rejected");
       const target = getPath(staged, "data.stagedUploadsCreate.stagedTargets.0") as
         | { url: string; resourceUrl: string; parameters: { name: string; value: string }[] }
         | undefined;
-      if (!target) throw new CatalogError("bad_response");
+      if (!target?.url || !target.resourceUrl) throw new CatalogError("bad_response");
 
+      // 2. The file itself: the signed form fields first, the file last (the storage answers XML or nothing).
       const form = new FormData();
       for (const { name, value } of target.parameters) form.append(name, value);
       form.append("file", new Blob([Buffer.from(image.bytes)], { type: image.mimeType }), image.filename);
-      await fetchJson(target.url, { method: "POST", body: form });
+      await postForm(target.url, form);
 
-      const attached = await graphql(CREATE_MEDIA, {
-        productId,
-        media: [{ originalSource: target.resourceUrl, mediaContentType: "IMAGE", alt: image.alt }],
+      // 3. Attach it to the product.
+      const attached = await graphql(ATTACH_MEDIA, {
+        product: { id: productId },
+        media: [{ originalSource: target.resourceUrl, mediaContentType: "IMAGE", alt: image.alt.slice(0, 512) }],
       });
-      if ((getPath(attached, "data.productCreateMedia.mediaUserErrors") as unknown[] | undefined)?.length) {
-        throw new CatalogError("bad_response");
+      if (userErrors(attached, "data.productUpdate.userErrors")) throw new CatalogError("media_rejected");
+      const mediaId = asText(getPath(attached, "data.productUpdate.product.media.nodes.0.id"));
+      if (!mediaId) throw new CatalogError("bad_response");
+
+      // 4. Shopify processes the image after it is attached: a file it can't read fails here, not above.
+      let status = asText(getPath(attached, "data.productUpdate.product.media.nodes.0.status"));
+      for (const wait of checks) {
+        if (status === "READY" || status === "FAILED") break;
+        await new Promise((resolve) => setTimeout(resolve, wait));
+        status = asText(getPath(await graphql(MEDIA_STATUS, { id: mediaId }), "data.node.status"));
       }
+      if (status === "FAILED") throw new CatalogError("media_rejected");
+      // Still processing after the checks: it is on the product, Shopify finishes it on its own.
+      return { ref: mediaId };
     },
 
     async search(query, limit) {

@@ -229,10 +229,15 @@ export const generations = pgTable(
     settings: jsonb().$type<Record<string, string | null>>().notNull(),
     provider: text().notNull(),
     model: text().notNull(),
-    status: text().$type<"pending" | "uploaded" | "failed">().notNull(),
+    /** Store upload: `pending` → `publishing` (one queued job owns it) → `uploaded` / `failed`. */
+    status: text().$type<"pending" | "publishing" | "uploaded" | "failed">().notNull(),
     publishedTo: text(),
     publishedAt: timestamp(),
     publishError: text(),
+    /** The store's id for the uploaded image (Shopify media gid, Magento media entry id), so a retry never uploads it twice. */
+    publishRef: text(),
+    /** When the upload job took it (stuck uploads are failed by the stale-job sweep). */
+    publishStartedAt: timestamp(),
     /** Approval state of an image (see src/lib/copy/review-status.ts). Videos stay draft. */
     reviewStatus: text().$type<ReviewStatus>().notNull().default("draft"),
     reviewNote: text(),

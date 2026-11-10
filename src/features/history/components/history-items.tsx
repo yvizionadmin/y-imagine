@@ -26,6 +26,7 @@ const modeBadge: Record<GenerationMode, string> = {
 const statusDot: Record<PublishStatus, string> = {
   uploaded: "bg-emerald-500",
   pending: "bg-amber-500",
+  publishing: "animate-pulse bg-sky-500",
   failed: "bg-[#ef4444]",
 };
 

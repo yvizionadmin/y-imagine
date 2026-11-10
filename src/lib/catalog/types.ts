@@ -46,11 +46,15 @@ export interface CatalogConnector {
   findBySku(sku: string): Promise<CatalogProduct | null>;
   /** Free-text product search (SKU or name). Connectors without it fall back to an exact SKU lookup. */
   search?(query: string, limit: number): Promise<CatalogProduct[]>;
-  /** Attach an image to the product with this SKU. Present only when the definition has canPublish. */
-  publishImage?(sku: string, image: PublishImage): Promise<void>;
+  /**
+   * Attach an image to the product with this SKU. Present only when the definition has canPublish.
+   * Returns the store's id for the new image when it gives one (kept so a retry never uploads twice).
+   */
+  publishImage?(sku: string, image: PublishImage): Promise<{ ref: string | null }>;
 }
 
-export type CatalogErrorCode = "auth_failed" | "unreachable" | "bad_response" | "misconfigured" | "not_found";
+/** `rate_limited`: the store asked us to slow down (the upload waits and goes again); `media_rejected`: the store refused or couldn't process the image. */
+export type CatalogErrorCode = "auth_failed" | "unreachable" | "bad_response" | "misconfigured" | "not_found" | "rate_limited" | "media_rejected";
 
 export class CatalogError extends Error {
   constructor(public readonly code: CatalogErrorCode, message?: string) {

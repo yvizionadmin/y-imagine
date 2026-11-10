@@ -93,6 +93,9 @@ export function createMagentoConnector({ config, secrets }: ConnectorSettings): 
         }),
       });
       if (result === null) throw new CatalogError("not_found");
+      // Magento answers with the new media entry's id (a JSON string or number).
+      const ref = asText(result);
+      return { ref: ref || null };
     },
   };
 }

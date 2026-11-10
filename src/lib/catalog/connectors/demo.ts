@@ -51,6 +51,7 @@ export function createDemoConnector(): CatalogConnector {
     async publishImage(sku) {
       await new Promise((resolve) => setTimeout(resolve, 600));
       if (!products.some((p) => p.sku.toLowerCase() === sku.toLowerCase())) throw new CatalogError("not_found");
+      return { ref: `demo-media-${Date.now()}` };
     },
   };
 }
