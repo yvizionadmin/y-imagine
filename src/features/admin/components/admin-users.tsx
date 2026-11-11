@@ -19,6 +19,8 @@ import {
   type AdminUserRow,
 } from "../actions";
 import { Field, filterSelectClass, NoticeBar, PageHeader, selectClass, StatusBadge, Table, td, th, type Notice } from "./admin-ui";
+import { confirmAction } from "@/components/app/confirm";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 type Filter = "all" | "active" | "disabled" | "super_admin";
 
@@ -99,7 +101,7 @@ export function AdminUsers() {
       <NoticeBar notice={notice} />
 
       {!data ? (
-        <Loader2 className="mx-auto mt-10 size-6 animate-spin text-muted-foreground" aria-hidden />
+        <LoadingSkeleton variant="list" className="p-4" />
       ) : (
         <Table
           minWidth={900}
@@ -174,8 +176,8 @@ export function AdminUsers() {
                         {t("users.signOutEverywhere")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() =>
-                          window.confirm(t(u.platformRole ? "users.revokeAdminConfirm" : "users.grantAdminConfirm", { email: u.email })) &&
+                        onClick={async () =>
+                          (await confirmAction(t(u.platformRole ? "users.revokeAdminConfirm" : "users.grantAdminConfirm", { email: u.email }), "continue")) &&
                           run(setAdminUserSuperAdmin(u.id, !u.platformRole), t(u.platformRole ? "users.adminRevoked" : "users.adminGranted", { email: u.email }))
                         }
                       >
@@ -184,8 +186,8 @@ export function AdminUsers() {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         variant={u.status === "active" ? "destructive" : "default"}
-                        onClick={() =>
-                          (u.status !== "active" || window.confirm(t("users.disableConfirm", { email: u.email }))) &&
+                        onClick={async () =>
+                          (u.status !== "active" || (await confirmAction(t("users.disableConfirm", { email: u.email }), "continue"))) &&
                           run(setAdminUserStatus(u.id, u.status === "active"), t(u.status === "active" ? "users.disabled" : "users.enabled", { email: u.email }))
                         }
                       >

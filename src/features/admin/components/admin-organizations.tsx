@@ -13,6 +13,7 @@ import { PLAN_IDS, type PlanId } from "@/lib/plans";
 import { createAdminOrg, listAdminOrgs, setAdminOrgStatus, updateAdminOrg, type AdminOrgRow } from "../actions";
 import { Field, filterSelectClass, NoticeBar, PageHeader, selectClass, StatusBadge, Table, td, th, type Notice } from "./admin-ui";
 import { usePlanCredits } from "./use-plan-credits";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 export function AdminOrganizations() {
   const t = useTranslations("Admin");
@@ -81,7 +82,7 @@ export function AdminOrganizations() {
       <NoticeBar notice={notice} />
 
       {!orgs ? (
-        <Loader2 className="mx-auto mt-10 size-6 animate-spin text-muted-foreground" aria-hidden />
+        <LoadingSkeleton variant="list" className="p-4" />
       ) : (
         <Table
           minWidth={900}

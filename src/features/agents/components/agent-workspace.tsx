@@ -11,6 +11,8 @@ import { useJobCost } from "@/features/credits/use-job-cost";
 import { AGENT_GOAL_MAX, appendText, type AgentRun, type AgentRunSummary, type AgentStep, type AgentStreamEvent } from "@/lib/agent/limits";
 import { deleteAgentRun, getAgentState, openAgentRun } from "../actions";
 import { AgentSteps } from "./agent-steps";
+import { confirmAction } from "@/components/app/confirm";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 const SUGGESTIONS = ["copyAndImage", "arabic", "image"] as const;
 
@@ -189,7 +191,7 @@ export function AgentWorkspace() {
   }
 
   async function remove(id: string) {
-    if (working || !window.confirm(t("deleteConfirm"))) return;
+    if (working || !(await confirmAction(t("deleteConfirm")))) return;
     const result = await deleteAgentRun(id);
     if (!result.ok) return;
     setRuns((list) => (list ?? []).filter((x) => x.id !== id));
@@ -247,7 +249,7 @@ export function AgentWorkspace() {
         >
           <div className="mx-auto flex max-w-3xl flex-col gap-4">
             {loadingRun ? (
-              <Loader2 className="mx-auto mt-16 size-6 animate-spin text-muted-foreground" aria-hidden />
+              <LoadingSkeleton variant="list" className="p-4" />
             ) : !run ? (
               <EmptyState canRun={canRun} onPick={(prompt) => start(prompt)} />
             ) : (

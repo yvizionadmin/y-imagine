@@ -12,6 +12,8 @@ import { CHAT_MESSAGE_MAX } from "@/lib/chat/limits";
 import type { ChatMessage, ChatThread } from "@/lib/chat/threads";
 import type { ChatEvent } from "@/lib/chat/turn";
 import { deleteChatThread, getChatState, openChatThread, renameChatThread } from "../actions";
+import { confirmAction } from "@/components/app/confirm";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 type Shown = Pick<ChatMessage, "id" | "role" | "content" | "status"> & { pending?: boolean };
 /** A failed send: a blocked reason (Workspace.blocked.*), or Chat.errors.*. */
@@ -199,7 +201,7 @@ export function ChatWorkspace() {
 
   async function remove(id: string) {
     if (streaming) return;
-    if (!window.confirm(t("deleteConfirm"))) return;
+    if (!(await confirmAction(t("deleteConfirm")))) return;
     const result = await deleteChatThread(id);
     if (!result.ok) return;
     setThreads((list) => (list ?? []).filter((x) => x.id !== id));
@@ -267,7 +269,7 @@ export function ChatWorkspace() {
         >
           <div className="mx-auto flex max-w-3xl flex-col gap-4">
             {loadingThread ? (
-              <Loader2 className="mx-auto mt-16 size-6 animate-spin text-muted-foreground" aria-hidden />
+              <LoadingSkeleton variant="list" className="p-4" />
             ) : messages.length === 0 ? (
               <EmptyState canSend={canSend} onPick={(prompt) => send(prompt)} />
             ) : (

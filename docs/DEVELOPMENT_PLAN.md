@@ -308,7 +308,7 @@ https://claude.ai/artifact/TWULxCFBnNzHUboRiWupm5 (private to the owner).
 | U2 ✅ | Home | Prompt box first (Image / Video / Copy), tool cards with pictures, "continue where you left off", team gallery with "Use prompt" | A new user starts a job from Home without opening the rail | 2 |
 | U3 ✅ | Results | Hover actions on each result (download, use prompt, upscale, animate, edit, upload) and progress cards with stage and time left | Every result leads to its next step in one click | 1–2 |
 | U4 ✅ | Jobs tray | Top-bar button and tray for running videos, Director projects, bulk jobs and store uploads; "ready" notices | Users leave a screen and are told when work finishes | 1–2 |
-| U5 | Polish | Loading placeholders, pop-up notices, confirm dialogs instead of `window.confirm`, presets as pictures, empty screens with examples | No spinners-only screens or browser confirms left | 1–2 |
+| U5 ✅ | Polish | Loading placeholders, pop-up notices, confirm dialogs instead of `window.confirm`, presets as pictures, empty screens with examples | No spinners-only screens or browser confirms left | 1–2 |
 | U6 | First run | Setup checklist (AI key, store, first image, team) and a one-time guide per tool | A new org sees what to do next | 1 |
 | U7 | Dark theme | Dark default for the app (rail and popups recoloured, not changed), phone check of every screen | Every screen passes the a11y scan in dark and on a phone | 1–2 |
 
@@ -1415,3 +1415,13 @@ https://claude.ai/artifact/TWULxCFBnNzHUboRiWupm5 (private to the owner).
   job (`jobsChanged()` from `src/lib/jobs-events.ts`, called after Studio video, Director create/retry, editor export,
   bulk starts and store upload). Tests: `tests/integration/jobs-tray.test.ts`, `tests/e2e/studio.spec.ts` (tray count,
   list, ready notice). 465 Vitest, 47 Playwright, lint, tsc, build.
+- **2026-11-11, U5 Polish.** Every `window.confirm` (20 calls in 17 screens: deletes, removals, admin grants,
+  maintenance, view-as) now uses the app's own dialog: `confirmAction(message, "delete" | "remove" | "continue")` from
+  `src/components/app/confirm.tsx`, shown by a `ConfirmHost` in the app and console layouts. Cancel has the focus,
+  Delete/Remove are red, Escape or the backdrop cancel, Arabic labels. Page-level spinners (24 screens, plus the
+  Characters list and Studio recent) are `LoadingSkeleton` placeholders (`src/components/ui/skeleton.tsx`: list,
+  cards or page shapes, announced once as "Loading", no pulse with reduced motion). Left as they are on purpose:
+  inline errors next to forms (clearer there than a pop-up; pop-ups are used for finished jobs, U4), presets as
+  pictures (needs a picture per preset first) and empty screens (they already explain and link to the next step).
+  Tests: `tests/e2e/characters.spec.ts` (Cancel keeps, Delete removes, Cancel focused), `view-as.spec.ts` answers
+  the dialog. 465 Vitest, 47 Playwright, lint, tsc, build.

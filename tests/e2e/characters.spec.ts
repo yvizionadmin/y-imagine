@@ -53,4 +53,17 @@ test("Characters: save one from photos with consent, then star her in an AI Dire
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(page.getByRole("heading", { level: 1, name: "الشخصيات" })).toBeVisible();
   await expect(page.getByRole("listitem", { name: "Layla" }).getByText(/تم تأكيد الحقوق والموافقة/)).toBeVisible();
+
+  // Deleting asks in the app's own dialog (U5): Cancel keeps her, Delete removes her.
+  await page.goto("/en/editor/characters");
+  const layla = page.getByRole("listitem", { name: "Layla" });
+  await layla.getByRole("button", { name: /^Delete/ }).click();
+  const ask = page.getByRole("dialog", { name: /Layla/ });
+  await expect(ask.getByRole("button", { name: "Cancel" })).toBeFocused();
+  await ask.getByRole("button", { name: "Cancel" }).click();
+  await expect(ask).toBeHidden();
+  await expect(layla).toBeVisible();
+  await layla.getByRole("button", { name: /^Delete/ }).click();
+  await page.getByRole("dialog", { name: /Layla/ }).getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(layla).toHaveCount(0);
 });

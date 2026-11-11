@@ -14,6 +14,7 @@ import { cancelCopyBatch, deleteCopyBatch, exportCopyBatch, getCopyBatch, retryF
 import type { OpenBatch } from "./bulk-copy-workspace";
 import { copiesAsCsv, download } from "./copy-export";
 import { ReviewBadge } from "./review-bar";
+import { confirmAction } from "@/components/app/confirm";
 
 /** A run that hasn't moved after this long is probably waiting for a worker that isn't running. */
 const STUCK_MS = 30_000;
@@ -109,7 +110,7 @@ function RunView({
   }
 
   async function remove() {
-    if (!window.confirm(t("deleteConfirm"))) return;
+    if (!(await confirmAction(t("deleteConfirm")))) return;
     setBusy(true);
     const result = await deleteCopyBatch(batch.id);
     setBusy(false);

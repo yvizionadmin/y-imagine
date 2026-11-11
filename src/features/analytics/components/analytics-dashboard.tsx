@@ -2,7 +2,7 @@
 
 import { PageHeader } from "@/components/app/page-header";
 import { useEffect, useState } from "react";
-import { ArrowDownRight, ArrowUpRight, CircleAlert, CircleCheck, Loader2, TriangleAlert } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CircleAlert, CircleCheck, TriangleAlert } from "lucide-react";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { cn } from "cn";
 import { Link } from "@/i18n/navigation";
@@ -10,6 +10,7 @@ import { LATN } from "@/lib/format";
 import { getAnalytics, type Analytics, type AnalyticsDay, type RecentItem } from "../actions";
 import { ANALYTICS_RANGES, type AnalyticsRange } from "../config";
 import { ActivityChart, Sparkline } from "./charts";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 const TOOL_HREF = { create: "/home", video: "/home?mode=video", generate: "/generate", recolor: "/recolor", aplus: "/aplus", looks: "/looks", upscale: "/history", copy: "/copy", chat: "/chat", agent: "/agents", voice: "/editor", music: "/editor", director: "/editor/director" } as const;
 
@@ -60,7 +61,7 @@ export function AnalyticsDashboard() {
       </div>
 
       {!data ? (
-        <Loader2 className="mx-auto mt-16 size-6 animate-spin text-muted-foreground" aria-hidden />
+        <LoadingSkeleton variant="cards" className="p-4" />
       ) : (
         // Refetching keeps the previous render, dimmed, so the layout never jumps.
         <div className={cn("flex flex-col gap-6 transition-opacity", loading && "opacity-60")} aria-busy={loading}>

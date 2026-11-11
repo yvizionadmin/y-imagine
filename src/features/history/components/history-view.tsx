@@ -15,6 +15,7 @@ import { HistoryDrawer } from "./history-drawer";
 import { HistoryFilterBar, Select, type FilterDraft } from "./history-filters";
 import { HistoryCard, HistoryRow, type ItemActions } from "./history-items";
 import { jobsChanged } from "@/lib/jobs-events";
+import { confirmAction } from "@/components/app/confirm";
 
 type Data = Awaited<ReturnType<typeof queryHistory>>;
 type Notice = { tone: "success" | "error"; text: string } | null;
@@ -95,7 +96,7 @@ export function HistoryView() {
   }
 
   async function remove(ids: string[]) {
-    if (!window.confirm(t("deleteConfirm", { count: ids.length }))) return;
+    if (!(await confirmAction(t("deleteConfirm", { count: ids.length })))) return;
     const result = await deleteGenerations(ids);
     if (result.ok) setNotice({ tone: "success", text: t("deleted", { count: result.count }) });
     setSelected(new Set());

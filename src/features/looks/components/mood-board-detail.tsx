@@ -12,6 +12,7 @@ import type { CatalogProduct } from "@/lib/catalog/types";
 import { addLookProduct, duplicateLook, getLookById, regenerateLook, searchLookProducts, swapLookProduct, type AddedProduct, type LookView } from "../actions";
 import { LOOK_RATIOS, type LookItem } from "../config";
 import { thumbnailUrl } from "@/lib/image/thumbnail-url";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 type Busy = "regenerate" | "swap" | "duplicate" | null;
 
@@ -30,7 +31,7 @@ export function MoodBoardDetail({ id }: { id: string }) {
     getLookById(id).then(setState);
   }, [id]);
 
-  if (state === undefined) return <Loader2 className="mx-auto mt-24 size-6 animate-spin text-muted-foreground" aria-hidden />;
+  if (state === undefined) return <LoadingSkeleton variant="cards" className="p-4" />;
   if (state === null) {
     return (
       <div className="mx-auto mt-16 flex max-w-sm flex-col items-center gap-3 rounded-xl border bg-background px-6 py-12 text-center">

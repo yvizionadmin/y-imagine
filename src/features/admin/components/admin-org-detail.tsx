@@ -22,6 +22,8 @@ import {
 import { AuditList } from "./admin-audit";
 import { EditOrgDialog } from "./admin-organizations";
 import { Card, NoticeBar, StatTile, StatusBadge, Table, td, th, type Notice } from "./admin-ui";
+import { confirmAction } from "@/components/app/confirm";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 export function AdminOrgDetail({ id }: { id: string }) {
   const t = useTranslations("Admin");
@@ -46,7 +48,7 @@ export function AdminOrgDetail({ id }: { id: string }) {
     refresh();
   }
 
-  if (data === null) return <Loader2 className="mx-auto mt-16 size-6 animate-spin text-muted-foreground" aria-hidden />;
+  if (data === null) return <LoadingSkeleton variant="page" className="mx-auto max-w-6xl p-4 md:p-8" />;
   if (data === "missing")
     return (
       <div className="flex flex-col items-center gap-3 px-8 py-16 text-center">
@@ -83,8 +85,8 @@ export function AdminOrgDetail({ id }: { id: string }) {
           <Button
             variant="outline"
             className="h-10 px-4 text-[13px] font-semibold"
-            onClick={() => {
-              if (window.confirm(t("orgs.viewAsConfirm", { name: org.name }))) void startViewAs(org.id);
+            onClick={async () => {
+              if (await confirmAction(t("orgs.viewAsConfirm", { name: org.name }), "continue")) void startViewAs(org.id);
             }}
           >
             {t("orgs.viewAs")}
@@ -269,7 +271,7 @@ function Members({
             <td className={td}>
               <button
                 type="button"
-                onClick={() => window.confirm(t("orgs.removeConfirm", { name: m.name || m.email })) && onRun(removeAdminOrgMember(orgId, m.id), t("orgs.memberRemoved", { name: m.name || m.email }))}
+                onClick={async () => (await confirmAction(t("orgs.removeConfirm", { name: m.name || m.email }), "remove")) && onRun(removeAdminOrgMember(orgId, m.id), t("orgs.memberRemoved", { name: m.name || m.email }))}
                 className="text-xs font-semibold text-danger hover:underline"
               >
                 {t("remove")}

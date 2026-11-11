@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { LATN } from "@/lib/format";
 import { PLAN_IDS, PLANS, type PlanId } from "@/lib/plans";
 import { choosePlan, getBilling, openBillingPortal, resumePlan, type BillingView } from "../actions";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 type Interval = "month" | "year";
 type Pending = { plan: PlanId; kind: "downgrade" | "change" } | null;
@@ -72,7 +73,7 @@ export function BillingSettings() {
     return (
       <div className="mx-auto flex max-w-5xl flex-col gap-6 p-4 md:p-10">
         <Header />
-        <Loader2 className="mx-auto mt-10 size-6 animate-spin text-muted-foreground" aria-hidden />
+        <LoadingSkeleton variant="list" className="p-4" />
       </div>
     );
   }

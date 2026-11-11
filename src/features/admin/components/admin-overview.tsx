@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { ActivityChart } from "@/features/analytics/components/charts";
 import { Link } from "@/i18n/navigation";
@@ -9,6 +9,7 @@ import { LATN } from "@/lib/format";
 import { getAdminOverview, type AdminOverview as Overview } from "../actions";
 import { AuditList } from "./admin-audit";
 import { Card, PageHeader, StatTile } from "./admin-ui";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 /** Platform health at a glance: tenants, users, job volume and failures across every org. */
 export function AdminOverview() {
@@ -23,7 +24,7 @@ export function AdminOverview() {
     getAdminOverview(30).then((r) => r.ok && setData(r.data));
   }, []);
 
-  if (!data) return <Loader2 className="mx-auto mt-16 size-6 animate-spin text-muted-foreground" aria-hidden />;
+  if (!data) return <LoadingSkeleton variant="page" className="mx-auto max-w-6xl p-4 md:p-8" />;
   const { totals, jobs, settings } = data;
   const failRate = jobs.total ? jobs.failed / jobs.total : 0;
   const maxFeature = Math.max(1, ...data.byFeature.map((f) => f.count));

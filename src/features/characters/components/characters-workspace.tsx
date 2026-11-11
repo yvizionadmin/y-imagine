@@ -12,6 +12,8 @@ import { Link } from "@/i18n/navigation";
 import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 import { CHARACTER_DESCRIPTION_MAX, CHARACTER_IMAGE_TYPES, CHARACTER_MAX_IMAGES, CHARACTER_NAME_MAX, type CharacterView } from "@/lib/characters/limits";
 import { createCharacterFromDescription, createCharacterFromPhotos, deleteCharacter, getCharacters } from "../actions";
+import { confirmAction } from "@/components/app/confirm";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 const input = "h-9 w-full rounded-lg border bg-background px-3 text-sm";
 const area = "w-full resize-none rounded-lg border bg-background px-3 py-2 text-sm";
@@ -34,7 +36,7 @@ export function CharactersWorkspace() {
   const added = (character: CharacterView) => setCharacters((list) => [character, ...(list ?? [])]);
 
   async function remove(c: CharacterView) {
-    if (!window.confirm(t("deleteConfirm", { name: c.name }))) return;
+    if (!(await confirmAction(t("deleteConfirm", { name: c.name })))) return;
     const result = await deleteCharacter(c.id);
     if (!result.ok) return setError(result.error);
     setCharacters((list) => (list ?? []).filter((x) => x.id !== c.id));
@@ -71,7 +73,7 @@ export function CharactersWorkspace() {
             {t("saved")}
           </h2>
           {characters === null ? (
-            <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label={t("loading")} />
+            <LoadingSkeleton variant="cards" count={3} />
           ) : characters.length === 0 ? (
             <p className="text-xs text-muted-foreground">{t("none")}</p>
           ) : (

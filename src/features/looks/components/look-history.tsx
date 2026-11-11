@@ -2,7 +2,7 @@
 
 import { blockedReason } from "@/components/app/job-errors";
 import { useState } from "react";
-import { Download, Loader2, Search } from "lucide-react";
+import { Download, Search } from "lucide-react";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { LATN } from "@/lib/format";
@@ -13,6 +13,7 @@ import { LookMenu, LookModeBadge, type LookMenuActions } from "./look-menu";
 import { useLooks } from "./use-looks";
 import { lookCategories } from "../config";
 import { thumbnailUrl } from "@/lib/image/thumbnail-url";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 const DAY = 24 * 60 * 60 * 1000;
 const DATE_RANGES = { all: null, last7: 7, last30: 30 } as const;
@@ -88,7 +89,7 @@ export function LooksHistory() {
       {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-[11px] text-danger">{error}</p>}
 
       {!looks ? (
-        <Loader2 className="mx-auto mt-16 size-6 animate-spin text-muted-foreground" aria-hidden />
+        <LoadingSkeleton variant="cards" className="p-4" />
       ) : looks.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border bg-background px-6 py-16 text-center">
           <h2 className="text-base font-bold">{t("noHistory")}</h2>

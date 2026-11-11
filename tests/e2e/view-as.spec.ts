@@ -70,8 +70,8 @@ test("view an org as its admin: read-only, time-limited and in the audit log", a
   const before = await fingerprint(orgId);
   expect(Object.keys(before).length).toBeGreaterThan(10);
 
-  staff.on("dialog", (dialog) => dialog.accept());
   await staff.getByRole("button", { name: "View as admin" }).click();
+  await staff.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
   await staff.waitForURL(/\/en\/home/);
   const banner = staff.getByRole("status").filter({ hasText: `Viewing ${company} as an admin` });
   await expect(banner).toContainText("Read-only");

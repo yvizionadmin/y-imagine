@@ -30,6 +30,8 @@ import {
   resendInvite,
   type MemberView,
 } from "../actions";
+import { confirmAction } from "@/components/app/confirm";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 const ROLES: Role[] = ["admin", "editor", "viewer"];
 type Team = Awaited<ReturnType<typeof getTeam>>;
@@ -116,7 +118,7 @@ export function TeamSettings() {
       )}
 
       {!team ? (
-        <Loader2 className="mx-auto mt-10 size-6 animate-spin text-muted-foreground" aria-hidden />
+        <LoadingSkeleton variant="list" className="p-4" />
       ) : (
         <MembersTable
           rows={rows}
@@ -128,9 +130,9 @@ export function TeamSettings() {
             await refresh();
           }}
           onEditDepartment={setEditing}
-          onRemove={(m) => {
+          onRemove={async (m) => {
             const name = m.name || m.email;
-            if (window.confirm(t(m.status === "invited" ? "revokeConfirm" : "removeConfirm", { name }))) {
+            if (await confirmAction(t(m.status === "invited" ? "revokeConfirm" : "removeConfirm", { name }), "remove")) {
               run(removeTeamMember(m.id), t(m.status === "invited" ? "revoked" : "removed", { name }));
             }
           }}

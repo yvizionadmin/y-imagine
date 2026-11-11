@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { ConfirmHost } from "@/components/app/confirm";
 import { AdminNav, AdminTopBar } from "@/features/admin/components/admin-ui";
 import { requireSuperAdmin } from "@/lib/workspace";
 
@@ -17,6 +18,7 @@ export default function AdminLayout({ children }: LayoutProps<"/[locale]/admin">
           </Suspense>
         </main>
       </div>
+      <ConfirmHost />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { deleteLook, getLooks, setLookBoard, type LookView } from "../actions";
 import type { LookMenuActions } from "./look-menu";
+import { confirmAction } from "@/components/app/confirm";
 
 /** Saved looks plus the delete / board-toggle actions shared by Mood Boards and History. */
 export function useLooks() {
@@ -29,7 +30,7 @@ export function useLooks() {
       else setError(t(response.error === "forbidden" ? "forbidden" : "notFound"));
     },
     async onDelete(look) {
-      if (!window.confirm(t("deleteConfirm", { name: look.title }))) return;
+      if (!(await confirmAction(t("deleteConfirm", { name: look.title })))) return;
       setError(null);
       const response = await deleteLook(look.id);
       if (response.ok || response.error === "not_found") setLooks((all) => all?.filter((l) => l.id !== look.id) ?? null);

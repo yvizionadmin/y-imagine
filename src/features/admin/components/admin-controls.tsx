@@ -12,6 +12,8 @@ import { PLAN_IDS, type PlanId } from "@/lib/plans";
 import { getAdminControls, saveAdminControls } from "../actions";
 import { Card, NoticeBar, PageHeader, selectClass, type Notice } from "./admin-ui";
 import { usePlanCredits } from "./use-plan-credits";
+import { confirmAction } from "@/components/app/confirm";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 type Form = { maintenance: { enabled: boolean; message: string }; signupsEnabled: boolean; defaultPlan: PlanId; disabledFeatures: string[] };
 
@@ -37,14 +39,14 @@ export function AdminControls() {
     });
   }, []);
 
-  if (!form) return <Loader2 className="mx-auto mt-16 size-6 animate-spin text-muted-foreground" aria-hidden />;
+  if (!form) return <LoadingSkeleton variant="list" className="p-4" />;
 
   const patch = (next: Partial<Form>) => setForm({ ...form, ...next });
   const toggleFeature = (f: JobFeature) =>
     patch({ disabledFeatures: form.disabledFeatures.includes(f) ? form.disabledFeatures.filter((x) => x !== f) : [...form.disabledFeatures, f] });
 
   async function save() {
-    if (form!.maintenance.enabled && !window.confirm(t("controls.maintenanceConfirm"))) return;
+    if (form!.maintenance.enabled && !(await confirmAction(t("controls.maintenanceConfirm"), "continue"))) return;
     setBusy(true);
     const r = await saveAdminControls(form!);
     setBusy(false);

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Clapperboard, Loader2, Lock, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Clapperboard, Lock, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,8 @@ import { AddClipDialog, ClipList, type ClipPick } from "./clip-list";
 import { EditorPreview, formatTime } from "./editor-preview";
 import { ExportPanel, SoundPanel, SubtitlesPanel } from "./editor-panels";
 import { jobsChanged } from "@/lib/jobs-events";
+import { confirmAction } from "@/components/app/confirm";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 const SAVE_DELAY_MS = 700;
 const POLL_MS = 3000;
@@ -193,7 +195,7 @@ export function EditorWorkspace() {
   }
 
   async function remove() {
-    if (!project || !window.confirm(t("deleteConfirm", { name: project.name }))) return;
+    if (!project || !(await confirmAction(t("deleteConfirm", { name: project.name })))) return;
     setBusy(true);
     const result = await deleteEditorProject(project.id);
     setBusy(false);
@@ -294,7 +296,7 @@ export function EditorWorkspace() {
   const urlFor = useCallback((assetId: string) => urls.get(assetId) ?? `/api/assets/${assetId}`, [urls]);
 
   if (!setup || projects === null) {
-    return <Loader2 className="mx-auto mt-24 size-6 animate-spin text-muted-foreground" aria-label={t("loading")} />;
+    return <LoadingSkeleton variant="page" className="mx-auto max-w-6xl p-4 md:p-8" />;
   }
 
   return (

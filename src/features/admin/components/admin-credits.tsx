@@ -10,6 +10,7 @@ import { LATN } from "@/lib/format";
 import { PLAN_IDS, type PlanId } from "@/lib/plans";
 import { getAdminCredits, saveAdminCredits } from "../actions";
 import { Card, NoticeBar, PageHeader, Table, td, th, type Notice } from "./admin-ui";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 /** Number fields are edited as text so a half-typed value doesn't jump; the server validates on save. */
 type Draft = {
@@ -53,7 +54,7 @@ export function AdminCredits() {
     });
   }, []);
 
-  if (!draft) return <Loader2 className="mx-auto mt-16 size-6 animate-spin text-muted-foreground" aria-hidden />;
+  if (!draft) return <LoadingSkeleton variant="list" className="p-4" />;
 
   const parsed = parseCreditRules(draft);
   const n = (v: number) => format.number(v, LATN);

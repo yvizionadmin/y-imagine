@@ -17,6 +17,7 @@ import {
 } from "../actions";
 import { AddConnectionDialog } from "./add-connection-dialog";
 import { ConnectorIcon, ProductPreview } from "./connector-visuals";
+import { confirmAction } from "@/components/app/confirm";
 
 type State = { connections: ConnectionView[]; definitions: ConnectorDefinition[]; canManage: boolean; imageApprovalRequired: boolean };
 
@@ -201,7 +202,7 @@ function ConnectionCard({
               size="sm"
               className="text-danger hover:text-danger"
               onClick={async () => {
-                if (!window.confirm(t("removeConfirm", { name: connection.name }))) return;
+                if (!(await confirmAction(t("removeConfirm", { name: connection.name }), "remove"))) return;
                 await deleteCatalogConnection(connection.id);
                 onChanged();
               }}

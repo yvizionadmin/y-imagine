@@ -305,7 +305,14 @@
       "noticeFailed": "{kind} didn’t finish",
       "open": "Open",
       "dismiss": "Dismiss"
-    }
+    },
+    "confirm": {
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "remove": "Remove",
+      "continue": "Continue"
+    },
+    "loading": "Loading"
   },
   "Workspace": {
     "back": "Back",

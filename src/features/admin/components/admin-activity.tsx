@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import { cn } from "cn";
@@ -11,6 +11,7 @@ import { LATN } from "@/lib/format";
 import { getAdminActivity, type AdminJob } from "../actions";
 import { AuditList } from "./admin-audit";
 import { Card, filterSelectClass, PageHeader, StatusBadge, Table, td, th } from "./admin-ui";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 type Tab = "jobs" | "audit";
 type Status = "all" | "ok" | "failed";
@@ -100,7 +101,7 @@ export function AdminActivity() {
       </div>
 
       {!data ? (
-        <Loader2 className="mx-auto mt-10 size-6 animate-spin text-muted-foreground" aria-hidden />
+        <LoadingSkeleton variant="list" className="p-4" />
       ) : tab === "jobs" ? (
         <Jobs jobs={data.jobs} />
       ) : (

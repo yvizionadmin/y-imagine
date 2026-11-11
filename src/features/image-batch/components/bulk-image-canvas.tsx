@@ -11,6 +11,7 @@ import { LATN } from "@/lib/format";
 import { cancelImageBatchRun, deleteImageBatchRun, getImageBatchRun, retryFailedImages } from "@/features/image-batch/actions";
 import type { ImageBatchItemView, ImageBatchView } from "@/lib/image-batch/start";
 import type { OpenImageRun } from "./use-image-runs";
+import { confirmAction } from "@/components/app/confirm";
 
 /** A run that hasn't moved after this long is probably waiting for a worker that isn't running. */
 const STUCK_MS = 30_000;
@@ -85,7 +86,7 @@ function RunView({ run, onChanged, onDeleted }: { run: OpenImageRun; onChanged: 
   }
 
   async function remove() {
-    if (!window.confirm(t("deleteConfirm"))) return;
+    if (!(await confirmAction(t("deleteConfirm")))) return;
     setBusy(true);
     const result = await deleteImageBatchRun(batch.id);
     setBusy(false);

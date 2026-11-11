@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Link } from "@/i18n/navigation";
 import { LATN } from "@/lib/format";
 import { connectBitly, createShortLink, disconnectBitly, forgetShortLink, getLinks, refreshClicks, type LinkView } from "../actions";
+import { confirmAction } from "@/components/app/confirm";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 type State = Awaited<ReturnType<typeof getLinks>>;
 type ErrorCode = "forbidden" | "invalid_input" | "not_connected" | "invalid_token" | "rate_limited" | "invalid_url" | "provider_error" | "unreachable";
@@ -38,7 +40,7 @@ export function LinksWorkspace() {
       )}
 
       {!state ? (
-        <Loader2 className="mx-auto mt-16 size-6 animate-spin text-muted-foreground" aria-hidden />
+        <LoadingSkeleton variant="list" className="p-4" />
       ) : !state.connection ? (
         <ConnectCard canManage={state.canManage} demo={state.demo} onConnected={() => { setNotice(null); refresh(); }} onError={fail} />
       ) : (
@@ -150,7 +152,7 @@ function ConnectionBar({ state, onDisconnected, onError }: { state: State; onDis
           size="sm"
           className="ms-auto text-danger hover:text-danger"
           onClick={async () => {
-            if (!window.confirm(t("disconnectConfirm"))) return;
+            if (!(await confirmAction(t("disconnectConfirm"), "remove"))) return;
             const response = await disconnectBitly();
             if (response.ok) onDisconnected();
             else onError(response.error);
@@ -301,7 +303,7 @@ function LinksTable({
                         <IconAction
                           label={t("forget")}
                           onClick={async () => {
-                            if (!window.confirm(t("forgetConfirm"))) return;
+                            if (!(await confirmAction(t("forgetConfirm"), "remove"))) return;
                             const response = await forgetShortLink(link.id);
                             if (response.ok) onChanged();
                             else onError(response.error);

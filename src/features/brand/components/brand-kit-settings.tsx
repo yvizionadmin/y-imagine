@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Link } from "@/i18n/navigation";
 import { BRAND_LIMITS, EMPTY_BRAND_KIT, type BrandKit } from "@/lib/brand/limits";
 import { getBrandKitSettings, saveBrandKit } from "../actions";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 type State = Awaited<ReturnType<typeof getBrandKitSettings>>;
 type Form = Omit<BrandKit, "useWords" | "avoidWords"> & { useWords: string; avoidWords: string };
@@ -75,7 +76,7 @@ export function BrandKitSettings() {
       {state && readOnly && <p className="rounded-lg bg-muted px-3 py-2 text-xs">{t("readOnly")}</p>}
 
       {!state ? (
-        <Loader2 className="mx-auto mt-10 size-6 animate-spin text-muted-foreground" aria-hidden />
+        <LoadingSkeleton variant="list" className="p-4" />
       ) : (
         <>
           <form

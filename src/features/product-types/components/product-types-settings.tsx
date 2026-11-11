@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { categoryPresets, type CategoryPreset } from "@/lib/catalog-presets";
 import { PRODUCT_TYPE_NAME_MAX, PRODUCT_TYPES_PER_CATEGORY, type OrgProductType } from "@/lib/product-types";
 import { addProductType, getProductTypes, removeProductType, setCategoryVisible } from "../actions";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 type State = Awaited<ReturnType<typeof getProductTypes>>;
 type Notice = { category: string; kind: "duplicate" | "limit" | "error" | "lastCategory" } | null;
@@ -65,7 +66,7 @@ export function ProductTypesSettings() {
       {state && !canManage && <p className="rounded-lg bg-muted px-3 py-2 text-xs">{t("readOnly")}</p>}
 
       {!state ? (
-        <Loader2 className="mx-auto mt-10 size-6 animate-spin text-muted-foreground" aria-hidden />
+        <LoadingSkeleton variant="list" className="p-4" />
       ) : (
         <ul className="flex flex-col gap-3">
           {categoryPresets.map((category) => (

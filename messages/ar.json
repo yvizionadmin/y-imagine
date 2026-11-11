@@ -305,7 +305,14 @@
       "noticeFailed": "تعذّر إكمال {kind}",
       "open": "فتح",
       "dismiss": "إغلاق"
-    }
+    },
+    "confirm": {
+      "cancel": "إلغاء",
+      "delete": "حذف",
+      "remove": "إزالة",
+      "continue": "متابعة"
+    },
+    "loading": "جارٍ التحميل"
   },
   "Workspace": {
     "back": "رجوع",

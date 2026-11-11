@@ -11,6 +11,8 @@ import { isModelFeature, providersFor, type ModelFeature, type ModelPreference }
 import { AI_PROVIDERS, CAPABILITIES, FEATURE_NEEDS, PROVIDER_INFO, type AiProviderId } from "@/lib/ai/providers-info";
 import { LATN } from "@/lib/format";
 import { deleteKey, getProviderKeys, revalidateKey, saveKey, setToolModel } from "../actions";
+import { confirmAction } from "@/components/app/confirm";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 type State = Awaited<ReturnType<typeof getProviderKeys>>;
 
@@ -41,7 +43,7 @@ export function ProviderKeysSettings() {
       {state && !state.canManage && <p className="rounded-lg bg-muted px-3 py-2 text-xs">{t("readOnly")}</p>}
 
       {!state ? (
-        <Loader2 className="mx-auto mt-10 size-6 animate-spin text-muted-foreground" aria-hidden />
+        <LoadingSkeleton variant="list" className="p-4" />
       ) : (
         <>
           <ul className="grid gap-4 md:grid-cols-2">
@@ -150,7 +152,7 @@ function ProviderCard({
   }
 
   async function remove() {
-    if (!window.confirm(t("removeConfirm", { provider: t(`providers.${provider}.name`) }))) return;
+    if (!(await confirmAction(t("removeConfirm", { provider: t(`providers.${provider}.name`) }), "remove"))) return;
     setBusy("delete");
     const response = await deleteKey(provider);
     setBusy(null);

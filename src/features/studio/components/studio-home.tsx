@@ -20,6 +20,7 @@ import { MediaModeSwitch } from "./media-mode-switch";
 import { animateHref } from "@/lib/image/animate-href";
 import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 import { jobsChanged } from "@/lib/jobs-events";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 const IMAGE_TYPES = "image/png,image/jpeg,image/webp";
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -554,7 +555,7 @@ function Thumb({ file, label, onRemove, tilt = 0 }: { file: File; label: string;
 
 function Recent({ items, pending, onReuse }: { items: StudioItem[] | null; pending: number; onReuse: (item: StudioItem) => void }) {
   const t = useTranslations("Studio");
-  if (items === null) return <Loader2 className="mx-auto my-8 size-5 animate-spin text-muted-foreground" aria-hidden />;
+  if (items === null) return <LoadingSkeleton variant="cards" count={4} className="mx-auto max-w-6xl px-4 pb-12 sm:px-8" />;
   if (!items.length && !pending) return <p className="pb-12 text-center text-xs text-muted-foreground">{t("emptyRecent")}</p>;
   return (
     <section aria-labelledby="studio-recent" className="mx-auto w-full max-w-6xl px-4 pb-12 sm:px-8">

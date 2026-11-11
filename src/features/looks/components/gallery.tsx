@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { cn } from "cn";
 import { Link } from "@/i18n/navigation";
@@ -10,6 +10,7 @@ import { lookCategories, ROOM_TYPES } from "../config";
 import { LookMenu, type LookMenuActions } from "./look-menu";
 import { useLooks } from "./use-looks";
 import { thumbnailUrl } from "@/lib/image/thumbnail-url";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 /** Mood Boards: looks promoted to boards (Figma 98:9358). Each card opens the board detail. */
 export function LooksGallery() {
@@ -66,7 +67,7 @@ export function LooksGallery() {
       {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-[11px] text-danger">{error}</p>}
 
       {!looks ? (
-        <Loader2 className="mx-auto mt-16 size-6 animate-spin text-muted-foreground" aria-hidden />
+        <LoadingSkeleton variant="cards" className="p-4" />
       ) : visible.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl border bg-background px-6 py-16 text-center">
           <h2 className="text-base font-bold">{t("noBoards")}</h2>

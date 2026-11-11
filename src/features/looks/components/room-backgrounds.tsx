@@ -11,6 +11,8 @@ import type { RoomBackgroundView } from "@/lib/looks/room-backgrounds";
 import { deleteRoomBackground, editRoomBackground, getRoomBackgrounds, uploadRoomBackground } from "../actions";
 import { DEFAULT_LOOK_CATEGORY, LOOK_STYLES, ROOM_TYPES, lookStyles } from "../config";
 import { thumbnailUrl } from "@/lib/image/thumbnail-url";
+import { confirmAction } from "@/components/app/confirm";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 type Editing = { mode: "upload" } | { mode: "edit"; background: RoomBackgroundView } | null;
 
@@ -57,7 +59,7 @@ export function RoomBackgroundsManager() {
       </div>
 
       {!data ? (
-        <Loader2 className="mx-auto mt-16 size-6 animate-spin text-muted-foreground" aria-hidden />
+        <LoadingSkeleton variant="cards" className="p-4" />
       ) : visible.length === 0 ? (
         <p className="rounded-xl border bg-background px-6 py-12 text-center text-[13px] text-muted-foreground">{t("noBackgrounds")}</p>
       ) : (
@@ -89,7 +91,7 @@ export function RoomBackgroundsManager() {
                         type="button"
                         className="text-danger"
                         onClick={async () => {
-                          if (!window.confirm(t("deleteConfirm", { name: b.name }))) return;
+                          if (!(await confirmAction(t("deleteConfirm", { name: b.name })))) return;
                           await deleteRoomBackground(b.id);
                           refresh();
                         }}

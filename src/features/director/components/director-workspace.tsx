@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Clapperboard, Loader2, Lock } from "lucide-react";
+import { ArrowLeft, Clapperboard, Lock } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { PageHeader } from "@/components/app/page-header";
 import { blockedReason } from "@/components/app/job-errors";
@@ -12,6 +12,8 @@ import { createDirectorProject, deleteDirectorProject, getDirectorProject, getDi
 import { DirectorForm } from "./director-form";
 import { DirectorProjectView } from "./director-project";
 import { jobsChanged } from "@/lib/jobs-events";
+import { confirmAction } from "@/components/app/confirm";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
 
 const POLL_MS = 4000;
 const working = (status: string) => status !== "done" && status !== "failed";
@@ -90,7 +92,7 @@ export function DirectorWorkspace() {
   }
 
   async function remove() {
-    if (!project || !window.confirm(t("deleteConfirm"))) return;
+    if (!project || !(await confirmAction(t("deleteConfirm")))) return;
     setBusy(true);
     const result = await deleteDirectorProject(project.id);
     setBusy(false);
@@ -99,7 +101,7 @@ export function DirectorWorkspace() {
     show(null);
   }
 
-  if (!setup || projects === null) return <Loader2 className="mx-auto mt-24 size-6 animate-spin text-muted-foreground" aria-label={t("loading")} />;
+  if (!setup || projects === null) return <LoadingSkeleton variant="page" className="mx-auto max-w-6xl p-4 md:p-8" />;
   const canEdit = setup.canEdit && setup.allowed;
   const blocked = error ? blockedReason(error) : null;
 
