@@ -312,7 +312,83 @@
       "remove": "Remove",
       "continue": "Continue"
     },
-    "loading": "Loading"
+    "loading": "Loading",
+    "guides": {
+      "gotIt": "Got it",
+      "close": "Close tip",
+      "generate": {
+        "title": "Lifestyle images in 3 steps",
+        "s1": "Open Product Info: add the product photo and its SKU.",
+        "s2": "Open Scene Settings: pick a category and a room or scene.",
+        "s3": "Press Generate. Every result is saved to History; from a result you can upscale or animate it."
+      },
+      "recolor": {
+        "title": "Recolor in 3 steps",
+        "s1": "Add the product photo.",
+        "s2": "Add a swatch or texture photo of the new colour or fabric.",
+        "s3": "Generate, then compare before and after with the slider."
+      },
+      "aplus": {
+        "title": "A+ images in 3 steps",
+        "s1": "Add the product photo and its title.",
+        "s2": "Write the feature text; the layout preview updates as you type.",
+        "s3": "Generate a marketplace-ready image with your text on it."
+      },
+      "looks": {
+        "title": "Inspirational looks in 3 steps",
+        "s1": "Choose a room or background.",
+        "s2": "Add products from your catalog.",
+        "s3": "Generate the look and save it to a mood board."
+      },
+      "resize": {
+        "title": "Resize in 3 steps",
+        "s1": "Add one or more images.",
+        "s2": "Pick the marketplace or social sizes you need.",
+        "s3": "Resize, then download them all."
+      },
+      "copy": {
+        "title": "Product copy in 3 steps",
+        "s1": "Enter the product name, details and keywords.",
+        "s2": "Choose the tone and the language (English or Arabic).",
+        "s3": "Generate, edit if needed, and send it for approval."
+      },
+      "chat": {
+        "title": "AI Assistant",
+        "s1": "Ask anything: product ideas, descriptions, translations.",
+        "s2": "Replies come from your team's AI models; each message uses credits.",
+        "s3": "Your conversations are saved in the list, so you can come back to them."
+      },
+      "agents": {
+        "title": "AI Agents",
+        "s1": "Describe a goal, for example: find our oak chairs and write launch copy.",
+        "s2": "The agent searches your catalog, writes copy and makes images, step by step.",
+        "s3": "Each tool it uses costs credits, and its images are saved to History."
+      },
+      "editor": {
+        "title": "Video editor in 3 steps",
+        "s1": "Add clips from your Studio videos.",
+        "s2": "Trim them, and add subtitles, music or a voice-over.",
+        "s3": "Pick a size (9:16, 1:1 or 16:9) and export the MP4."
+      },
+      "director": {
+        "title": "AI Director in 3 steps",
+        "s1": "Describe your video idea in a sentence.",
+        "s2": "Choose the scenes, length, size and, if you like, a saved character.",
+        "s3": "It writes the script, draws a storyboard, films each scene and puts the video together."
+      },
+      "characters": {
+        "title": "Characters",
+        "s1": "Save a person from photos, with their consent.",
+        "s2": "Or describe someone and get an AI portrait.",
+        "s3": "Pick them in the AI Director to keep them the same in every scene."
+      },
+      "history": {
+        "title": "History",
+        "s1": "Every image and video your team makes is saved here.",
+        "s2": "Filter by product, date, tool or approval.",
+        "s3": "Approve images and upload them to your online store."
+      }
+    }
   },
   "Workspace": {
     "back": "Back",
@@ -3035,7 +3111,36 @@
         "draft": "Draft"
       }
     },
-    "frameFailed": "Couldn’t load that image as the start frame. Add it again with the + button."
+    "frameFailed": "Couldn’t load that image as the start frame. Add it again with the + button.",
+    "setup": {
+      "title": "Get set up",
+      "progress": "{done} of {total} done",
+      "dismiss": "Hide the setup checklist",
+      "done": "Done",
+      "askAdmin": "Your admin does this step.",
+      "steps": {
+        "key": {
+          "title": "Connect an AI key",
+          "body": "Your OpenAI, Gemini, Anthropic or OpenRouter key powers every tool.",
+          "action": "Add a key"
+        },
+        "image": {
+          "title": "Make your first image",
+          "body": "Describe a scene in the box above and press Generate.",
+          "action": "Write a prompt"
+        },
+        "store": {
+          "title": "Connect your store",
+          "body": "Bring in your products and upload approved images to your store.",
+          "action": "Connect a store"
+        },
+        "team": {
+          "title": "Invite your team",
+          "body": "Add the people who create, review and publish.",
+          "action": "Invite people"
+        }
+      }
+    }
   },
   "Emails": {
     "footer": "Imagine AI · You're getting this email because of your Imagine AI workspace.",

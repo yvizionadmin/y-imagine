@@ -15,6 +15,7 @@ import { videoCost, type VideoResolution } from "@/lib/credits";
 import { LATN } from "@/lib/format";
 import { createImages, getStudioSetup, listStudioRecent, pollStudioVideos, startVideo } from "../actions";
 import { parseMediaMode, PROMPT_MAX, STUDIO_MAX_IMAGES, STUDIO_MAX_REFERENCES, type MediaMode, type StudioItem, type StudioSetup } from "../types";
+import { SetupChecklist } from "@/features/onboarding/components/setup-checklist";
 import { ContinueRow, ToolCards } from "./home-sections";
 import { MediaModeSwitch } from "./media-mode-switch";
 import { animateHref } from "@/lib/image/animate-href";
@@ -425,6 +426,7 @@ export function StudioHome() {
         </div>
       </section>
 
+      <SetupChecklist />
       <ContinueRow />
       <Recent items={recent} pending={pending && mode === "image" ? image.count : 0} onReuse={reusePrompt} />
       <ToolCards />

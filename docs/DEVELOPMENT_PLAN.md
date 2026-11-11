@@ -309,7 +309,7 @@ https://claude.ai/artifact/TWULxCFBnNzHUboRiWupm5 (private to the owner).
 | U3 ✅ | Results | Hover actions on each result (download, use prompt, upscale, animate, edit, upload) and progress cards with stage and time left | Every result leads to its next step in one click | 1–2 |
 | U4 ✅ | Jobs tray | Top-bar button and tray for running videos, Director projects, bulk jobs and store uploads; "ready" notices | Users leave a screen and are told when work finishes | 1–2 |
 | U5 ✅ | Polish | Loading placeholders, pop-up notices, confirm dialogs instead of `window.confirm`, presets as pictures, empty screens with examples | No spinners-only screens or browser confirms left | 1–2 |
-| U6 | First run | Setup checklist (AI key, store, first image, team) and a one-time guide per tool | A new org sees what to do next | 1 |
+| U6 ✅ | First run | Setup checklist (AI key, store, first image, team) and a one-time guide per tool | A new org sees what to do next | 1 |
 | U7 | Dark theme | Dark default for the app (rail and popups recoloured, not changed), phone check of every screen | Every screen passes the a11y scan in dark and on a phone | 1–2 |
 
 ## Progress
@@ -1425,3 +1425,14 @@ https://claude.ai/artifact/TWULxCFBnNzHUboRiWupm5 (private to the owner).
   pictures (needs a picture per preset first) and empty screens (they already explain and link to the next step).
   Tests: `tests/e2e/characters.spec.ts` (Cancel keeps, Delete removes, Cancel focused), `view-as.spec.ts` answers
   the dialog. 465 Vitest, 47 Playwright, lint, tsc, build.
+- **2026-11-11, U6 First run.** Home shows **Get set up** until done: connect an AI key, make a first image, connect
+  a store, invite the team — ticked from real data (`setupChecklist` in `src/lib/onboarding.ts`, read only), with a
+  progress bar and a link per step (members see "Your admin does this step" for admin-only steps). Hidden once all
+  four are done, or with × (remembered per org in this browser). Twelve tools (Lifestyle, Recolor, A+, Looks,
+  Resize, Copy, Chat, Agents, Editor, AI Director, Characters, History) show a **one-time guide** the first time
+  they open: three steps and "Got it", remembered in this browser (`ToolGuide` in the app layout, list in
+  `src/lib/tool-guides.ts`, `useLocalFlag` in `src/lib/local-flag.ts` — localStorage only, so blocked storage just
+  shows the tip again). No database change. Playwright starts with the guides seen (`storageState` in the config) so
+  they don't cover what specs click; `first-run.spec.ts` uses a fresh browser. Tests: `tests/unit/tool-guides.test.ts`,
+  `tests/integration/setup-checklist.test.ts`, `tests/e2e/first-run.spec.ts`. 469 Vitest, 48 Playwright, lint, tsc,
+  build.

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { ConfirmHost } from "@/components/app/confirm";
+import { ToolGuide } from "@/components/app/tool-guide";
 import { IconRail } from "@/components/app/icon-rail";
 import { NewJobScope } from "@/components/app/new-job";
 import { OrgCatalogInit, OrgCatalogProvider } from "@/components/app/org-catalog";
@@ -42,6 +43,9 @@ export default function AppLayout({ children }: LayoutProps<"/[locale]">) {
         </main>
       </div>
       <ConfirmHost />
+      <Suspense>
+        <ToolGuide />
+      </Suspense>
     </div>
   );
 }

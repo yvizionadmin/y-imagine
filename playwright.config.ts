@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { GUIDED_PAGES, guideFlag } from "./src/lib/tool-guides";
 
 // End-to-end tests (`npm run test:e2e`) against the production build (`next build` first) on port
 // 3100, with its own database and demo mode: no Clerk, Stripe, Sentry or real AI provider is called.
@@ -12,7 +13,16 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   workers: 1,
   reporter: [["list"]],
-  use: { baseURL: `http://localhost:${PORT}`, trace: "retain-on-failure", locale: "en-US" },
+  use: {
+    baseURL: `http://localhost:${PORT}`,
+    trace: "retain-on-failure",
+    locale: "en-US",
+    // The one-time tool guides (U6) are already seen, so they don't cover what specs click; tool-guides.spec opts out.
+    storageState: {
+      cookies: [],
+      origins: [{ origin: `http://localhost:${PORT}`, localStorage: Object.values(GUIDED_PAGES).map((guide) => ({ name: guideFlag(guide), value: "1" })) }],
+    },
+  },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
     command: `tsx tests/e2e/prepare-db.mts && next start -p ${PORT}`,
