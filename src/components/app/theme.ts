@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 
-import { THEME_KEY as KEY, THEMES, type Theme } from "./theme-script";
+import { DEFAULT_THEME, THEME_KEY as KEY, THEMES, type Theme } from "./theme-script";
 
 // setTheme keeps <html class="dark"> in sync after THEME_SCRIPT applied the saved theme.
 export { THEMES, type Theme };
@@ -12,9 +12,9 @@ const listeners = new Set<() => void>();
 function read(): Theme {
   try {
     const value = localStorage.getItem(KEY);
-    return (THEMES as readonly string[]).includes(value ?? "") ? (value as Theme) : "light";
+    return (THEMES as readonly string[]).includes(value ?? "") ? (value as Theme) : DEFAULT_THEME;
   } catch {
-    return "light";
+    return DEFAULT_THEME;
   }
 }
 
@@ -44,6 +44,6 @@ export function useTheme(): Theme {
       };
     },
     read,
-    () => "light",
+    () => DEFAULT_THEME,
   );
 }

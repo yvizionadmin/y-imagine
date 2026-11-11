@@ -310,7 +310,7 @@ https://claude.ai/artifact/TWULxCFBnNzHUboRiWupm5 (private to the owner).
 | U4 ✅ | Jobs tray | Top-bar button and tray for running videos, Director projects, bulk jobs and store uploads; "ready" notices | Users leave a screen and are told when work finishes | 1–2 |
 | U5 ✅ | Polish | Loading placeholders, pop-up notices, confirm dialogs instead of `window.confirm`, presets as pictures, empty screens with examples | No spinners-only screens or browser confirms left | 1–2 |
 | U6 ✅ | First run | Setup checklist (AI key, store, first image, team) and a one-time guide per tool | A new org sees what to do next | 1 |
-| U7 | Dark theme | Dark default for the app (rail and popups recoloured, not changed), phone check of every screen | Every screen passes the a11y scan in dark and on a phone | 1–2 |
+| U7 ✅ | Dark theme | Dark default for the app (rail and popups recoloured, not changed), phone check of every screen | Every screen passes the a11y scan in dark and on a phone | 1–2 |
 
 ## Progress
 - **2026-11-02, Phase 0 (part 1) done:** Next.js 16.4 + Tailwind 4 + shadcn (base-nova, RTL), next-intl en/ar
@@ -1436,3 +1436,13 @@ https://claude.ai/artifact/TWULxCFBnNzHUboRiWupm5 (private to the owner).
   they don't cover what specs click; `first-run.spec.ts` uses a fresh browser. Tests: `tests/unit/tool-guides.test.ts`,
   `tests/integration/setup-checklist.test.ts`, `tests/e2e/first-run.spec.ts`. 469 Vitest, 48 Playwright, lint, tsc,
   build.
+- **2026-11-11, U7 Dark theme + phone check (Part C done).** Dark is the default for anyone who hasn't chosen
+  (`DEFAULT_THEME` in `theme-script.ts`, used by the pre-paint script and `useTheme`); Light and System stay in the
+  account menu and on sign-in, and a saved choice is kept. The dark palette already covered every token and status
+  tint, so no colours changed; the rail and its popups are only recoloured by the tokens, not changed. Audit: all 26
+  screens (marketing, sign-in, every tool, History, Analytics, settings) screenshotted in dark at 1440 px and 390 px.
+  Two phone bugs fixed in shared components: the results area's "will appear here" text was cut at both edges
+  (`CanvasShell`: p-4 on phones, content held to the screen width), and the prompt dock stacked one chip per line
+  beside Generate (chips now take the whole row on phones, cost and Generate below). Tests:
+  `tests/e2e/phone-layout.spec.ts` (tool screens on a phone, en/ar: empty-state text on screen, chips use the dock's
+  width; fails without the fix). 469 Vitest, 50 Playwright, lint, tsc, build.

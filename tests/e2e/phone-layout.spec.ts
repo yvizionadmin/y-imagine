@@ -56,4 +56,21 @@ for (const locale of ["en", "ar"]) {
     await page.goto(`/${locale}/settings/team`);
     await expectOnScreen(page.locator("thead th").last());
   });
+
+  // U7: the results area's "will appear here" text isn't cut at the edges, and the prompt dock keeps its chips on
+  // a full-width row with Generate below, instead of one chip per line.
+  test(`tool screens fit a phone: empty results and the prompt dock (${locale})`, async ({ page }) => {
+    await signUp(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const route of ["recolor", "aplus", "qr"]) {
+      await page.goto(`/${locale}/${route}`);
+      const empty = page.locator("[data-empty-state]").first();
+      await expectOnScreen(empty.locator("h2, h3, p").first());
+      await expectOnScreen(empty.locator("p").last());
+      const chips = page.getByRole("group", { name: locale === "en" ? "Settings" : /الإعدادات/ });
+      // The chips get the dock's whole row (minus its padding), not a narrow column beside Generate.
+      const share = await chips.evaluate((el) => el.getBoundingClientRect().width / el.parentElement!.clientWidth);
+      expect(share, `${route}: chips use the dock's width`).toBeGreaterThan(0.85);
+    }
+  });
 }

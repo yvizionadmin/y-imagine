@@ -585,7 +585,7 @@ export function PanelFooter({
   const dock = useContext(DockContext);
   return (
     <div className="flex flex-wrap items-center gap-2 px-3 pt-2 pb-3 sm:px-4 sm:pb-4">
-      <div ref={dock?.setChips} role="group" aria-label={t("settings")} className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 empty:hidden" />
+      <div ref={dock?.setChips} role="group" aria-label={t("settings")} className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 empty:hidden max-sm:basis-full" />
       <div className="ms-auto flex items-center gap-2.5">
         <Button type="button" variant="ghost" size="icon" disabled={busy} onClick={onReset} aria-label={t("reset")} title={t("reset")} className="size-8 rounded-full text-muted-foreground">
           <RotateCcw className="size-3.5" aria-hidden />

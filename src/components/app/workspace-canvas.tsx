@@ -44,12 +44,12 @@ export function CanvasShell({
   }, []);
 
   return (
-    <section className="relative flex min-h-[20rem] min-w-0 shrink-0 grow items-center justify-center overflow-hidden bg-canvas p-10">
+    <section className="relative flex min-h-[20rem] min-w-0 shrink-0 grow items-center justify-center overflow-hidden bg-canvas p-4 sm:p-10">
       {top && <div className="absolute top-10 left-1/2 z-10 -translate-x-1/2">{top}</div>}
 
       <div
         ref={contentRef}
-        className="flex flex-col items-center gap-5 [&_img[data-result]]:cursor-zoom-in"
+        className="flex max-w-full min-w-0 flex-col items-center gap-5 [&_img[data-result]]:cursor-zoom-in"
         onClick={(e) => {
           const img = e.target instanceof HTMLImageElement && e.target.matches("[data-result]") ? e.target : null;
           if (img) setViewing({ src: img.src, alt: img.alt, name: img.alt || "image", ...source });
