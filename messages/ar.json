@@ -388,11 +388,16 @@
       "upscaleTo": "تحسين إلى {size}",
       "upscaleCost": "{count, plural, one {رصيد واحد} two {رصيدان} few {# أرصدة} other {# رصيد}}",
       "upscaleFailed": "تعذّر تحسين دقة هذه الصورة. حاول مرة أخرى.",
-      "upscaled": "تم التحسين إلى {size}"
+      "upscaled": "تم التحسين إلى {size}",
+      "animate": "حوّلها إلى فيديو"
     },
     "chooseCategory": "اختر الفئة",
     "chooseFirst": "اختر فئة لعرض المشاهد المقترحة، أو تصفح الكل",
-    "tryIt": "جرّبه"
+    "tryIt": "جرّبه",
+    "progress": {
+      "usual": "عادةً أقل من دقيقة",
+      "slow": "يستغرق وقتًا أطول من المعتاد…"
+    }
   },
   "Presets": {
     "categories": {
@@ -2994,7 +2999,8 @@
         "failed": "تعذّر بعض العناصر",
         "draft": "مسودة"
       }
-    }
+    },
+    "frameFailed": "تعذّر تحميل الصورة كإطار البداية. أضفها مرة أخرى بزر +."
   },
   "Emails": {
     "footer": "Imagine AI · تصلك هذه الرسالة بسبب مساحة عملك في Imagine AI.",

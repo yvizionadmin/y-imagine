@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Aperture, ArrowUp, CornerDownLeft, ChevronDown, Clapperboard, Clock, Cpu, ImagePlus, Images, Loader2, Lock, Plus, Sparkles, X } from "lucide-react";
+import { Aperture, ArrowUp, CornerDownLeft, Film, ChevronDown, Clapperboard, Clock, Cpu, ImagePlus, Images, Loader2, Lock, Plus, Sparkles, X } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { cn } from "cn";
 import { blockedReason } from "@/components/app/job-errors";
@@ -17,6 +17,7 @@ import { createImages, getStudioSetup, listStudioRecent, pollStudioVideos, start
 import { parseMediaMode, PROMPT_MAX, STUDIO_MAX_IMAGES, STUDIO_MAX_REFERENCES, type MediaMode, type StudioItem, type StudioSetup } from "../types";
 import { ContinueRow, ToolCards } from "./home-sections";
 import { MediaModeSwitch } from "./media-mode-switch";
+import { animateHref } from "@/lib/image/animate-href";
 import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 
 const IMAGE_TYPES = "image/png,image/jpeg,image/webp";
@@ -73,6 +74,29 @@ export function StudioHome() {
     });
     listStudioRecent().then(setRecent);
   }, []);
+
+  // "Animate" from a result (`?mode=video&frame=<asset id>`): that stored image becomes the start frame.
+  // Keyed on the id, not on load: the page stays mounted between visits.
+  const frameId = searchParams.get("frame");
+  useEffect(() => {
+    if (!frameId || !/^[0-9a-f-]{36}$/.test(frameId)) return;
+    let cancelled = false;
+    fetch(`/api/assets/${frameId}`)
+      .then((res) => (res.ok ? res.blob() : null))
+      .catch(() => null)
+      .then((blob) => {
+        if (cancelled) return;
+        const params = new URLSearchParams(window.location.search);
+        params.delete("frame");
+        window.history.replaceState(null, "", params.size ? `?${params}` : window.location.pathname);
+        if (!blob || !IMAGE_TYPES.split(",").includes(blob.type) || blob.size > MAX_FILE_BYTES) return setError(t("frameFailed"));
+        setStartFrame(new File([blob], `frame.${blob.type.split("/")[1]}`, { type: blob.type }));
+        setConsent(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [frameId, t]);
 
   // Videos render in the background: re-check the open ones until they finish.
   const openIds = useMemo(() => (recent ?? []).filter(isOpen).map((i) => i.id), [recent]);
@@ -558,12 +582,27 @@ function Recent({ items, pending, onReuse }: { items: StudioItem[] | null; pendi
               <p className="pointer-events-none absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100">
                 {item.prompt}
               </p>
-              <ReuseButton onClick={() => onReuse(item)} className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 max-md:opacity-100" />
+              <div className="absolute top-2 end-2 flex gap-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100">
+                <AnimateLink src={item.url} />
+                <ReuseButton onClick={() => onReuse(item)} />
+              </div>
             </li>
           ),
         )}
       </ul>
     </section>
+  );
+}
+
+function AnimateLink({ src }: { src: string | null }) {
+  const t = useTranslations("Workspace.viewer");
+  const href = src ? animateHref(src) : null;
+  if (!href) return null;
+  return (
+    <Link href={href} className="flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur transition hover:bg-black/85">
+      <Film className="size-3" aria-hidden />
+      {t("animate")}
+    </Link>
   );
 }
 

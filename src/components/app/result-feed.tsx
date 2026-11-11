@@ -130,8 +130,8 @@ export function ResultFeed({
                         className="block h-auto max-h-80 w-auto max-w-full object-contain"
                       />
                     </button>
-                    <div className="absolute end-2 bottom-2 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                      <ImageActions image={viewerImage(item)} onUpscaled={setViewing} />
+                    <div className="absolute end-2 bottom-2 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100">
+                      <ImageActions image={viewerImage(item)} onUpscaled={setViewing} animate />
                       <Link
                         href="/history"
                         aria-label={t("openHistory")}
@@ -145,7 +145,8 @@ export function ResultFeed({
                 ))}
               </div>
               <time dateTime={first.createdAt} className="text-[11px] text-muted-foreground">
-                {format.relativeTime(new Date(first.createdAt), now)}
+                {/* Never "in 3 seconds" when the server's clock is a little ahead. */}
+                {format.relativeTime(new Date(Math.min(Date.parse(first.createdAt), now.getTime())), now)}
               </time>
             </li>
           );

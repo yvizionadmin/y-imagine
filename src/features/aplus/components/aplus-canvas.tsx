@@ -6,7 +6,7 @@ import { RefreshCw, Sparkles, TriangleAlert, Wand } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
-import { CanvasEmptyState, CanvasShell, CompareSlider, ImageBadge, ImageFrame, StatusPill } from "@/components/app/workspace-canvas";
+import { CanvasEmptyState, CanvasShell, CompareSlider, ImageBadge, ImageFrame, JobProgress, StatusPill } from "@/components/app/workspace-canvas";
 import type { AplusFeature, AplusLayout, GeneratedImage } from "@/lib/ai/types";
 
 export type AplusDraft = {
@@ -108,6 +108,7 @@ export function AplusCanvas({
               <p className="text-[15px] font-bold">{t("creatingTitle")}</p>
               <p className="text-xs text-white/70">{t("creatingBody")}</p>
             </div>
+            <JobProgress />
             <button type="button" onClick={onCancel} className="text-xs font-semibold underline underline-offset-4">
               {t("cancel")}
             </button>

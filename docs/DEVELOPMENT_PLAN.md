@@ -306,7 +306,7 @@ https://claude.ai/artifact/TWULxCFBnNzHUboRiWupm5 (private to the owner).
 |---|------|-------|-----------|------|
 | U1 ✅ | Top bar | ⌘K / Ctrl+K search over every tool and settings page (en/ar); Upgrade next to the credits for admins on Free/Starter | Any page opens from the keyboard in two keys plus a word | 1 |
 | U2 ✅ | Home | Prompt box first (Image / Video / Copy), tool cards with pictures, "continue where you left off", team gallery with "Use prompt" | A new user starts a job from Home without opening the rail | 2 |
-| U3 | Results | Hover actions on each result (download, use prompt, upscale, animate, edit, upload) and progress cards with stage and time left | Every result leads to its next step in one click | 1–2 |
+| U3 ✅ | Results | Hover actions on each result (download, use prompt, upscale, animate, edit, upload) and progress cards with stage and time left | Every result leads to its next step in one click | 1–2 |
 | U4 | Jobs tray | Top-bar button and tray for running videos, Director projects, bulk jobs and store uploads; "ready" notices | Users leave a screen and are told when work finishes | 1–2 |
 | U5 | Polish | Loading placeholders, pop-up notices, confirm dialogs instead of `window.confirm`, presets as pictures, empty screens with examples | No spinners-only screens or browser confirms left | 1–2 |
 | U6 | First run | Setup checklist (AI key, store, first image, team) and a one-time guide per tool | A new org sees what to do next | 1 |
@@ -1395,3 +1395,13 @@ https://claude.ai/artifact/TWULxCFBnNzHUboRiWupm5 (private to the owner).
   **Other tools** as cards (pictures for the image tools, icons for the rest; names from the ⌘K list). The icon-row
   `ToolShortcuts` was only used here and is replaced by the cards. Tests: `tests/integration/home-continue.test.ts`,
   `tests/e2e/studio.spec.ts` (cards, Use prompt). 458 Vitest, 47 Playwright, lint, tsc, build. The dark look is U7.
+- **2026-11-11, U3 Results.** Results already had Download, Share, Upscale, Open in History and "Use again". Added
+  **Animate into video** on every stored image (tool canvas corner, results feed, full-size viewer, Studio recent):
+  it opens `/home?mode=video&frame=<asset id>` and the Studio loads that image as the start frame (keyed on the id,
+  since the page stays mounted; the param is then dropped; likeness consent is still asked; Free sees the upgrade
+  prompt as before). Only `/api/assets/<uuid>` images qualify (`src/lib/image/animate-href.ts`). Result buttons show
+  without hover on touch screens. The Lifestyle, Recolor and A+ "creating" overlays gain `JobProgress`: elapsed time
+  and an estimated bar easing toward 90% (`src/lib/progress.ts`; providers give no real progress, so the text says
+  "Usually under a minute", then "Taking longer than usual…"). Feed times never read "in 3 seconds" when the server
+  clock is ahead. Tests: `tests/unit/result-actions.test.ts`, `tests/e2e/studio.spec.ts` (Animate). 462 Vitest,
+  47 Playwright, lint, tsc, build.

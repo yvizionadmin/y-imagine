@@ -20,6 +20,7 @@ import {
   CompareSlider,
   ImageBadge,
   ImageFrame,
+  JobProgress,
   StatusPill,
 } from "@/components/app/workspace-canvas";
 import type { GeneratedImage } from "@/lib/ai/types";
@@ -130,6 +131,7 @@ export function GenerateCanvas({
               <p className="text-[15px] font-bold">{t("creatingTitle")}</p>
               <p className="text-xs text-white/70">{t("creatingBody")}</p>
             </div>
+            <JobProgress />
           </div>
         </ImageFrame>
       )}

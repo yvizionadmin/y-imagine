@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Maximize } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
 import { ImageActions, ImageViewer, type ViewerImage } from "@/components/app/image-viewer";
+import { estimatedProgress } from "@/lib/progress";
 
 /**
  * The results area: top/bottom overlay slots and the content. A generated image (`img[data-result]`) opens in a
@@ -70,7 +71,7 @@ export function CanvasShell({
           >
             <Maximize className="size-4" aria-hidden />
           </button>
-          <ImageActions image={{ ...result, ...source }} onUpscaled={setViewing} />
+          <ImageActions image={{ ...result, ...source }} onUpscaled={setViewing} animate />
         </div>
       )}
 
@@ -182,6 +183,35 @@ export function CompareSlider({
       </div>
       <div className="absolute top-4 left-4">{beforeBadge}</div>
       <div className="absolute top-4 right-4">{afterBadge}</div>
+    </div>
+  );
+}
+
+/**
+ * Time spent on the current job and a bar that fills toward a typical job's length, under a "creating" message.
+ * The provider gives no real progress, so the bar is an estimate and the text says what's normal.
+ * Visual only: the overlay's role="status" already announces the job.
+ */
+export function JobProgress({ typicalSeconds = 30 }: { typicalSeconds?: number }) {
+  const t = useTranslations("Workspace.progress");
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const started = Date.now();
+    const timer = setInterval(() => setSeconds(Math.floor((Date.now() - started) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const elapsed = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  return (
+    <div aria-hidden className="flex w-56 flex-col gap-1.5">
+      <div className="h-1 overflow-hidden rounded-full bg-white/15">
+        <div className="h-full rounded-full bg-primary transition-[width] duration-1000 ease-linear" style={{ width: `${estimatedProgress(seconds, typicalSeconds)}%` }} />
+      </div>
+      <p className="flex justify-between text-[11px] text-white/70">
+        <span dir="ltr" className="font-mono">
+          {elapsed}
+        </span>
+        <span>{t(seconds > typicalSeconds * 3 ? "slow" : "usual")}</span>
+      </p>
     </div>
   );
 }

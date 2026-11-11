@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import type { CategoryPreset } from "@/lib/catalog-presets";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
-import { CanvasEmptyState, CanvasShell, CompareSlider, ImageFrame } from "@/components/app/workspace-canvas";
+import { CanvasEmptyState, CanvasShell, CompareSlider, ImageFrame, JobProgress } from "@/components/app/workspace-canvas";
 import type { GeneratedImage, PreservationCheck } from "@/lib/ai/types";
 
 export type RecolorCanvasState =
@@ -106,6 +106,7 @@ export function RecolorCanvas({
               <p className="text-[15px] font-bold">{tk("creatingTitle")}</p>
               <p className="text-xs text-white/70">{t("creatingBody")}</p>
             </div>
+            <JobProgress />
             <button type="button" onClick={onCancel} className="text-xs font-semibold text-[#ec4899] underline underline-offset-4">
               {t("cancel")}
             </button>

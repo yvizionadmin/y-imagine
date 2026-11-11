@@ -45,6 +45,14 @@ test("Studio home: sign-in lands on the prompt, Image makes a picture, Video is 
   await page.getByRole("button", { name: "Use prompt" }).click();
   await expect(page.getByLabel("Prompt")).toHaveValue("A ceramic vase on a linen table, morning light");
   await expect(page.getByLabel("Prompt")).toBeFocused();
+  // "Animate into video": Video mode with that image as the start frame (Free sees the upgrade prompt).
+  await page.getByRole("listitem").filter({ has: page.getByRole("img", { name: "A ceramic vase on a linen table, morning light" }) }).hover();
+  await page.getByRole("link", { name: "Animate into video" }).click();
+  await expect(page).toHaveURL(/\/en\/home\?mode=video$/);
+  await expect(page.getByRole("button", { name: "Remove image" })).toBeVisible();
+  await expect(page.getByText("Video is on paid plans")).toBeVisible();
+  await page.getByRole("button", { name: "Remove image" }).click();
+  await page.getByRole("radiogroup", { name: "What to create" }).getByRole("radio", { name: "Image" }).click();
 
   // Video: kept in the URL; the Free plan sees the upgrade prompt and can't generate.
   await modes.getByRole("radio", { name: /Video/ }).click();

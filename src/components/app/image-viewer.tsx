@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { Check, Download, ImageUpscale, Loader2, Maximize, Minus, Plus, Share2, X } from "lucide-react";
+import { Check, Download, Film, ImageUpscale, Loader2, Maximize, Minus, Plus, Share2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
 import { blockedReason } from "@/components/app/job-errors";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useJobCost } from "@/features/credits/use-job-cost";
+import { Link } from "@/i18n/navigation";
+import { animateHref } from "@/lib/image/animate-href";
 import { upscaleImage } from "@/features/upscale/actions";
 import { UPSCALE_SIZES, type UpscaleSize } from "@/lib/ai/types";
 import { downloadImage, shareImage } from "@/lib/share-image";
@@ -68,12 +70,18 @@ export function ImageActions({
   tone = "surface",
   className,
   onUpscaled,
+  animate: canAnimate = false,
+  onAnimate,
 }: {
   image: ViewerImage;
   tone?: "surface" | "dark";
   className?: string;
   /** Shows Upscale; called with the upscaled image. */
   onUpscaled?: (image: ViewerImage) => void;
+  /** Shows Animate: Studio video with this stored image as the start frame. */
+  animate?: boolean;
+  /** Called as Animate opens the Studio, e.g. to close a viewer. */
+  onAnimate?: () => void;
 }) {
   const t = useTranslations("Workspace.viewer");
   const [copied, setCopied] = useState(false);
@@ -81,9 +89,15 @@ export function ImageActions({
     "flex size-9 items-center justify-center rounded-full outline-offset-2 transition-colors",
     tone === "dark" ? "bg-white/10 text-white hover:bg-white/20" : "border bg-background/90 text-foreground shadow-sm backdrop-blur hover:text-primary",
   );
+  const animate = canAnimate ? animateHref(image.src) : null;
   return (
     <div className={cn("flex items-center gap-1.5", className)}>
       {onUpscaled && <UpscaleButton image={image} buttonClass={button} onUpscaled={onUpscaled} />}
+      {animate && (
+        <Link href={animate} onClick={onAnimate} aria-label={t("animate")} title={t("animate")} className={button}>
+          <Film className="size-4" aria-hidden />
+        </Link>
+      )}
       <button type="button" aria-label={t("download")} title={t("download")} onClick={() => void downloadImage(image.src, image.name)} className={button}>
         <Download className="size-4" aria-hidden />
       </button>
@@ -138,7 +152,7 @@ export function ImageViewer({ image: opened, onClose }: { image: ViewerImage | n
                   {image.alt}
                 </p>
                 <div className="flex items-center gap-1.5">
-                  <ImageActions image={image} tone="dark" onUpscaled={(next) => opened && setUpscaled({ from: opened.src, image: next })} />
+                  <ImageActions image={image} tone="dark" onUpscaled={(next) => opened && setUpscaled({ from: opened.src, image: next })} animate onAnimate={onClose} />
                   <DialogPrimitive.Close aria-label={t("close")} title={t("close")} className={round}>
                     <X className="size-4" aria-hidden />
                   </DialogPrimitive.Close>

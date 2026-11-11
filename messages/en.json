@@ -388,11 +388,16 @@
       "upscaleTo": "Upscale to {size}",
       "upscaleCost": "{count, plural, one {# credit} other {# credits}}",
       "upscaleFailed": "Couldn’t upscale this image. Try again.",
-      "upscaled": "Upscaled to {size}"
+      "upscaled": "Upscaled to {size}",
+      "animate": "Animate into video"
     },
     "chooseCategory": "Choose a category",
     "chooseFirst": "Choose a category for recommended scenes, or browse all",
-    "tryIt": "Try it"
+    "tryIt": "Try it",
+    "progress": {
+      "usual": "Usually under a minute",
+      "slow": "Taking longer than usual…"
+    }
   },
   "Presets": {
     "categories": {
@@ -2994,7 +2999,8 @@
         "failed": "Some items failed",
         "draft": "Draft"
       }
-    }
+    },
+    "frameFailed": "Couldn’t load that image as the start frame. Add it again with the + button."
   },
   "Emails": {
     "footer": "Imagine AI · You're getting this email because of your Imagine AI workspace.",
