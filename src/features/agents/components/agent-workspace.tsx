@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowUp, Bot, Loader2, PanelLeft, Plus, Square, Trash2, X } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { blockedReason, isBlocked } from "@/components/app/job-errors";
@@ -339,6 +339,7 @@ export function AgentWorkspace() {
 function RunRow({ run, active, disabled, canDelete, onOpen, onDelete }: { run: AgentRunSummary; active: boolean; disabled: boolean; canDelete: boolean; onOpen: () => void; onDelete: () => void }) {
   const t = useTranslations("Agents");
   const format = useFormatter();
+  const now = useNow({ updateInterval: 60_000 });
   return (
     <li className={cn("group flex items-center rounded-lg", active ? "bg-accent text-accent-foreground" : "hover:bg-muted")}>
       <button type="button" onClick={onOpen} disabled={disabled} aria-current={active ? "true" : undefined} className="flex min-w-0 flex-1 flex-col items-start px-2.5 py-2 text-start">
@@ -346,7 +347,7 @@ function RunRow({ run, active, disabled, canDelete, onOpen, onDelete }: { run: A
           {run.goal}
         </span>
         <span className="text-[11px] text-muted-foreground">
-          {t(`status.${run.status}`)} · {format.relativeTime(new Date(run.createdAt))}
+          {t(`status.${run.status}`)} · {format.relativeTime(new Date(Math.min(Date.parse(run.createdAt), now.getTime())), now)}
         </span>
       </button>
       {canDelete && run.status !== "running" && (

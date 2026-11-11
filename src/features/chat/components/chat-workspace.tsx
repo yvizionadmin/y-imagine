@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowUp, Check, Loader2, MessageSquare, PanelLeft, Pencil, Plus, Square, Trash2, X } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { blockedReason, isBlocked } from "@/components/app/job-errors";
@@ -339,6 +339,7 @@ export function ChatWorkspace() {
 function ThreadRow({ thread, active, disabled, onOpen, onDelete, onRename }: { thread: ChatThread; active: boolean; disabled: boolean; onOpen: () => void; onDelete: () => void; onRename: (title: string) => void }) {
   const t = useTranslations("Chat");
   const format = useFormatter();
+  const now = useNow({ updateInterval: 60_000 });
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(thread.title);
 
@@ -368,7 +369,7 @@ function ThreadRow({ thread, active, disabled, onOpen, onDelete, onRename }: { t
         <span dir="auto" className="w-full truncate text-start text-[13px] font-medium">
           {thread.title}
         </span>
-        <span className="text-[11px] text-muted-foreground">{format.relativeTime(new Date(thread.updatedAt))}</span>
+        <span className="text-[11px] text-muted-foreground">{format.relativeTime(new Date(Math.min(Date.parse(thread.updatedAt), now.getTime())), now)}</span>
       </button>
       <div className="flex shrink-0 gap-0.5 pe-1 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 max-md:opacity-100">
         <button type="button" disabled={disabled} aria-label={t("rename", { title: thread.title })} onClick={() => (setTitle(thread.title), setEditing(true))} className="rounded p-1 text-muted-foreground hover:text-foreground">

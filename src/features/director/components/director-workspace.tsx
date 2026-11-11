@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Clapperboard, Lock } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 import { PageHeader } from "@/components/app/page-header";
 import { blockedReason } from "@/components/app/job-errors";
 import { Link } from "@/i18n/navigation";
@@ -23,6 +23,7 @@ export function DirectorWorkspace() {
   const t = useTranslations("Director");
   const tw = useTranslations("Workspace");
   const format = useFormatter();
+  const now = useNow({ updateInterval: 60_000 });
   const router = useRouter();
   const searchParams = useSearchParams();
   const [setup, setSetup] = useState<DirectorSetup | null>(null);
@@ -164,7 +165,7 @@ export function DirectorWorkspace() {
                           {p.title || p.idea}
                         </span>
                         <span className="text-[11px] text-muted-foreground">
-                          {t(`status.${p.status}`)} · {format.relativeTime(new Date(p.updatedAt))}
+                          {t(`status.${p.status}`)} · {format.relativeTime(new Date(Math.min(Date.parse(p.updatedAt), now.getTime())), now)}
                         </span>
                       </button>
                     </li>

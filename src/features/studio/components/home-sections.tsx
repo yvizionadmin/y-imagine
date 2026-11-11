@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import NextImage from "next/image";
 import { Bot, Clapperboard, Crop, Layers, Link2, MessageSquare, PenLine, QrCode, Star, type LucideIcon } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 import { cn } from "cn";
 import { Link } from "@/i18n/navigation";
 import { LATN } from "@/lib/format";
@@ -79,6 +79,7 @@ const STATE_CLASS: Record<ContinueItem["state"], string> = {
 export function ContinueRow() {
   const t = useTranslations("Studio.continue");
   const format = useFormatter();
+  const now = useNow({ updateInterval: 60_000 });
   const [items, setItems] = useState<ContinueItem[] | null>(null);
 
   useEffect(() => {
@@ -110,7 +111,7 @@ export function ContinueRow() {
                     {item.progress && item.state === "working"
                       ? t("progress", { done: format.number(item.progress.done, LATN), total: format.number(item.progress.total, LATN) })
                       : t(`states.${item.state}`)}{" "}
-                    · {format.relativeTime(new Date(item.at))}
+                    · {format.relativeTime(new Date(Math.min(Date.parse(item.at), now.getTime())), now)}
                   </span>
                 </span>
               </Link>
