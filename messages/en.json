@@ -2975,7 +2975,26 @@
     "lookHint": "Lens and lighting are added to your prompt as direction. Auto adds nothing.",
     "cameraNative": "{model} sets {move} with its own camera setting, not through your prompt.",
     "editVideo": "Edit in the video editor",
-    "cleanupDue": "{count, plural, one {One video or project} other {# videos and projects}} will be removed on {date} (older than {days, plural, one {# day} other {# days}}). Download what you want to keep."
+    "cleanupDue": "{count, plural, one {One video or project} other {# videos and projects}} will be removed on {date} (older than {days, plural, one {# day} other {# days}}). Download what you want to keep.",
+    "usePrompt": "Use prompt",
+    "continue": {
+      "title": "Continue where you left off",
+      "progress": "{done} of {total} done",
+      "kinds": {
+        "director": "AI Director",
+        "editor": "Video editor",
+        "generateBulk": "Bulk lifestyle",
+        "recolorBulk": "Bulk recolor",
+        "aplusBulk": "Bulk A+",
+        "copyBulk": "Bulk copy"
+      },
+      "states": {
+        "working": "In progress",
+        "done": "Done",
+        "failed": "Some items failed",
+        "draft": "Draft"
+      }
+    }
   },
   "Emails": {
     "footer": "Imagine AI · You're getting this email because of your Imagine AI workspace.",

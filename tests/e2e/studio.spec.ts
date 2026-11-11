@@ -13,8 +13,11 @@ test("Studio home: sign-in lands on the prompt, Image makes a picture, Video is 
   await page.getByRole("button", { name: "Create account" }).click();
   await page.waitForURL(/\/en\/home/);
   await expect(page.getByRole("heading", { name: "Create anything you imagine" })).toBeVisible();
-  // Shortcuts to the other tools sit under the prompt.
-  await expect(page.getByRole("navigation", { name: "Other tools" }).getByRole("link", { name: "Recolor" })).toBeVisible();
+  // The other tools as cards under the results, each opening its tool.
+  const tools = page.getByRole("region", { name: "Other tools" });
+  await expect(tools.getByRole("link")).toHaveCount(12);
+  await tools.getByRole("link", { name: /Recolor product/ }).click();
+  await page.waitForURL(/\/en\/recolor$/);
 
   // A demo key routes jobs to the offline demo provider.
   await page.goto("/en/settings/api-keys");
@@ -36,6 +39,12 @@ test("Studio home: sign-in lands on the prompt, Image makes a picture, Video is 
   await page.getByRole("button", { name: "Generate" }).click();
   await expect(page.getByRole("img", { name: "A ceramic vase on a linen table, morning light" })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText("49 credits")).toBeVisible();
+  // "Use prompt" puts a result's prompt back in the box to change and run again.
+  await page.getByLabel("Prompt").fill("");
+  await page.getByRole("listitem").filter({ has: page.getByRole("img", { name: "A ceramic vase on a linen table, morning light" }) }).hover();
+  await page.getByRole("button", { name: "Use prompt" }).click();
+  await expect(page.getByLabel("Prompt")).toHaveValue("A ceramic vase on a linen table, morning light");
+  await expect(page.getByLabel("Prompt")).toBeFocused();
 
   // Video: kept in the URL; the Free plan sees the upgrade prompt and can't generate.
   await modes.getByRole("radio", { name: /Video/ }).click();

@@ -305,7 +305,7 @@ https://claude.ai/artifact/TWULxCFBnNzHUboRiWupm5 (private to the owner).
 | # | Step | Scope | Done when | Est. |
 |---|------|-------|-----------|------|
 | U1 ✅ | Top bar | ⌘K / Ctrl+K search over every tool and settings page (en/ar); Upgrade next to the credits for admins on Free/Starter | Any page opens from the keyboard in two keys plus a word | 1 |
-| U2 | Home | Prompt box first (Image / Video / Copy), tool cards with pictures, "continue where you left off", team gallery with "Use prompt" | A new user starts a job from Home without opening the rail | 2 |
+| U2 ✅ | Home | Prompt box first (Image / Video / Copy), tool cards with pictures, "continue where you left off", team gallery with "Use prompt" | A new user starts a job from Home without opening the rail | 2 |
 | U3 | Results | Hover actions on each result (download, use prompt, upscale, animate, edit, upload) and progress cards with stage and time left | Every result leads to its next step in one click | 1–2 |
 | U4 | Jobs tray | Top-bar button and tray for running videos, Director projects, bulk jobs and store uploads; "ready" notices | Users leave a screen and are told when work finishes | 1–2 |
 | U5 | Polish | Loading placeholders, pop-up notices, confirm dialogs instead of `window.confirm`, presets as pictures, empty screens with examples | No spinners-only screens or browser confirms left | 1–2 |
@@ -1388,3 +1388,10 @@ https://claude.ai/artifact/TWULxCFBnNzHUboRiWupm5 (private to the owner).
   is `DESTINATIONS` in `nav-items.ts`. Credits pill gains **Upgrade** (→ Billing) for org admins on Free or Starter,
   not during a read-only view. Tests: `tests/unit/command-menu.test.ts` (every entry is a real page, covers the rail,
   labelled in both languages; matching), `tests/e2e/top-bar.spec.ts`. 456 Vitest, 47 Playwright, lint, tsc, build.
+- **2026-11-11, U2 Home.** The Studio prompt stays first and unchanged. Under it: **Continue where you left off**
+  (`listContinueItems`, read only: the org's latest Director and editor projects and bulk image/copy runs, newest
+  first, at most 6, each opening its project or bulk page, with state and "x of y done"; hidden when empty), **Recent**
+  with a **Use prompt** button on every image and video (puts the prompt back in the box, in its mode, focused), and
+  **Other tools** as cards (pictures for the image tools, icons for the rest; names from the ⌘K list). The icon-row
+  `ToolShortcuts` was only used here and is replaced by the cards. Tests: `tests/integration/home-continue.test.ts`,
+  `tests/e2e/studio.spec.ts` (cards, Use prompt). 458 Vitest, 47 Playwright, lint, tsc, build. The dark look is U7.

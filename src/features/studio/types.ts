@@ -56,3 +56,17 @@ export type StudioItem = {
   createdBy: string;
   createdAt: string;
 };
+
+/** Home's "Continue where you left off": the org's latest projects and bulk runs, newest first. */
+export type ContinueItem = {
+  kind: "director" | "editor" | "generateBulk" | "recolorBulk" | "aplusBulk" | "copyBulk";
+  id: string;
+  title: string;
+  href: `/${string}`;
+  state: "working" | "done" | "failed" | "draft";
+  /** Bulk runs: items finished out of the total. */
+  progress: { done: number; total: number } | null;
+  at: string;
+};
+
+export const CONTINUE_SHOWN = 6;

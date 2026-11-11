@@ -2,11 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Aperture, ArrowUp, ChevronDown, Clapperboard, Clock, Cpu, ImagePlus, Images, Loader2, Lock, Plus, Sparkles, X } from "lucide-react";
+import { Aperture, ArrowUp, CornerDownLeft, ChevronDown, Clapperboard, Clock, Cpu, ImagePlus, Images, Loader2, Lock, Plus, Sparkles, X } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { cn } from "cn";
 import { blockedReason } from "@/components/app/job-errors";
-import { ToolShortcuts } from "@/components/app/tool-shortcuts";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Link } from "@/i18n/navigation";
@@ -16,6 +15,7 @@ import { videoCost, type VideoResolution } from "@/lib/credits";
 import { LATN } from "@/lib/format";
 import { createImages, getStudioSetup, listStudioRecent, pollStudioVideos, startVideo } from "../actions";
 import { parseMediaMode, PROMPT_MAX, STUDIO_MAX_IMAGES, STUDIO_MAX_REFERENCES, type MediaMode, type StudioItem, type StudioSetup } from "../types";
+import { ContinueRow, ToolCards } from "./home-sections";
 import { MediaModeSwitch } from "./media-mode-switch";
 import { thumbnailUrl } from "@/lib/image/thumbnail-url";
 
@@ -104,6 +104,17 @@ export function StudioHome() {
     },
     [searchParams],
   );
+
+  /** Puts a past result's prompt back in the box, in its mode, ready to change and run again. */
+  const reusePrompt = (item: StudioItem) => {
+    setPrompt(item.prompt.slice(0, PROMPT_MAX));
+    setMode(item.kind);
+    requestAnimationFrame(() => {
+      const box = document.getElementById("studio-prompt");
+      box?.scrollIntoView({ block: "center", behavior: "smooth" });
+      box?.focus({ preventScroll: true });
+    });
+  };
 
   const n = (v: number) => format.number(v, LATN);
   const gb = (bytes: number) => format.number(bytes / 1024 ** 3, { ...LATN, style: "unit", unit: "gigabyte", maximumFractionDigits: bytes < 1024 ** 3 ? 2 : 1 });
@@ -383,12 +394,13 @@ export function StudioHome() {
               </p>
             )}
 
-            <ToolShortcuts />
           </div>
         </div>
       </section>
 
-      <Recent items={recent} pending={pending && mode === "image" ? image.count : 0} />
+      <ContinueRow />
+      <Recent items={recent} pending={pending && mode === "image" ? image.count : 0} onReuse={reusePrompt} />
+      <ToolCards />
     </div>
   );
 }
@@ -514,7 +526,7 @@ function Thumb({ file, label, onRemove, tilt = 0 }: { file: File; label: string;
   );
 }
 
-function Recent({ items, pending }: { items: StudioItem[] | null; pending: number }) {
+function Recent({ items, pending, onReuse }: { items: StudioItem[] | null; pending: number; onReuse: (item: StudioItem) => void }) {
   const t = useTranslations("Studio");
   if (items === null) return <Loader2 className="mx-auto my-8 size-5 animate-spin text-muted-foreground" aria-hidden />;
   if (!items.length && !pending) return <p className="pb-12 text-center text-xs text-muted-foreground">{t("emptyRecent")}</p>;
@@ -536,7 +548,7 @@ function Recent({ items, pending }: { items: StudioItem[] | null; pending: numbe
         ))}
         {items.map((item) =>
           item.kind === "video" ? (
-            <VideoCard key={item.id} item={item} />
+            <VideoCard key={item.id} item={item} onReuse={() => onReuse(item)} />
           ) : (
             <li key={item.id} className="group relative mb-3 break-inside-avoid overflow-hidden rounded-xl border bg-muted">
               <a href={item.url ?? undefined} target="_blank" rel="noreferrer">
@@ -546,6 +558,7 @@ function Recent({ items, pending }: { items: StudioItem[] | null; pending: numbe
               <p className="pointer-events-none absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100">
                 {item.prompt}
               </p>
+              <ReuseButton onClick={() => onReuse(item)} className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 max-md:opacity-100" />
             </li>
           ),
         )}
@@ -554,7 +567,21 @@ function Recent({ items, pending }: { items: StudioItem[] | null; pending: numbe
   );
 }
 
-function VideoCard({ item }: { item: StudioItem }) {
+function ReuseButton({ onClick, className }: { onClick: () => void; className?: string }) {
+  const t = useTranslations("Studio");
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn("flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur transition hover:bg-black/85", className)}
+    >
+      <CornerDownLeft className="size-3 rtl:-scale-x-100" aria-hidden />
+      {t("usePrompt")}
+    </button>
+  );
+}
+
+function VideoCard({ item, onReuse }: { item: StudioItem; onReuse: () => void }) {
   const t = useTranslations("Studio");
   const tw = useTranslations("Workspace");
   const blocked = item.error ? blockedReason(item.error) : null;
@@ -581,6 +608,10 @@ function VideoCard({ item }: { item: StudioItem }) {
           {item.aspectRatio} · {item.seconds}s
         </span>
       </p>
+      <button type="button" onClick={onReuse} className="flex w-full items-center gap-1.5 border-t px-2 py-1.5 text-[11px] font-semibold text-primary hover:bg-muted">
+        <CornerDownLeft className="size-3.5 rtl:-scale-x-100" aria-hidden />
+        {t("usePrompt")}
+      </button>
       {/* Opens the clip as a new video editor project (paid plans, like video itself). */}
       {item.status === "ok" && item.url && (
         <Link href={`/editor?clip=${item.url.split("/").pop()}`} className="flex items-center gap-1.5 border-t px-2 py-1.5 text-[11px] font-semibold text-primary hover:bg-muted">

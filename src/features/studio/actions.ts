@@ -17,7 +17,11 @@ import { dispatchVideoJob } from "@/lib/video/queue";
 import { videoCleanupDue, videoStorageFor } from "@/lib/video/storage";
 import { recordAudit } from "@/lib/audit";
 import { getWorkspace } from "@/lib/workspace";
-import { PROMPT_MAX, STUDIO_MAX_IMAGES, STUDIO_MAX_REFERENCES, type StudioItem, type StudioSetup } from "./types";
+import { countBatchItems, listBatches } from "@/lib/copy/batches";
+import { listDirectors } from "@/lib/director/projects";
+import { listEdits } from "@/lib/editor/edits";
+import { countImageBatchItems, listImageBatches } from "@/lib/image-batch/batches";
+import { CONTINUE_SHOWN, PROMPT_MAX, STUDIO_MAX_IMAGES, STUDIO_MAX_REFERENCES, type ContinueItem, type StudioItem, type StudioSetup } from "./types";
 
 // The Studio home (/home): one prompt, Image | Video. Image runs text-to-image (feature "create")
 // through the registry like every tool, one job and one charge per image; results are saved to
@@ -94,6 +98,70 @@ export async function listStudioRecent(): Promise<StudioItem[]> {
   const workspace = await getWorkspace({ read: true });
   const [images, videos] = await Promise.all([listRecentGenerations(workspace.orgId, "create", 24), listRecentVideoJobs(workspace.orgId, 24)]);
   return [...images.map(toItem), ...videos.map(toVideoItem)].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/** Home's "Continue where you left off": the latest Director and editor projects and bulk runs. Read only. */
+export async function listContinueItems(): Promise<ContinueItem[]> {
+  const { orgId } = await getWorkspace({ read: true });
+  const n = CONTINUE_SHOWN;
+  const [directors, edits, generate, recolor, aplus, copies] = await Promise.all([
+    listDirectors(orgId, n),
+    listEdits(orgId, n),
+    listImageBatches(orgId, "generate", n),
+    listImageBatches(orgId, "recolor", n),
+    listImageBatches(orgId, "aplus", n),
+    listBatches(orgId, n),
+  ]);
+  const images = [...generate, ...recolor, ...aplus];
+  const [imageCounts, copyCounts] = await Promise.all([countImageBatchItems(orgId, images.map((b) => b.id)), countBatchItems(orgId, copies.map((b) => b.id))]);
+  const iso = (d: Date | string) => (typeof d === "string" ? d : d.toISOString());
+  const batchState = (status: string, failed: number) => (status === "running" ? "working" : failed > 0 ? "failed" : "done");
+
+  const items: ContinueItem[] = [
+    ...directors.map((p): ContinueItem => ({
+      kind: "director",
+      id: p.id,
+      title: p.title || p.idea,
+      href: `/editor/director?project=${p.id}`,
+      state: p.status === "done" ? "done" : p.status === "failed" ? "failed" : "working",
+      progress: null,
+      at: iso(p.updatedAt),
+    })),
+    ...edits.map((e): ContinueItem => ({
+      kind: "editor",
+      id: e.id,
+      title: e.name,
+      href: `/editor?project=${e.id}`,
+      state: e.status === "ok" ? "done" : e.status === "failed" ? "failed" : e.status === "draft" ? "draft" : "working",
+      progress: null,
+      at: iso(e.updatedAt),
+    })),
+    ...images.map((b): ContinueItem => {
+      const c = imageCounts.get(b.id);
+      return {
+        kind: `${b.tool}Bulk`,
+        id: b.id,
+        title: b.name,
+        href: `/${b.tool}/bulk`,
+        state: batchState(b.status, c?.failed ?? 0),
+        progress: { done: c?.done ?? 0, total: b.total },
+        at: iso(b.finishedAt ?? b.createdAt),
+      };
+    }),
+    ...copies.map((b): ContinueItem => {
+      const c = copyCounts.get(b.id);
+      return {
+        kind: "copyBulk",
+        id: b.id,
+        title: b.name,
+        href: "/copy/bulk",
+        state: batchState(b.status, c?.failed ?? 0),
+        progress: { done: c?.done ?? 0, total: b.total },
+        at: iso(b.finishedAt ?? b.createdAt),
+      };
+    }),
+  ];
+  return items.sort((a, b) => b.at.localeCompare(a.at)).slice(0, n);
 }
 
 /** Current state of video jobs the page is waiting on. */
