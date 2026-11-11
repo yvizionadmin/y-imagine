@@ -19,6 +19,7 @@ import { ContinueRow, ToolCards } from "./home-sections";
 import { MediaModeSwitch } from "./media-mode-switch";
 import { animateHref } from "@/lib/image/animate-href";
 import { thumbnailUrl } from "@/lib/image/thumbnail-url";
+import { jobsChanged } from "@/lib/jobs-events";
 
 const IMAGE_TYPES = "image/png,image/jpeg,image/webp";
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -182,6 +183,7 @@ export function StudioHome() {
     }
     startTransition(async () => {
       const result = await startVideo(form);
+      jobsChanged();
       if (!result.ok) {
         if (result.error === "storage_full") getStudioSetup().then(setSetup);
         return setError(failure(result.error));

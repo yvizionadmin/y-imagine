@@ -22,6 +22,7 @@ import { analyzeSwatch } from "../actions";
 import { startRecolorBatch } from "../batch-actions";
 import { swatchDisplayName, SwatchPicker, type SwatchState } from "./swatch-picker";
 import { useJobCost } from "@/features/credits/use-job-cost";
+import { jobsChanged } from "@/lib/jobs-events";
 
 const TEMPLATE = { name: "imagine-bulk-recolor-template.csv", csv: "sku\nSOFA-2041\nSOFA-2042\n" };
 
@@ -92,6 +93,7 @@ export function BulkRecolorWorkspace() {
     startTransition(async () => {
       data.set("catalogImage", String(catalogImage));
       const result = await startRecolorBatch(data);
+      jobsChanged();
       if (!result.ok) {
         const blocked = blockedReason(result.error);
         return setError(startError(result.error, count * unitCost, blocked ? tw(`blocked.${blocked}.title`) : null));

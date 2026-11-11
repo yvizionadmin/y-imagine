@@ -1,12 +1,13 @@
 "use client";
 
 import { Suspense } from "react";
-import { Bell, Coins, Wand } from "lucide-react";
+import { Coins, Wand } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { LATN } from "@/lib/format";
 import type { Workspace } from "@/lib/workspace";
 import { CommandMenu } from "./command-menu";
+import { JobsTray } from "./jobs-tray";
 import { activeTool } from "./nav-items";
 import { UserMenu } from "./user-menu";
 
@@ -41,13 +42,9 @@ export function TopBar({ workspace }: { workspace: Workspace }) {
             <span className="w-2" aria-hidden />
           )}
         </div>
-        <button
-          type="button"
-          aria-label={t("notifications")}
-          className="flex size-9 items-center justify-center rounded-full hover:bg-white/10"
-        >
-          <Bell className="size-4" aria-hidden />
-        </button>
+        <Suspense fallback={<span className="size-9" />}>
+          <JobsTray />
+        </Suspense>
         <UserMenu
           user={user}
           isSuperAdmin={workspace.isSuperAdmin}

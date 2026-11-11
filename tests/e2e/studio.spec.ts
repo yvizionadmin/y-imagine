@@ -103,7 +103,18 @@ test("Studio video on a paid plan: queue, progress, then playback", async ({ pag
   await expect(page.getByRole("button", { name: "Look: Macro · Golden hour" })).toBeVisible();
   await page.getByRole("button", { name: "Generate" }).click();
   await expect(page.getByText("Your video is being made.")).toBeVisible();
+  // The jobs tray (top bar) shows it at once, then says when it's ready (U4).
+  const tray = page.getByRole("button", { name: /^Jobs and notifications/ });
+  await expect(tray).toHaveAccessibleName("Jobs and notifications, 1 running");
+  await tray.click();
+  await expect(page.getByRole("dialog").getByText("Slow push-in on a steaming cup of coffee, morning light")).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(page.locator("video")).toBeVisible({ timeout: 45_000 });
+  const notice = page.getByRole("status").filter({ hasText: "Video is ready" });
+  await expect(notice).toBeVisible({ timeout: 15_000 });
+  await expect(tray).toHaveAccessibleName("Jobs and notifications");
+  await notice.getByRole("button", { name: "Dismiss" }).click();
+  await expect(notice.getByText("Video is ready")).toHaveCount(0);
   await expect(page.getByText(/^9:16 · 4s$/)).toBeVisible();
   await expect(page.getByText(/^Video storage: .+ of 25 GB · clips are kept 90 days$/)).toBeVisible();
 

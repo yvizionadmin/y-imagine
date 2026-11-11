@@ -17,6 +17,7 @@ import { CategorySelect, CopyModeTabs, CopyStyleFields, type BrandSummary, type 
 import { download } from "./copy-export";
 import { useJobCost } from "@/features/credits/use-job-cost";
 import { SourceSwitch } from "@/features/image-batch/components/product-list-field";
+import { jobsChanged } from "@/lib/jobs-events";
 
 const CATEGORY_KEYS = categoryPresets.map((c) => c.key);
 const POLL_MS = 2500;
@@ -76,6 +77,7 @@ export function BulkCopyWorkspace() {
     setError(null);
     startTransition(async () => {
       const result = await startCopyBatch({ text, name: fileName ?? undefined, settings: { category, ...style } });
+      jobsChanged();
       if (!result.ok) {
         setError(failure(result, count * unitCost));
         return;

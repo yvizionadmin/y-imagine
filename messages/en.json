@@ -277,6 +277,34 @@
           "hint": "Maintenance and platform settings"
         }
       }
+    },
+    "tray": {
+      "button": "{count, plural, =0 {Jobs and notifications} one {Jobs and notifications, # running} other {Jobs and notifications, # running}}",
+      "loading": "Loading your jobs",
+      "empty": "Nothing running. Videos, AI Director projects, bulk runs and store uploads show here while they work.",
+      "running": "Running",
+      "finished": "Finished in the last 30 minutes",
+      "started": "Started {when}",
+      "progress": "{done} of {total} done",
+      "uploading": "{count, plural, one {{display} image} other {{display} images}} uploading to your store",
+      "states": {
+        "done": "Done",
+        "failed": "Failed"
+      },
+      "kinds": {
+        "video": "Video",
+        "director": "AI Director",
+        "render": "Video export",
+        "generateBulk": "Bulk lifestyle images",
+        "recolorBulk": "Bulk recolor",
+        "aplusBulk": "Bulk A+ images",
+        "copyBulk": "Bulk product copy",
+        "publish": "Store upload"
+      },
+      "noticeDone": "{kind} is ready",
+      "noticeFailed": "{kind} didn’t finish",
+      "open": "Open",
+      "dismiss": "Dismiss"
     }
   },
   "Workspace": {

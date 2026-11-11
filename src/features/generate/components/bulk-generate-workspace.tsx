@@ -18,6 +18,7 @@ import { IMAGE_BATCH_MAX_ROWS, parseImageRows } from "@/lib/image-batch/rows";
 import type { AspectRatio, Resolution } from "@/lib/image-formats";
 import { startImageBatch } from "../batch-actions";
 import { useJobCost } from "@/features/credits/use-job-cost";
+import { jobsChanged } from "@/lib/jobs-events";
 
 const TEMPLATE = { name: "imagine-bulk-images-template.csv", csv: "sku,product_size\nSOFA-2041,220 × 90 × 85 cm\nCHAIR-118,\n" };
 
@@ -87,6 +88,7 @@ export function BulkGenerateWorkspace() {
           title,
         },
       });
+      jobsChanged();
       if (!result.ok) {
         const blocked = blockedReason(result.error);
         return setError(startError(result.error, count * unitCost, blocked ? tw(`blocked.${blocked}.title`) : null));

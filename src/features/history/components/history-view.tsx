@@ -14,6 +14,7 @@ import { HISTORY_PAGE_SIZES, type HistoryFilters, type HistoryItem } from "../ty
 import { HistoryDrawer } from "./history-drawer";
 import { HistoryFilterBar, Select, type FilterDraft } from "./history-filters";
 import { HistoryCard, HistoryRow, type ItemActions } from "./history-items";
+import { jobsChanged } from "@/lib/jobs-events";
 
 type Data = Awaited<ReturnType<typeof queryHistory>>;
 type Notice = { tone: "success" | "error"; text: string } | null;
@@ -82,6 +83,7 @@ export function HistoryView() {
     setNotice(null);
     setPublishing(ids === "all-pending" ? "all" : new Set(ids));
     const result = await publishGenerations(ids);
+    jobsChanged();
     setPublishing(new Set());
     if (!result.ok) return setNotice({ tone: "error", text: t("noTarget", { count: data?.pendingCount ?? 0 }) });
     setNotice({

@@ -307,7 +307,7 @@ https://claude.ai/artifact/TWULxCFBnNzHUboRiWupm5 (private to the owner).
 | U1 ✅ | Top bar | ⌘K / Ctrl+K search over every tool and settings page (en/ar); Upgrade next to the credits for admins on Free/Starter | Any page opens from the keyboard in two keys plus a word | 1 |
 | U2 ✅ | Home | Prompt box first (Image / Video / Copy), tool cards with pictures, "continue where you left off", team gallery with "Use prompt" | A new user starts a job from Home without opening the rail | 2 |
 | U3 ✅ | Results | Hover actions on each result (download, use prompt, upscale, animate, edit, upload) and progress cards with stage and time left | Every result leads to its next step in one click | 1–2 |
-| U4 | Jobs tray | Top-bar button and tray for running videos, Director projects, bulk jobs and store uploads; "ready" notices | Users leave a screen and are told when work finishes | 1–2 |
+| U4 ✅ | Jobs tray | Top-bar button and tray for running videos, Director projects, bulk jobs and store uploads; "ready" notices | Users leave a screen and are told when work finishes | 1–2 |
 | U5 | Polish | Loading placeholders, pop-up notices, confirm dialogs instead of `window.confirm`, presets as pictures, empty screens with examples | No spinners-only screens or browser confirms left | 1–2 |
 | U6 | First run | Setup checklist (AI key, store, first image, team) and a one-time guide per tool | A new org sees what to do next | 1 |
 | U7 | Dark theme | Dark default for the app (rail and popups recoloured, not changed), phone check of every screen | Every screen passes the a11y scan in dark and on a phone | 1–2 |
@@ -1405,3 +1405,13 @@ https://claude.ai/artifact/TWULxCFBnNzHUboRiWupm5 (private to the owner).
   "Usually under a minute", then "Taking longer than usual…"). Feed times never read "in 3 seconds" when the server
   clock is ahead. Tests: `tests/unit/result-actions.test.ts`, `tests/e2e/studio.spec.ts` (Animate). 462 Vitest,
   47 Playwright, lint, tsc, build.
+- **2026-11-11, U4 Jobs tray.** The top bar's bell (it did nothing before) is now the jobs tray: a count of running
+  jobs, and a list of the user's own running work and what finished in the last 30 minutes — Studio videos, AI
+  Director projects (their scene videos and render fold into the project), editor exports, bulk lifestyle / recolor /
+  A+ / copy runs with "x of y done" — plus the org's store uploads in progress as one entry. Each row opens its page.
+  When one of the user's jobs finishes, a notice ("Video is ready · Open") shows on whatever page they're on, and the
+  credits badge refreshes. Read only (`getTray` → `trayFor` in `src/lib/tray.ts`). It checks on load, on each page
+  change, every 5 s while something runs (30 s otherwise, never in a hidden tab), and at once when a screen starts a
+  job (`jobsChanged()` from `src/lib/jobs-events.ts`, called after Studio video, Director create/retry, editor export,
+  bulk starts and store upload). Tests: `tests/integration/jobs-tray.test.ts`, `tests/e2e/studio.spec.ts` (tray count,
+  list, ready notice). 465 Vitest, 47 Playwright, lint, tsc, build.

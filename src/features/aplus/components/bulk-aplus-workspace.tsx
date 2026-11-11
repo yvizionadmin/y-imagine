@@ -18,6 +18,7 @@ import type { AspectRatio, Resolution } from "@/lib/image-formats";
 import { startAplusBatch } from "../batch-actions";
 import { layoutPresets } from "../config";
 import { useJobCost } from "@/features/credits/use-job-cost";
+import { jobsChanged } from "@/lib/jobs-events";
 
 const TEMPLATE = {
   name: "imagine-bulk-aplus-template.csv",
@@ -66,6 +67,7 @@ export function BulkAplusWorkspace() {
         name: fileName ?? undefined,
         settings: { category, subcategory, layout, scene, style, aspectRatio, resolution, catalogImage, catalogTitle: titleLanguage, title: layout ? ta(`layouts.${layout}`) : t("layoutAuto") },
       });
+      jobsChanged();
       if (!result.ok) {
         const blocked = blockedReason(result.error);
         return setError(startError(result.error, count * unitCost, blocked ? tw(`blocked.${blocked}.title`) : null));

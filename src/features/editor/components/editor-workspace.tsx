@@ -24,6 +24,7 @@ import type { EditorError, EditorMediaView, EditorProject, EditorProjectSummary,
 import { AddClipDialog, ClipList, type ClipPick } from "./clip-list";
 import { EditorPreview, formatTime } from "./editor-preview";
 import { ExportPanel, SoundPanel, SubtitlesPanel } from "./editor-panels";
+import { jobsChanged } from "@/lib/jobs-events";
 
 const SAVE_DELAY_MS = 700;
 const POLL_MS = 3000;
@@ -279,6 +280,7 @@ export function EditorWorkspace() {
       return setError("save_failed");
     }
     const result = await exportEditorProject(project.id);
+    jobsChanged();
     setExporting(false);
     if (!result.ok) return setError(result.error);
     setProject((current) => (current ? { ...current, status: result.project.status, error: null } : current));

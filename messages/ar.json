@@ -277,6 +277,34 @@
           "hint": "الصيانة وإعدادات المنصة"
         }
       }
+    },
+    "tray": {
+      "button": "{count, plural, =0 {المهام والتنبيهات} one {المهام والتنبيهات، # قيد التنفيذ} other {المهام والتنبيهات، # قيد التنفيذ}}",
+      "loading": "جارٍ تحميل مهامك",
+      "empty": "لا شيء قيد التنفيذ. تظهر هنا الفيديوهات ومشاريع المخرج الذكي والمهام بالجملة والرفع إلى المتجر أثناء العمل.",
+      "running": "قيد التنفيذ",
+      "finished": "انتهت خلال آخر 30 دقيقة",
+      "started": "بدأت {when}",
+      "progress": "اكتمل {done} من {total}",
+      "uploading": "{count, plural, one {صورة واحدة} two {صورتان} few {{display} صور} many {{display} صورة} other {{display} صورة}} قيد الرفع إلى متجرك",
+      "states": {
+        "done": "مكتمل",
+        "failed": "تعذّر"
+      },
+      "kinds": {
+        "video": "فيديو",
+        "director": "المخرج الذكي",
+        "render": "تصدير فيديو",
+        "generateBulk": "صور نمط حياة بالجملة",
+        "recolorBulk": "إعادة تلوين بالجملة",
+        "aplusBulk": "صور A+ بالجملة",
+        "copyBulk": "نصوص بالجملة",
+        "publish": "الرفع إلى المتجر"
+      },
+      "noticeDone": "{kind} جاهز",
+      "noticeFailed": "تعذّر إكمال {kind}",
+      "open": "فتح",
+      "dismiss": "إغلاق"
     }
   },
   "Workspace": {

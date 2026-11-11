@@ -11,6 +11,7 @@ import type { DirectorSettings, DirectorSummary, DirectorView } from "@/lib/dire
 import { createDirectorProject, deleteDirectorProject, getDirectorProject, getDirectorSetup, listDirectorProjects, retryDirectorProject, type DirectorSetup } from "../actions";
 import { DirectorForm } from "./director-form";
 import { DirectorProjectView } from "./director-project";
+import { jobsChanged } from "@/lib/jobs-events";
 
 const POLL_MS = 4000;
 const working = (status: string) => status !== "done" && status !== "failed";
@@ -68,6 +69,7 @@ export function DirectorWorkspace() {
   async function create(idea: string, settings: DirectorSettings, characterId: string | null) {
     setError(null);
     const result = await createDirectorProject({ idea, settings, characterId });
+    jobsChanged();
     if (!result.ok) {
       setError(result.error);
       return false;
@@ -81,6 +83,7 @@ export function DirectorWorkspace() {
     if (!project) return;
     setBusy(true);
     const result = await retryDirectorProject(project.id);
+    jobsChanged();
     setBusy(false);
     if (!result.ok) return setError(result.error);
     setProject(result.project);
