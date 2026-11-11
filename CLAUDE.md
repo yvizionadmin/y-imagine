@@ -33,7 +33,9 @@ OpenRouter keys and use AI product-content features (recolor, lookbooks, A+ cont
 - Read-only org view (super admin): a Server Action that only reads calls `getWorkspace({ read: true })`; anything else is refused
   during a view. Reads must not write, lazy seeding included.
 - RTL: one component per screen, using logical Tailwind classes (`ms-`, `pe-`, `start-`, `end-`), never left/right.
-- UI follows the **light + icon-rail** design (Figma Sections 1/3/4/5, master `98:32`). Brand is "Imagine AI", never "Magnific".
+- UI follows the **icon-rail** design (Figma Sections 1/3/4/5, master `98:32`), moving toward a dark, creation-first look
+  (user references: Higgsfield, Dreamina; patterns only) in Part C of the plan. **Keep the rail and its popup menus as they are**,
+  and never change features in UI steps. Brand is "Imagine AI", never "Magnific".
   Tool pages use the **prompt dock** (`src/components/app/config-panel.tsx`): results on top, a compact prompt card pinned
   at the bottom (Single/Bulk row, the main input inline, one chip per `Section` with a `summary`/`icon` opening its
   panel). No side config panels. Image tools save every result to History and show a results feed (`ResultFeed` +

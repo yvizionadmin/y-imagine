@@ -297,6 +297,21 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
 | B13 ✅ | Characters + motion | Saved characters reused across scenes, motion control where providers support it, consent kept | The same character appears across AI Director scenes | 3–5 |
 | B14 ✅ | Polish | Copy fixes (A+ title overlap, Arabic units), performance and accessibility pass | Known small issues closed | 1–2 |
 
+### Part C: UI / customer experience (from 2026-11-11)
+The look moves toward the user's references (Higgsfield, Dreamina): dark and creation-first, with visual tools and
+results that lead to the next step. **No feature changes**, and **the icon rail and its popup menus stay as they are**
+(colours only, in U7). Patterns only; never another product's branding or exact layouts. Mockup:
+https://claude.ai/artifact/TWULxCFBnNzHUboRiWupm5 (private to the owner).
+| # | Step | Scope | Done when | Est. |
+|---|------|-------|-----------|------|
+| U1 ✅ | Top bar | ⌘K / Ctrl+K search over every tool and settings page (en/ar); Upgrade next to the credits for admins on Free/Starter | Any page opens from the keyboard in two keys plus a word | 1 |
+| U2 | Home | Prompt box first (Image / Video / Copy), tool cards with pictures, "continue where you left off", team gallery with "Use prompt" | A new user starts a job from Home without opening the rail | 2 |
+| U3 | Results | Hover actions on each result (download, use prompt, upscale, animate, edit, upload) and progress cards with stage and time left | Every result leads to its next step in one click | 1–2 |
+| U4 | Jobs tray | Top-bar button and tray for running videos, Director projects, bulk jobs and store uploads; "ready" notices | Users leave a screen and are told when work finishes | 1–2 |
+| U5 | Polish | Loading placeholders, pop-up notices, confirm dialogs instead of `window.confirm`, presets as pictures, empty screens with examples | No spinners-only screens or browser confirms left | 1–2 |
+| U6 | First run | Setup checklist (AI key, store, first image, team) and a one-time guide per tool | A new org sees what to do next | 1 |
+| U7 | Dark theme | Dark default for the app (rail and popups recoloured, not changed), phone check of every screen | Every screen passes the a11y scan in dark and on a phone | 1–2 |
+
 ## Progress
 - **2026-11-02, Phase 0 (part 1) done:** Next.js 16.4 + Tailwind 4 + shadcn (base-nova, RTL), next-intl en/ar
   via `src/proxy.ts`, Figma tokens in `src/app/globals.css` (Geist / Geist Mono / Inter / Cairo), app shell
@@ -1366,3 +1381,10 @@ are working days with Claude. **Part A gets the product live; Part B ships as up
   store" needs a real Shopify development store and a Magento instance (A8). **Check then:** the Shopify custom app needs
   the `write_products` and `write_files` scopes; Magento's PHP upload size limit; variant images and image order are not
   set (the image is added last).
+- **2026-11-11, U1 Top bar (Part C starts).** The user wants the UI closer to Higgsfield / Dreamina without changing any
+  feature, and keeps the current rail and its popups. Top bar: a search button (⌘K / Ctrl+K) opens a dialog listing
+  every tool and settings page (console pages for super admins), with a name and description in en/ar, filtered by
+  every typed word, arrow keys + Enter or click to open. It only navigates; each page still checks access. The list
+  is `DESTINATIONS` in `nav-items.ts`. Credits pill gains **Upgrade** (→ Billing) for org admins on Free or Starter,
+  not during a read-only view. Tests: `tests/unit/command-menu.test.ts` (every entry is a real page, covers the rail,
+  labelled in both languages; matching), `tests/e2e/top-bar.spec.ts`. 456 Vitest, 47 Playwright, lint, tsc, build.

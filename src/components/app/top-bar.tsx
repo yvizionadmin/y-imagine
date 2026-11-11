@@ -6,6 +6,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { LATN } from "@/lib/format";
 import type { Workspace } from "@/lib/workspace";
+import { CommandMenu } from "./command-menu";
 import { activeTool } from "./nav-items";
 import { UserMenu } from "./user-menu";
 
@@ -13,6 +14,8 @@ export function TopBar({ workspace }: { workspace: Workspace }) {
   const t = useTranslations("Shell");
   const format = useFormatter();
   const { user, creditsRemaining } = workspace;
+  // Billing changes are admin-only; nothing to upgrade to from Pro or Enterprise, or while viewing an org.
+  const canUpgrade = workspace.role === "admin" && !workspace.viewAs && (workspace.plan === "free" || workspace.plan === "starter");
 
   return (
     <header className="flex h-topbar shrink-0 items-center gap-6 bg-topbar px-[27px] font-ui text-topbar-foreground max-md:gap-2 max-md:px-3">
@@ -26,9 +29,17 @@ export function TopBar({ workspace }: { workspace: Workspace }) {
       </Suspense>
 
       <div className="ms-auto flex items-center gap-3 max-md:gap-1">
-        <div className="flex items-center gap-1.5 rounded-full border border-credits-border bg-credits px-3 py-1.5 text-xs leading-4 font-medium whitespace-nowrap text-credits-foreground max-md:px-2">
+        <CommandMenu isSuperAdmin={workspace.isSuperAdmin} />
+        <div className="flex items-center gap-1.5 rounded-full border border-credits-border bg-credits py-1 ps-3 pe-1 text-xs leading-4 font-medium whitespace-nowrap text-credits-foreground max-md:ps-2">
           <Coins className="size-3.5" aria-hidden />
-          {t("credits", { count: format.number(creditsRemaining, LATN) })}
+          <span>{t("credits", { count: format.number(creditsRemaining, LATN) })}</span>
+          {canUpgrade ? (
+            <Link href="/settings/billing" className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 max-md:hidden">
+              {t("upgrade")}
+            </Link>
+          ) : (
+            <span className="w-2" aria-hidden />
+          )}
         </div>
         <button
           type="button"

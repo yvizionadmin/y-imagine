@@ -6,6 +6,11 @@ import {
   Clapperboard,
   Clock,
   Coins,
+  CreditCard,
+  LayoutGrid,
+  Shapes,
+  SwatchBook,
+  UserRound,
   Crop,
   Image,
   ImagePlus,
@@ -114,3 +119,54 @@ export const adminItems: MoreItem[] = [
   { key: "adminCredits", href: "/admin/credits", icon: Coins },
   { key: "adminControls", href: "/admin/controls", icon: SlidersHorizontal },
 ];
+
+/** Super-admin console pages in the ⌘K search. */
+export const searchAdminItems: Destination[] = adminItems.map((item) => ({ ...item, group: "admin" }));
+
+// ⌘K search (top bar): every page a member can open. It only navigates; each page still checks access.
+export type DestinationGroup = "tools" | "workspace" | "settings" | "admin";
+export type Destination = { key: string; href: `/${string}`; icon: LucideIcon; group: DestinationGroup };
+
+export const DESTINATIONS: Destination[] = [
+  { key: "studio", href: "/home", icon: Sparkles, group: "tools" },
+  { key: "generate", href: "/generate", icon: WandSparkles, group: "tools" },
+  { key: "generateBulk", href: "/generate/bulk", icon: Layers, group: "tools" },
+  { key: "recolor", href: "/recolor", icon: Palette, group: "tools" },
+  { key: "recolorBulk", href: "/recolor/bulk", icon: Layers, group: "tools" },
+  { key: "aplus", href: "/aplus", icon: Image, group: "tools" },
+  { key: "aplusBulk", href: "/aplus/bulk", icon: Layers, group: "tools" },
+  { key: "looks", href: "/looks", icon: Star, group: "tools" },
+  { key: "boards", href: "/looks/boards", icon: LayoutGrid, group: "tools" },
+  { key: "resize", href: "/resize", icon: Crop, group: "tools" },
+  { key: "editor", href: "/editor", icon: Clapperboard, group: "tools" },
+  { key: "director", href: "/editor/director", icon: Clapperboard, group: "tools" },
+  { key: "characters", href: "/editor/characters", icon: UserRound, group: "tools" },
+  { key: "copy", href: "/copy", icon: PenLine, group: "tools" },
+  { key: "copyBulk", href: "/copy/bulk", icon: Layers, group: "tools" },
+  { key: "chat", href: "/chat", icon: MessageSquare, group: "tools" },
+  { key: "agents", href: "/agents", icon: Bot, group: "tools" },
+  { key: "templates", href: "/templates", icon: ImagePlus, group: "tools" },
+  { key: "qr", href: "/qr", icon: QrCode, group: "tools" },
+  { key: "links", href: "/links", icon: Link, group: "tools" },
+  { key: "history", href: "/history", icon: Clock, group: "workspace" },
+  { key: "analytics", href: "/dashboard", icon: ChartColumn, group: "workspace" },
+  { key: "team", href: "/settings/team", icon: UsersRound, group: "settings" },
+  { key: "apiKeys", href: "/settings/api-keys", icon: KeyRound, group: "settings" },
+  { key: "integrations", href: "/settings/integrations", icon: Plug, group: "settings" },
+  { key: "brand", href: "/settings/brand", icon: SwatchBook, group: "settings" },
+  { key: "productTypes", href: "/settings/product-types", icon: Shapes, group: "settings" },
+  { key: "billing", href: "/settings/billing", icon: CreditCard, group: "settings" },
+];
+
+export const DESTINATION_GROUPS: DestinationGroup[] = ["tools", "workspace", "settings", "admin"];
+
+/** Matches every word of the query against the page's name and its description. */
+export function matchDestinations<T extends { label: string; hint: string }>(items: T[], query: string): T[] {
+  const words = query.toLocaleLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return items;
+  return items.filter((item) => {
+    const text = `${item.label} ${item.hint}`.toLocaleLowerCase();
+    return words.every((w) => text.includes(w));
+  });
+}
+

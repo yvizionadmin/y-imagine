@@ -126,6 +126,157 @@
         "openai": "OpenAI",
         "gemini": "Google Gemini"
       }
+    },
+    "upgrade": "Upgrade",
+    "search": {
+      "button": "Search tools and pages",
+      "title": "Go to a tool or page",
+      "placeholder": "Type a tool or page name…",
+      "empty": "Nothing matches. Try another word.",
+      "groups": {
+        "tools": "Tools",
+        "workspace": "Workspace",
+        "settings": "Settings",
+        "admin": "Platform admin"
+      },
+      "items": {
+        "studio": {
+          "title": "Image & Video Studio",
+          "hint": "Create images and videos from a prompt"
+        },
+        "generate": {
+          "title": "Lifestyle image",
+          "hint": "Put your product in a styled scene"
+        },
+        "generateBulk": {
+          "title": "Bulk lifestyle images",
+          "hint": "A whole catalog in one run"
+        },
+        "recolor": {
+          "title": "Recolor product",
+          "hint": "New colors and fabrics, same product"
+        },
+        "recolorBulk": {
+          "title": "Bulk recolor",
+          "hint": "Recolor many products at once"
+        },
+        "aplus": {
+          "title": "A+ images",
+          "hint": "Marketplace content images with text"
+        },
+        "aplusBulk": {
+          "title": "Bulk A+ images",
+          "hint": "A+ images for many products"
+        },
+        "looks": {
+          "title": "Inspirational looks",
+          "hint": "Shoppable room and outfit scenes"
+        },
+        "boards": {
+          "title": "Mood boards",
+          "hint": "Saved looks and boards"
+        },
+        "resize": {
+          "title": "Image resizer",
+          "hint": "One image, many marketplace sizes"
+        },
+        "editor": {
+          "title": "Video editor",
+          "hint": "Trim, merge, subtitles, music and voice"
+        },
+        "director": {
+          "title": "AI Director",
+          "hint": "One idea to a finished video"
+        },
+        "characters": {
+          "title": "Characters",
+          "hint": "Saved people for your videos"
+        },
+        "copy": {
+          "title": "Product copy",
+          "hint": "Titles and descriptions"
+        },
+        "copyBulk": {
+          "title": "Bulk product copy",
+          "hint": "Copy for a whole catalog"
+        },
+        "chat": {
+          "title": "AI Assistant",
+          "hint": "Chat with your AI models"
+        },
+        "agents": {
+          "title": "AI Agents",
+          "hint": "Let the AI use the tools for you"
+        },
+        "templates": {
+          "title": "New job",
+          "hint": "Start from a template"
+        },
+        "qr": {
+          "title": "QR generator",
+          "hint": "QR codes for products and links"
+        },
+        "links": {
+          "title": "Short links",
+          "hint": "Short, trackable links"
+        },
+        "history": {
+          "title": "History",
+          "hint": "Every result, approvals and store uploads"
+        },
+        "analytics": {
+          "title": "Analytics",
+          "hint": "Jobs, credits and usage"
+        },
+        "team": {
+          "title": "Team members",
+          "hint": "Invite people and set roles"
+        },
+        "apiKeys": {
+          "title": "API keys",
+          "hint": "AI provider keys and models"
+        },
+        "integrations": {
+          "title": "Integrations",
+          "hint": "Connect your online store"
+        },
+        "brand": {
+          "title": "Brand kit",
+          "hint": "Brand voice and words to avoid"
+        },
+        "productTypes": {
+          "title": "Product types",
+          "hint": "Product types and scenes"
+        },
+        "billing": {
+          "title": "Billing and plan",
+          "hint": "Plan, invoices and upgrade"
+        },
+        "adminOverview": {
+          "title": "Admin overview",
+          "hint": "Platform at a glance"
+        },
+        "adminOrgs": {
+          "title": "Organizations",
+          "hint": "All client organizations"
+        },
+        "adminUsers": {
+          "title": "Users",
+          "hint": "All platform users"
+        },
+        "adminActivity": {
+          "title": "Monitoring",
+          "hint": "Jobs, errors and activity"
+        },
+        "adminCredits": {
+          "title": "Credits",
+          "hint": "Tool costs and credit adjustments"
+        },
+        "adminControls": {
+          "title": "Controls",
+          "hint": "Maintenance and platform settings"
+        }
+      }
     }
   },
   "Workspace": {
