@@ -36,7 +36,7 @@ const numberInput = "h-9 w-28 text-[13px] tabular-nums";
 /** Super-admin credit settings: plan credits, per-tool job cost, video pricing and tools per plan. */
 export function AdminCredits() {
   const t = useTranslations("Admin");
-  const tTools = useTranslations("Shell.nav");
+  const tTools = useTranslations("Analytics.tools");
   const format = useFormatter();
   const now = useNow({ updateInterval: 60_000 });
   const [draft, setDraft] = useState<Draft | null>(null);

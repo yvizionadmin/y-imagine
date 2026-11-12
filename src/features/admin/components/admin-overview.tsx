@@ -14,7 +14,7 @@ import { LoadingSkeleton } from "@/components/ui/skeleton";
 /** Platform health at a glance: tenants, users, job volume and failures across every org. */
 export function AdminOverview() {
   const t = useTranslations("Admin");
-  const tTools = useTranslations("Shell.nav");
+  const tTools = useTranslations("Analytics.tools");
   const format = useFormatter();
   const now = useNow({ updateInterval: 60_000 });
   const [data, setData] = useState<Overview | null>(null);

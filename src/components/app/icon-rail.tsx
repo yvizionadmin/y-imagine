@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { Ellipsis, PanelLeft, Plus } from "lucide-react";
+import { Ellipsis, PanelLeft } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
 import {
@@ -16,7 +16,6 @@ import {
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { AiImageRailItem } from "./ai-image-menu";
 import { activeTool, adminItems, AI_IMAGE_KEYS, moreItems, railItems, type ToolKey } from "./nav-items";
-import { startNewJob } from "./new-job";
 
 type RailProps = { isSuperAdmin: boolean };
 
@@ -55,16 +54,6 @@ function Rail({ activeKey, isSuperAdmin }: { activeKey: string | null } & RailPr
         <PanelLeft className="size-6 rtl:-scale-x-100" strokeWidth={1.5} aria-hidden />
       </button>
 
-      <Link href="/templates" onNavigate={startNewJob} className="flex flex-col items-center gap-0.5 pb-1">
-        <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.25),0_4px_4px_rgba(21,30,130,0.07)]">
-          <Plus className="size-5" aria-hidden />
-        </span>
-        {!compact && (
-          <span className="text-[11px] leading-4 font-medium tracking-[0.11px] text-primary">
-            {t("nav.newJob")}
-          </span>
-        )}
-      </Link>
 
       {railItems.map(({ key, href, icon: Icon, soon }) => {
         if (key === "generate") return <AiImageRailItem key={key} compact={compact} active={AI_IMAGE_KEYS.includes(activeKey as ToolKey)} />;

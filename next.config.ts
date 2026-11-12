@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   // Dev logs print Server Function arguments, which would put AI provider keys and store
   // credentials in the terminal.
   logging: { serverFunctions: false },
+  // Dev only: on non-Apple disks (exFAT) macOS writes `._*` stubs into the image cache and
+  // Next serves the stub instead of the picture. Production (Railway) still optimizes.
+  images: { unoptimized: process.env.NODE_ENV === "development" },
   experimental: {
     // Product PNGs up to 10 MB plus multipart overhead
     serverActions: { bodySizeLimit: "11mb" },
