@@ -20,7 +20,7 @@ type Data = Extract<Awaited<ReturnType<typeof getAdminActivity>>, { ok: true }>;
 /** Monitoring: every job and every audited action across orgs, newest first. */
 export function AdminActivity() {
   const t = useTranslations("Admin");
-  const tTools = useTranslations("Shell.nav");
+  const tTools = useTranslations("Analytics.tools");
   const params = useSearchParams();
   const [tab, setTab] = useState<Tab>(params.get("tab") === "audit" ? "audit" : "jobs");
   const [orgId, setOrgId] = useState(params.get("org") ?? "");
@@ -115,7 +115,7 @@ export function AdminActivity() {
 
 function Jobs({ jobs }: { jobs: AdminJob[] }) {
   const t = useTranslations("Admin");
-  const tTools = useTranslations("Shell.nav");
+  const tTools = useTranslations("Analytics.tools");
   const format = useFormatter();
   return (
     <Table

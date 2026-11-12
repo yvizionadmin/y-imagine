@@ -72,6 +72,62 @@ test("the Arabic site is right-to-left, can switch language, and private pages s
   }
 });
 
+test("the home page shows a before/after you can drag or key through, and tells search engines what it is", async ({ page }) => {
+  await page.goto("/en");
+  const slider = page.getByRole("slider", { name: "Compare the product photo with the AI scene" });
+  await expect(slider).toBeVisible();
+  await expect(page.getByRole("img", { name: "A grey sofa photographed on a plain studio background" })).toBeAttached();
+  await slider.focus();
+  await page.keyboard.press("Home");
+  await expect(slider).toHaveValue("0");
+  await page.keyboard.press("End");
+  await expect(slider).toHaveValue("100");
+
+  const data = await page.locator('script[type="application/ld+json"]').allTextContents();
+  const types = data.flatMap((text) => (JSON.parse(text)["@graph"] ?? [JSON.parse(text)]).map((t: { "@type": string }) => t["@type"]));
+  expect(types).toEqual(expect.arrayContaining(["Organization", "WebSite", "SoftwareApplication"]));
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute("content", "summary_large_image");
+
+  // The scene carousel moves with its buttons, and its centre slide stays clear after visiting other pages and coming back.
+  const main = page.getByRole("navigation", { name: "Main" }).first();
+  await main.getByRole("link", { name: "Pricing" }).click();
+  await main.getByRole("link", { name: "Features" }).click();
+  await page.getByRole("banner").getByRole("link", { name: "Imagine AI" }).click();
+  await expect(page).toHaveURL(/\/en$/);
+  const next = page.getByRole("button", { name: "Next scene" });
+  await next.scrollIntoViewIfNeeded();
+  await next.click();
+  const active = page.locator(".mkt-coverflow .swiper-slide-active .mkt-scene");
+  await expect(active).toHaveCSS("filter", "none");
+  await expect(active).toHaveCSS("opacity", "1");
+});
+
+test("features: the index jumps to a section and the recolor preview switches colour", async ({ page }) => {
+  await page.goto("/en/features");
+  await page.getByRole("navigation", { name: "Jump to a feature" }).getByRole("link", { name: "Team and control" }).click();
+  await expect(page.getByRole("heading", { name: "Team and control" })).toBeInViewport();
+  const colors = page.getByRole("radiogroup", { name: "Colors" });
+  await colors.getByRole("radio", { name: "Navy" }).click();
+  await expect(colors.getByRole("radio", { name: "Navy" })).toHaveAttribute("aria-checked", "true");
+  expect(await page.locator('script[type="application/ld+json"]').textContent()).toContain("BreadcrumbList");
+});
+
+test("pricing: the questions open one at a time and every answer is in the page for search engines", async ({ page }) => {
+  await page.goto("/en/pricing");
+  const first = page.getByRole("button", { name: "Do I need my own AI key?" });
+  const cancel = page.getByRole("button", { name: "Can I cancel?" });
+  await expect(first).toHaveAttribute("aria-expanded", "true");
+  await cancel.click();
+  await expect(cancel).toHaveAttribute("aria-expanded", "true");
+  await expect(first).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByText("Your plan stays active until the end of the paid period")).toBeVisible();
+
+  const faq = JSON.parse((await page.locator('script[type="application/ld+json"]').textContent()) ?? "[]") as { "@type": string; mainEntity?: unknown[] }[];
+  expect(faq.find((t) => t["@type"] === "FAQPage")?.mainEntity).toHaveLength(5);
+  // Closed answers are collapsed, not removed.
+  await expect(page.getByText("Credits are your plan's monthly quota of jobs")).toBeAttached();
+});
+
 test("search engines get a sitemap and robots file", async ({ request }) => {
   const sitemap = await (await request.get("/sitemap.xml")).text();
   expect(sitemap).toContain("/en/pricing");

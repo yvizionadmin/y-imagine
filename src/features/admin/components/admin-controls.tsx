@@ -20,7 +20,7 @@ type Form = { maintenance: { enabled: boolean; message: string }; signupsEnabled
 /** Platform switches: maintenance mode, open sign-ups, default plan, and per-tool kill switches. */
 export function AdminControls() {
   const t = useTranslations("Admin");
-  const tTools = useTranslations("Shell.nav");
+  const tTools = useTranslations("Analytics.tools");
   const format = useFormatter();
   const now = useNow({ updateInterval: 60_000 });
   const [form, setForm] = useState<Form | null>(null);

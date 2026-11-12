@@ -3288,7 +3288,9 @@
       "features": "Features",
       "pricing": "Pricing",
       "signIn": "Sign in",
-      "start": "Start free"
+      "start": "Start free",
+      "skip": "Skip to content",
+      "home": "Home"
     },
     "footer": {
       "label": "Site",
@@ -3378,11 +3380,28 @@
         "safe": {
           "title": "Keys stay protected",
           "body": "Keys are encrypted at rest, never sent back to the browser, and only org admins can manage them."
-        }
+        },
+        "stat": "0%",
+        "statLabel": "markup on your AI usage"
       },
       "arabic": {
         "title": "Built for English and Arabic",
         "body": "The whole workspace works right-to-left in Arabic, and copy and chat can answer in Arabic too."
+      },
+      "eyebrow": "Your own AI keys · English and Arabic",
+      "compare": {
+        "label": "Compare the product photo with the AI scene",
+        "before": "Before",
+        "after": "After",
+        "beforeAlt": "A grey sofa photographed on a plain studio background"
+      },
+      "providers": "Works with your keys from",
+      "gallery": {
+        "title": "A scene for every category",
+        "body": "Start from ready-made scenes for furniture, fashion, beauty, electronics and more, or describe your own.",
+        "previous": "Previous scene",
+        "next": "Next scene",
+        "region": "Sample scenes"
       }
     },
     "features": {
@@ -3434,6 +3453,22 @@
           "credits": "A clear monthly job quota for each plan",
           "links": "QR codes and Bitly short links"
         }
+      },
+      "eyebrow": "Features",
+      "jump": "Jump to a feature",
+      "demo": {
+        "title": "See a new color before you shoot it",
+        "body": "Pick a finish to get the idea. In the Recolor tool, AI repaints your own product photo from a swatch or a color name.",
+        "label": "Colors",
+        "note": "Preview for illustration only.",
+        "alt": "A grey sofa on a studio background, shown in the selected color",
+        "colors": {
+          "original": "Original",
+          "sage": "Sage",
+          "terracotta": "Terracotta",
+          "navy": "Navy",
+          "sand": "Sand"
+        }
       }
     },
     "pricing": {
@@ -3467,7 +3502,9 @@
           "q": "Can I cancel?",
           "a": "Yes. Your plan stays active until the end of the paid period, then the workspace moves to Free."
         }
-      }
+      },
+      "eyebrow": "Pricing",
+      "faqBody": "Keys, credits, costs and video, answered."
     },
     "legal": {
       "updated": "Last updated: {date}",

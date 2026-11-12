@@ -9,7 +9,7 @@ export function LegalPage({ kind, locale }: { kind: LegalKind; locale: Locale })
   const format = useFormatter();
   const doc = legalDoc(locale, kind);
   return (
-    <article className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-14 sm:px-6">
+    <article className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pt-[calc(var(--mkt-header)+2.5rem)] pb-14 sm:px-6">
       <header className="flex flex-col gap-3">
         <h1 className="text-3xl font-semibold tracking-tight">{doc.title}</h1>
         <p className="text-xs text-muted-foreground">

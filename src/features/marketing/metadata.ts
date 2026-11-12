@@ -9,6 +9,8 @@ const PATH: Record<MarketingPage, string> = { home: "", features: "/features", p
 /** Public base URL; APP_URL is set on every deployed service. */
 export const siteUrl = () => (process.env.APP_URL || "http://localhost:3100").replace(/\/$/, "");
 export const marketingPaths = Object.values(PATH);
+export const marketingPath = (locale: string, page: MarketingPage) => `/${locale}${PATH[page]}`;
+const SHARE_IMAGE = "/demo/lifestyle-living-room.png";
 
 /** Title, description, language alternates and share card for one public page. */
 export async function marketingMetadata(locale: string, page: MarketingPage, options: { noindex?: boolean } = {}): Promise<Metadata> {
@@ -24,7 +26,17 @@ export async function marketingMetadata(locale: string, page: MarketingPage, opt
       canonical: `/${locale}${PATH[page]}`,
       languages: Object.fromEntries(routing.locales.map((l) => [l, `/${l}${PATH[page]}`])),
     },
-    openGraph: { title, description, type: "website", siteName: tm("brand"), images: ["/demo/lifestyle-living-room.png"] },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      url: `/${locale}${PATH[page]}`,
+      siteName: tm("brand"),
+      locale: locale === "ar" ? "ar_AE" : "en_US",
+      alternateLocale: routing.locales.filter((l) => l !== locale).map((l) => (l === "ar" ? "ar_AE" : "en_US")),
+      images: [{ url: SHARE_IMAGE, width: 1184, height: 864, alt: tm("home.heroAlt") }],
+    },
+    twitter: { card: "summary_large_image", title, description, images: [SHARE_IMAGE] },
     robots: options.noindex ? { index: false, follow: true } : undefined,
   };
 }

@@ -1446,3 +1446,14 @@ https://claude.ai/artifact/TWULxCFBnNzHUboRiWupm5 (private to the owner).
   beside Generate (chips now take the whole row on phones, cost and Generate below). Tests:
   `tests/e2e/phone-layout.spec.ts` (tool screens on a phone, en/ar: empty-state text on screen, chips use the dock's
   width; fails without the fix). 469 Vitest, 50 Playwright, lint, tsc, build.
+- **2026-11-12, Marketing redesign (Home, Features, Pricing).** Awwwards-style motion on the three public pages only
+  (Terms/Privacy keep the plain layout). Libraries, all scoped to these pages: GSAP + ScrollTrigger + SplitText
+  (`scroll-fx.tsx`: word-split headings, batched reveals, parallax, pinned "How it works"), Lenis smooth scroll (synced
+  to GSAP's ticker), Motion for React (tilt cards, magnetic CTAs, pricing interval pill, price swap, FAQ accordion, recolor
+  swatch ring), Swiper (category ticker + scene coverflow; a still row is server-rendered because Swiper reads the clock
+  during render), lottie-react `LottieLight` (hand-made brand sparkle, `marketing/lottie/sparkle.json`, lazy-loaded).
+  Hero: drag/hover/keyboard before/after slider (native range input). Header floats over the hero (`--mkt-header`).
+  SEO: content stays server-rendered and visible without JS; JSON-LD (Organization/WebSite/SoftwareApplication, Breadcrumbs,
+  FAQPage) in `structured-data.tsx`; OG locale/url + Twitter card. Reveals use opacity only (never `visibility`), so
+  screen readers see everything; all motion is off under reduced motion. Tests: `tests/unit/marketing-seo.test.ts`, +3
+  `marketing.spec.ts` specs. 480 Vitest, marketing + accessibility Playwright, axe clean on the pages (dark + light), build.

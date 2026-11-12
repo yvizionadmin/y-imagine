@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
+import { JOB_FEATURES } from "@/features/analytics/config";
 
 // Some messages are lists (scene suggestions), which count as one key.
 type Tree = { [key: string]: string | string[] | Tree };
@@ -55,6 +56,14 @@ describe("translations", () => {
     ["ar", ar as Tree],
   ])("%s has every key the code asks for", (_locale, messages) => {
     expect(used.filter((key) => !has(messages, key))).toEqual([]);
+  });
+
+  // Labels looked up dynamically (`tTools(feature)`) are invisible to the scan above.
+  it.each([
+    ["en", en as Tree],
+    ["ar", ar as Tree],
+  ])("%s labels every job feature", (_locale, messages) => {
+    expect(JOB_FEATURES.filter((f) => !has(messages, `Analytics.tools.${f}`))).toEqual([]);
   });
 
   it("en and ar have the same keys", () => {
