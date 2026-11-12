@@ -5,7 +5,8 @@ import { COPY_CHANNELS, COPY_LANGUAGES, COPY_LENGTHS, COPY_TONES, type CopyLangu
 import { categoryPresets } from "@/lib/catalog-presets";
 import { recordAudit } from "@/lib/audit";
 import { getCopy, listCopies, removeCopy, reviewCopies, updateCopy, type SavedCopy } from "@/lib/copy/copies";
-import { notifyCopyReviewed, notifyCopySubmitted, quietly, requestEmailLocale } from "@/lib/email/notify";
+import { notifyCopyReviewed, notifyCopySubmitted, quietly } from "@/lib/email/notify";
+import { requestEmailLocale } from "@/lib/email/request-locale";
 import { REVIEW_FROM, REVIEW_TO, REVIEW_NOTE_MAX, REVIEW_STATUSES, type ReviewAction, type ReviewStatus } from "@/lib/copy/review-status";
 import { writeCopy } from "@/lib/copy/write";
 import { reportError } from "@/lib/observability/report";

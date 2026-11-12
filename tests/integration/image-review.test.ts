@@ -17,8 +17,8 @@ vi.mock("@/lib/email/notify", async (original) => ({
   ...(await original<typeof import("@/lib/email/notify")>()),
   notifyImagesSubmitted: async (input: Record<string, unknown>) => void notices.submitted.push(input),
   notifyImagesReviewed: async (input: Record<string, unknown>) => void notices.reviewed.push(input),
-  requestEmailLocale: async () => "en",
 }));
+vi.mock("@/lib/email/request-locale", () => ({ requestEmailLocale: async () => "en" }));
 
 // Uploads are queued (one job per image); here each one runs at once, as the worker would.
 vi.mock("@/lib/catalog/publish-queue", () => ({

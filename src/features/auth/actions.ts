@@ -6,7 +6,8 @@ import { PASSWORD_MAX, PASSWORD_MIN, verifyPassword } from "@/lib/auth/password"
 import { clerkEnabled } from "@/lib/auth/constants";
 import { consumeResetToken, createResetToken } from "@/lib/auth/password-reset";
 import { createSession, endSession, getSession, revokeUserSessions, setSessionOrg } from "@/lib/auth/session";
-import { requestEmailLocale, sendPasswordResetEmail } from "@/lib/email/notify";
+import { sendPasswordResetEmail } from "@/lib/email/notify";
+import { requestEmailLocale } from "@/lib/email/request-locale";
 import { emailEnabled } from "@/lib/email/send";
 import { clearLimit, clientIp, hit, isLimited, LIMITS } from "@/lib/rate-limit";
 import { findUserByEmail, getUser, insertUser, normalizeEmail, setUserPassword, syncBootstrapRole, updateUser } from "@/lib/auth/users";

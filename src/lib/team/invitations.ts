@@ -2,7 +2,8 @@ import "server-only";
 import { appUrl } from "@/lib/app-url";
 import { sendClerkInvitation } from "@/lib/auth/clerk";
 import { clerkEnabled } from "@/lib/auth/constants";
-import { requestEmailLocale, sendInviteEmail } from "@/lib/email/notify";
+import { sendInviteEmail } from "@/lib/email/notify";
+import { requestEmailLocale } from "@/lib/email/request-locale";
 import { reportError } from "@/lib/observability/report";
 
 // Invitation emails. The invitation itself is a `members` row (status "invited") that becomes an

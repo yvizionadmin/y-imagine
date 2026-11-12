@@ -1,5 +1,6 @@
 import "server-only";
-import { createTranslator } from "next-intl";
+// use-intl/core, not next-intl: the worker sends emails too, and next-intl's entry loads React client code.
+import { createTranslator } from "use-intl/core";
 import ar from "../../../messages/ar.json";
 import en from "../../../messages/en.json";
 import type { EmailMessage } from "./send";

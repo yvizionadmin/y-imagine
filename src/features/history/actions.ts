@@ -6,7 +6,8 @@ import { canPublish } from "@/lib/catalog/registry";
 import { claimForPublish } from "@/lib/catalog/publish";
 import { dispatchPublishes } from "@/lib/catalog/publish-queue";
 import { REVIEW_FROM, REVIEW_NOTE_MAX, REVIEW_TO, type ReviewAction } from "@/lib/copy/review-status";
-import { notifyImagesReviewed, notifyImagesSubmitted, quietly, requestEmailLocale } from "@/lib/email/notify";
+import { notifyImagesReviewed, notifyImagesSubmitted, quietly } from "@/lib/email/notify";
+import { requestEmailLocale } from "@/lib/email/request-locale";
 import {
   getGenerations,
   imageApprovalRequired,

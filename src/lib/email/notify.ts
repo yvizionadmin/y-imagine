@@ -1,11 +1,10 @@
 import "server-only";
-import { getLocale } from "next-intl/server";
 import { appUrl } from "@/lib/app-url";
 import { LATN } from "@/lib/format";
 import { reportError } from "@/lib/observability/report";
 import { listMembers } from "@/lib/team/members";
 import { sendEmail, type EmailResult } from "./send";
-import { emailLocale, emailTranslator, renderEmail, type EmailLocale } from "./templates";
+import { emailTranslator, renderEmail, type EmailLocale } from "./templates";
 
 // The emails the app sends, one function each. Callers pass the language of the person acting
 // (their current locale); links point into this deployment (APP_URL, else the request host).
@@ -186,15 +185,6 @@ export async function notifyVideoCleanup(input: { orgId: string; orgName: string
     );
   }
   return admins.length;
-}
-
-/** The current request's language for emails (en outside a request, where getLocale throws). */
-export async function requestEmailLocale(): Promise<EmailLocale> {
-  try {
-    return emailLocale(await getLocale());
-  } catch {
-    return "en";
-  }
 }
 
 /** Runs a notice without letting it fail the action that triggered it. */
